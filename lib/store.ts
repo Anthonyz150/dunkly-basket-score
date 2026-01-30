@@ -1,14 +1,23 @@
 // lib/store.ts
-export const saveToLocal = (key: string, data: any) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(key, JSON.stringify(data));
-  }
-};
 
-export const getFromLocal = (key: string) => {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : null;
+export function saveToLocal<T>(key: string, data: T): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    console.error("saveToLocal error:", error);
   }
-  return null;
-};
+}
+
+export function getFromLocal<T = unknown>(key: string): T | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? (JSON.parse(saved) as T) : null;
+  } catch (error) {
+    console.error("getFromLocal parse error:", error);
+    return null;
+  }
+}
