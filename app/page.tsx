@@ -1,118 +1,193 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { getFromLocal } from '@/lib/store';
-import Link from 'next/link';
+"use client";
+
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { getFromLocal } from "../lib/store";
+
+type Stats = {
+  compets: number;
+  equipes: number;
+  matchs: number;
+  arbitres: number;
+};
+
+type Match = {
+  id?: string;
+  competition?: string;
+  equipeA?: string;
+  equipeB?: string;
+  scoreA?: number;
+  scoreB?: number;
+};
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ compets: 0, equipes: 0, matchs: 0, arbitres: 0 });
-  const [liveMatch, setLiveMatch] = useState<any>(null);
-  const [user, setUser] = useState<any>(null);
+  const [stats, setStats] = useState<Stats>({
+    compets: 0,
+    equipes: 0,
+    matchs: 0,
+    arbitres: 0,
+  });
+
+  const [liveMatch, setLiveMatch] = useState<Match | null>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) setUser(JSON.parse(storedUser));
+    if (typeof window === "undefined") return;
 
-    const c = getFromLocal('competitions') || [];
-    const e = getFromLocal('equipes') || [];
-    const m = getFromLocal('matchs') || [];
-    const a = getFromLocal('arbitres') || [];
-    
-    setStats({ 
-        compets: c.length, 
-        equipes: e.length, 
-        matchs: m.length, 
-        arbitres: a.length 
+    const c = getFromLocal<any[]>("competitions") || [];
+    const e = getFromLocal<any[]>("equipes") || [];
+    const m = getFromLocal<Match[]>("matchs") || [];
+    const a = getFromLocal<any[]>("arbitres") || [];
+
+    setStats({
+      compets: c.length,
+      equipes: e.length,
+      matchs: m.length,
+      arbitres: a.length,
     });
 
-    const matchActif = m.find((match: any) => 
-      match.status === 'en_cours' || (match.scoreA + match.scoreB) > 0
-    );
-    
-    if (matchActif) setLiveMatch(matchActif);
+    if (m.length > 0) {
+      setLiveMatch(m[0]);
+    }
   }, []);
 
-  const isAdmin = user?.username === 'admin';
-
   return (
-    <div className="dashboard-wrapper">
-      <header className="dashboard-header">
-        <div className="header-title-row">
-          <span className="basketball-icon">🏀</span>
-          {/* CHANGEMENT ICI : BasketManager devient DUNKLY */}
-          <h1>DUNKLY <span className="version-tag">v1.0</span></h1>
-        </div>
-        <p className="welcome-text">
-          Bienvenue, <strong>{user?.username}</strong>. Voici l'état actuel de tes championnats.
-        </p>
+    <main className="main-content">
+      <header style={{ marginBottom: "40px" }}>
+        <h1>
+          🏀 BasketManager{" "}
+          <span style={{ fontSize: "1rem", color: "#999" }}>v1.0</span>
+        </h1>
+        <p>Bienvenue, Anthony. Voici l'état actuel de tes championnats.</p>
       </header>
 
-      {/* Reste du composant (Stats, Actions, Live Match) identique... */}
-      <div className="stats-grid">
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+          gap: "20px",
+          marginBottom: "40px",
+        }}
+      >
         <StatCard title="Compétitions" value={stats.compets} color="#e65100" />
         <StatCard title="Équipes" value={stats.equipes} color="#0277bd" />
-        <StatCard title="Matchs ce jour" value={stats.matchs} color="#2e7d32" />
+        <StatCard title="Matchs" value={stats.matchs} color="#2e7d32" />
         <StatCard title="Arbitres" value={stats.arbitres} color="#ef6c00" />
       </div>
 
-      <div className="dashboard-lower-grid">
-        <section className="card actions-section">
-          <h2 className="section-title">
-            {isAdmin ? "DERNIÈRES ACTIONS" : "ACCÈS RAPIDE"}
-          </h2>
-          <div className="actions-list">
-            {isAdmin ? (
-              <>
-                <ActionLink href="/matchs" icon="➕" text="Enregistrer un résultat" />
-                <ActionLink href="/equipes" icon="👥" text="Inscrire une équipe" />
-                <ActionLink href="/competitions" icon="🏆" text="Créer un tournoi" />
-              </>
-            ) : (
-              <>
-                <ActionLink href="/matchs" icon="⏱️" text="Consulter les résultats" />
-                <ActionLink href="/equipes" icon="👥" text="Voir les équipes" />
-                <ActionLink href="/competitions" icon="🏆" text="Liste des championnats" />
-              </>
-            )}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1.5fr 1fr",
+          gap: "30px",
+          alignItems: "start",
+        }}
+      >
+        <section className="card">
+          <h2 style={{ marginBottom: "25px" }}>ACTIONS RAPIDES</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
+            <ActionLink href="/matchs" icon="➕" text="Enregistrer un résultat" />
+            <ActionLink href="/equipes" icon="👥" text="Inscrire une équipe" />
+            <ActionLink href="/competitions" icon="🏆" text="Créer un tournoi" />
           </div>
         </section>
 
         {liveMatch ? (
-          <section className="live-match-card">
-            <h2 className="live-title">MATCH EN COURS</h2>
-            <div className="live-display">
-              <p className="live-comp-name">{liveMatch.competition}</p>
-              <div className="live-score-row">
-                <span className="live-team">{liveMatch.equipeA}</span>
-                <span className="live-score-digits">{liveMatch.scoreA} - {liveMatch.scoreB}</span>
-                <span className="live-team">{liveMatch.equipeB}</span>
+          <section style={liveMatchContainerStyle}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <h2 style={{ color: "#ff9800", fontSize: "1.2rem", margin: 0 }}>
+                DIRECT 🔴
+              </h2>
+              <Link
+                href={`/matchs/${liveMatch.id ?? ""}`}
+                style={{ color: "white", fontSize: "0.8rem" }}
+              >
+                Ouvrir l'e-marque
+              </Link>
+            </div>
+
+            <div style={scoreBoardStyle}>
+              <p style={{ fontSize: "0.8rem", color: "#ff9800" }}>
+                {liveMatch.competition}
+              </p>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={teamNameStyle}>{liveMatch.equipeA}</span>
+                <span style={liveScoreStyle}>
+                  {liveMatch.scoreA} - {liveMatch.scoreB}
+                </span>
+                <span style={teamNameStyle}>{liveMatch.equipeB}</span>
               </div>
             </div>
           </section>
         ) : (
-          <div className="card no-live-placeholder" style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-            <p>Aucun match en direct pour le moment.</p>
+          <div className="card" style={{ textAlign: "center", color: "#999", padding: "40px" }}>
+            <p>Aucun match en cours actuellement.</p>
           </div>
         )}
       </div>
+    </main>
+  );
+}
+
+function StatCard({
+  title,
+  value,
+  color,
+}: {
+  title: string;
+  value: number;
+  color: string;
+}) {
+  return (
+    <div className="card" style={{ borderLeft: `6px solid ${color}` }}>
+      <p style={{ fontSize: "0.9rem", color: "#666", fontWeight: 600 }}>
+        {title}
+      </p>
+      <h3 style={{ fontSize: "2rem" }}>{value}</h3>
     </div>
   );
 }
 
-// Sous-composants inchangés
-function StatCard({ title, value, color }: any) {
+function ActionLink({
+  href,
+  icon,
+  text,
+}: {
+  href: string;
+  icon: string;
+  text: string;
+}) {
   return (
-    <div className="card stat-card" style={{ borderLeft: `5px solid ${color}` }}>
-      <p className="stat-label">{title}</p>
-      <h3 className="stat-number">{value}</h3>
-    </div>
-  );
-}
-
-function ActionLink({ href, icon, text }: any) {
-  return (
-    <Link href={href} className="action-row">
-      <span className="action-icon">{icon}</span>
-      <span className="action-text">{text}</span>
+    <Link
+      href={href}
+      className="nav-link"
+      style={{
+        background: "#f8f9fa",
+        color: "#333",
+        border: "1px solid #eee",
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+      }}
+    >
+      <span>{icon}</span> {text}
     </Link>
   );
 }
+
+const liveMatchContainerStyle = {
+  background: "#111",
+  padding: "25px",
+  borderRadius: "20px",
+  color: "white",
+};
+
+const scoreBoardStyle = { marginTop: "20px", textAlign: "center" as const };
+
+const liveScoreStyle = {
+  fontSize: "2.5rem",
+  fontWeight: "900",
+  color: "white",
+  margin: "0 15px",
+};
+
+const teamNameStyle = { fontSize: "1rem", fontWeight: "bold", flex: 1 };
