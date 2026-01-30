@@ -1,4 +1,5 @@
-'use client';
+'use client'; // Indispensable pour éviter l'erreur de build Vercel
+
 import { useState, useEffect } from 'react';
 import { getFromLocal } from '@/lib/store';
 import Link from 'next/link';
@@ -10,31 +11,31 @@ export default function Dashboard() {
   const [searchTerm, setSearchTerm] = useState(""); 
 
   useEffect(() => {
-    // Récupération de l'utilisateur
+    // Récupération de l'utilisateur connecté
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) setUser(JSON.parse(storedUser));
 
-    // Récupération des données avec repli sur tableau vide pour éviter les erreurs .length
+    // Récupération sécurisée des données (tableau vide par défaut)
     const c = getFromLocal('competitions') || [];
     const e = getFromLocal('equipes') || [];
     const m = getFromLocal('matchs') || [];
     const a = getFromLocal('arbitres') || [];
     
     setStats({ 
-        compets: c.length, 
-        equipes: e.length, 
-        matchs: m.length, 
-        arbitres: a.length 
+      compets: c.length, 
+      equipes: e.length, 
+      matchs: m.length, 
+      arbitres: a.length 
     });
 
-    // Détection d'un match en direct
+    // Recherche d'un match en direct ou avec un score existant
     const matchActif = m.find((match: any) => 
       match.status === 'en_cours' || (match.scoreA + match.scoreB) > 0
     );
     if (matchActif) setLiveMatch(matchActif);
   }, []);
 
-  // Fonction d'exportation des données pour l'Admin
+  // Fonction d'exportation au format JSON
   const exportData = () => {
     const data = {
       matchs: getFromLocal('matchs') || [],
@@ -60,7 +61,7 @@ export default function Dashboard() {
           <h1>DUNKLY <span className="version-tag">v1.0</span></h1>
         </div>
         
-        {/* Barre de recherche interactive */}
+        {/* Barre de recherche */}
         <div className="search-container" style={{ marginTop: '20px' }}>
           <input 
             type="text" 
@@ -73,7 +74,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Grille de statistiques */}
+      {/* Grille des statistiques */}
       <div className="stats-grid">
         <StatCard title="Compétitions" value={stats.compets} color="#e65100" />
         <StatCard title="Équipes" value={stats.equipes} color="#0277bd" />
@@ -82,7 +83,7 @@ export default function Dashboard() {
       </div>
 
       <div className="dashboard-lower-grid">
-        {/* Section Actions dynamiques */}
+        {/* Actions selon le rôle */}
         <section className="card actions-section">
           <h2 className="section-title">{isAdmin ? "ADMINISTRATION" : "ACCÈS RAPIDE"}</h2>
           <div className="actions-list">
@@ -90,7 +91,7 @@ export default function Dashboard() {
               <>
                 <ActionLink href="/matchs" icon="➕" text="Enregistrer un résultat" />
                 <ActionLink href="/equipes" icon="👥" text="Inscrire une équipe" />
-                <button onClick={exportData} className="export-btn-pro" style={exportBtnStyle}>
+                <button onClick={exportData} style={exportBtnStyle}>
                   <span>📥</span> <span>Exporter la base de données</span>
                 </button>
               </>
@@ -103,21 +104,21 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Section Match en Direct */}
+        {/* Bloc Live Match */}
         {liveMatch ? (
           <section className="live-match-card">
             <h2 className="live-title">LIVE 🏀</h2>
             <div className="live-display">
-              <p className="live-comp-name">{liveMatch.competition}</p>
-              <div className="live-score-row">
-                <span className="live-team">{liveMatch.equipeA}</span>
-                <span className="live-score-digits">{liveMatch.scoreA} - {liveMatch.scoreB}</span>
-                <span className="live-team">{liveMatch.equipeB}</span>
+              <p className="live-comp-name" style={{ color: '#f39c12', fontSize: '0.8rem' }}>{liveMatch.competition}</p>
+              <div className="live-score-row" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', margin: '15px 0' }}>
+                <span className="live-team" style={{ fontWeight: 'bold' }}>{liveMatch.equipeA}</span>
+                <span className="live-score-digits" style={{ fontSize: '2.5rem', fontWeight: '900' }}>{liveMatch.scoreA} - {liveMatch.scoreB}</span>
+                <span className="live-team" style={{ fontWeight: 'bold' }}>{liveMatch.equipeB}</span>
               </div>
             </div>
           </section>
         ) : (
-          <div className="card no-live-placeholder" style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+          <div className="card no-live-placeholder" style={{ textAlign: 'center', padding: '40px', color: '#999', background: 'white', borderRadius: '12px' }}>
             <p>Aucun match en direct pour le moment.</p>
           </div>
         )}
@@ -126,15 +127,14 @@ export default function Dashboard() {
   );
 }
 
-// Styles objets pour garantir la propreté visuelle sans CSS externe complexe
+// Styles objets pour éviter les erreurs de compilation CSS dans le build
 const searchInputStyle = {
   width: '100%',
   padding: '12px 20px',
   borderRadius: '10px',
   border: '1px solid #ddd',
   fontSize: '1rem',
-  outline: 'none',
-  boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+  outline: 'none'
 };
 
 const exportBtnStyle = {
@@ -144,30 +144,28 @@ const exportBtnStyle = {
   width: '100%',
   padding: '15px',
   background: '#f8f9fa',
-  border: '2px dashed #ccc',
+  border: '1px dashed #ccc',
   borderRadius: '10px',
   cursor: 'pointer',
   fontWeight: '600',
   color: '#444',
-  marginTop: '10px',
-  transition: '0.2s'
+  marginTop: '10px'
 };
 
-// Sous-composants réutilisables
 function StatCard({ title, value, color }: any) {
   return (
-    <div className="card stat-card" style={{ borderLeft: `5px solid ${color}`, background: 'white', padding: '20px', borderRadius: '12px' }}>
-      <p className="stat-label" style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>{title}</p>
-      <h3 className="stat-number" style={{ margin: '10px 0 0', fontSize: '2.5rem', fontWeight: 'bold' }}>{value}</h3>
+    <div className="card stat-card" style={{ borderLeft: `5px solid ${color}`, background: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+      <p style={{ margin: 0, color: '#666', fontSize: '0.9rem', fontWeight: 'bold' }}>{title}</p>
+      <h3 style={{ margin: '10px 0 0', fontSize: '2.5rem', fontWeight: 'bold' }}>{value}</h3>
     </div>
   );
 }
 
 function ActionLink({ href, icon, text }: any) {
   return (
-    <Link href={href} className="action-row" style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', textDecoration: 'none', color: '#333', fontWeight: '600', marginBottom: '10px' }}>
-      <span className="action-icon">{icon}</span>
-      <span className="action-text">{text}</span>
+    <Link href={href} style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', textDecoration: 'none', color: '#333', fontWeight: '600', marginBottom: '10px' }}>
+      <span>{icon}</span>
+      <span>{text}</span>
     </Link>
   );
 }
