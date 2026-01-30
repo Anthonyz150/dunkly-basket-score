@@ -7,12 +7,14 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ compets: 0, equipes: 0, matchs: 0, arbitres: 0 });
   const [liveMatch, setLiveMatch] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
-  const [searchTerm, setSearchTerm] = useState(""); // 🔍 Barre de recherche
+  const [searchTerm, setSearchTerm] = useState(""); 
 
   useEffect(() => {
+    // Récupération de l'utilisateur
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) setUser(JSON.parse(storedUser));
 
+    // Récupération des données avec repli sur tableau vide pour éviter les erreurs .length
     const c = getFromLocal('competitions') || [];
     const e = getFromLocal('equipes') || [];
     const m = getFromLocal('matchs') || [];
@@ -25,18 +27,19 @@ export default function Dashboard() {
         arbitres: a.length 
     });
 
+    // Détection d'un match en direct
     const matchActif = m.find((match: any) => 
       match.status === 'en_cours' || (match.scoreA + match.scoreB) > 0
     );
     if (matchActif) setLiveMatch(matchActif);
   }, []);
 
-  // 📥 Fonction d'exportation (JSON pour Excel)
+  // Fonction d'exportation des données pour l'Admin
   const exportData = () => {
     const data = {
-      matchs: getFromLocal('matchs'),
-      equipes: getFromLocal('equipes'),
-      arbitres: getFromLocal('arbitres'),
+      matchs: getFromLocal('matchs') || [],
+      equipes: getFromLocal('equipes') || [],
+      arbitres: getFromLocal('arbitres') || [],
       exportDate: new Date().toISOString()
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -53,16 +56,16 @@ export default function Dashboard() {
     <div className="dashboard-wrapper">
       <header className="dashboard-header">
         <div className="header-title-row">
-          <span className="basketball-icon">🏀</span>
+          <span className="basketball-icon" style={{ fontSize: '2rem' }}>🏀</span>
           <h1>DUNKLY <span className="version-tag">v1.0</span></h1>
         </div>
         
-        {/* 🔍 Barre de recherche stylisée */}
+        {/* Barre de recherche interactive */}
         <div className="search-container" style={{ marginTop: '20px' }}>
           <input 
             type="text" 
             placeholder="Rechercher une compétition, une équipe..." 
-            className="search-input"
+            className="search-input-pro"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={searchInputStyle}
@@ -70,14 +73,16 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Grille de statistiques */}
       <div className="stats-grid">
         <StatCard title="Compétitions" value={stats.compets} color="#e65100" />
         <StatCard title="Équipes" value={stats.equipes} color="#0277bd" />
-        <StatCard title="Matchs ce jour" value={stats.matchs} color="#2e7d32" />
+        <StatCard title="Matchs" value={stats.matchs} color="#2e7d32" />
         <StatCard title="Arbitres" value={stats.arbitres} color="#ef6c00" />
       </div>
 
       <div className="dashboard-lower-grid">
+        {/* Section Actions dynamiques */}
         <section className="card actions-section">
           <h2 className="section-title">{isAdmin ? "ADMINISTRATION" : "ACCÈS RAPIDE"}</h2>
           <div className="actions-list">
@@ -85,8 +90,8 @@ export default function Dashboard() {
               <>
                 <ActionLink href="/matchs" icon="➕" text="Enregistrer un résultat" />
                 <ActionLink href="/equipes" icon="👥" text="Inscrire une équipe" />
-                <button onClick={exportData} style={exportBtnStyle}>
-                  <span>📥</span> <span>Exporter les données de la saison</span>
+                <button onClick={exportData} className="export-btn-pro" style={exportBtnStyle}>
+                  <span>📥</span> <span>Exporter la base de données</span>
                 </button>
               </>
             ) : (
@@ -98,9 +103,10 @@ export default function Dashboard() {
           </div>
         </section>
 
+        {/* Section Match en Direct */}
         {liveMatch ? (
           <section className="live-match-card">
-            <h2 className="live-title">LIVE</h2>
+            <h2 className="live-title">LIVE 🏀</h2>
             <div className="live-display">
               <p className="live-comp-name">{liveMatch.competition}</p>
               <div className="live-score-row">
@@ -111,14 +117,16 @@ export default function Dashboard() {
             </div>
           </section>
         ) : (
-          <div className="card no-live-placeholder">Aucun match en direct</div>
+          <div className="card no-live-placeholder" style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+            <p>Aucun match en direct pour le moment.</p>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-// Styles rapides en ligne pour les nouveaux éléments
+// Styles objets pour garantir la propreté visuelle sans CSS externe complexe
 const searchInputStyle = {
   width: '100%',
   padding: '12px 20px',
@@ -135,27 +143,29 @@ const exportBtnStyle = {
   gap: '15px',
   width: '100%',
   padding: '15px',
-  background: '#f0f0f0',
-  border: '1px dashed #ccc',
-  borderRadius: '8px',
+  background: '#f8f9fa',
+  border: '2px dashed #ccc',
+  borderRadius: '10px',
   cursor: 'pointer',
-  fontWeight: 'bold',
+  fontWeight: '600',
   color: '#444',
-  marginTop: '10px'
+  marginTop: '10px',
+  transition: '0.2s'
 };
 
+// Sous-composants réutilisables
 function StatCard({ title, value, color }: any) {
   return (
-    <div className="card stat-card" style={{ borderLeft: `5px solid ${color}` }}>
-      <p className="stat-label">{title}</p>
-      <h3 className="stat-number">{value}</h3>
+    <div className="card stat-card" style={{ borderLeft: `5px solid ${color}`, background: 'white', padding: '20px', borderRadius: '12px' }}>
+      <p className="stat-label" style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>{title}</p>
+      <h3 className="stat-number" style={{ margin: '10px 0 0', fontSize: '2.5rem', fontWeight: 'bold' }}>{value}</h3>
     </div>
   );
 }
 
 function ActionLink({ href, icon, text }: any) {
   return (
-    <Link href={href} className="action-row">
+    <Link href={href} className="action-row" style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', textDecoration: 'none', color: '#333', fontWeight: '600', marginBottom: '10px' }}>
       <span className="action-icon">{icon}</span>
       <span className="action-text">{text}</span>
     </Link>

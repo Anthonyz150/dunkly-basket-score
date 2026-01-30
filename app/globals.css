@@ -439,3 +439,42 @@ html, body {
   from { transform: translateY(0); }
   to { transform: translateY(-30px); }
 }
+.search-input-pro {
+  width: 100%;
+  padding: 12px 15px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-input-pro:focus {
+  border-color: var(--orange-basket);
+}
+
+.export-btn {
+  width: 100%;
+  margin-top: 15px;
+  padding: 12px;
+  background: #f8f9fa;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.export-btn:hover {
+  background: #eee;
+  border-color: #999;
+  color: #333;
+}
+
+.empty-live {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+  font-style: italic;
+}
