@@ -1,193 +1,106 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { getFromLocal } from "../lib/store";
-
-type Stats = {
-  compets: number;
-  equipes: number;
-  matchs: number;
-  arbitres: number;
-};
-
-type Match = {
-  id?: string;
-  competition?: string;
-  equipeA?: string;
-  equipeB?: string;
-  scoreA?: number;
-  scoreB?: number;
-};
+import { useState, useEffect } from 'react';
+import { getFromLocal } from '@/lib/store';
+import Link from 'next/link';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<Stats>({
-    compets: 0,
-    equipes: 0,
-    matchs: 0,
-    arbitres: 0,
-  });
-
-  const [liveMatch, setLiveMatch] = useState<Match | null>(null);
+  const [stats, setStats] = useState({ compets: 0, equipes: 0, matchs: 0, arbitres: 0 });
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    // 1. Récupération de l'utilisateur (uniquement côté client)
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) setUser(JSON.parse(storedUser));
 
-    const c = getFromLocal<any[]>("competitions") || [];
-    const e = getFromLocal<any[]>("equipes") || [];
-    const m = getFromLocal<Match[]>("matchs") || [];
-    const a = getFromLocal<any[]>("arbitres") || [];
-
-    setStats({
-      compets: c.length,
-      equipes: e.length,
-      matchs: m.length,
-      arbitres: a.length,
+    // 2. Récupération des stats avec gestion de secours (fallback)
+    const c = getFromLocal('competitions') || [];
+    const e = getFromLocal('equipes') || [];
+    const m = getFromLocal('matchs') || [];
+    const a = getFromLocal('arbitres') || [];
+    
+    setStats({ 
+        compets: Array.isArray(c) ? c.length : 0, 
+        equipes: Array.isArray(e) ? e.length : 0, 
+        matchs: Array.isArray(m) ? m.length : 0, 
+        arbitres: Array.isArray(a) ? a.length : 0 
     });
-
-    if (m.length > 0) {
-      setLiveMatch(m[0]);
-    }
   }, []);
 
+  const isAdmin = user?.username === 'admin';
+
   return (
-    <main className="main-content">
-      <header style={{ marginBottom: "40px" }}>
-        <h1>
-          🏀 BasketManager{" "}
-          <span style={{ fontSize: "1rem", color: "#999" }}>v1.0</span>
-        </h1>
-        <p>Bienvenue, Anthony. Voici l'état actuel de tes championnats.</p>
+    <div style={{ padding: '20px', fontFamily: 'sans-serif', color: '#333', maxWidth: '600px', margin: '0 auto' }}>
+      
+      {/* HEADER DUNKLY */}
+      <header style={{ marginBottom: '30px', borderBottom: '2px solid #eee', paddingBottom: '15px', textAlign: 'center' }}>
+        <h1 style={{ fontSize: '28px', margin: 0, color: '#e65100' }}>🏀 DUNKLY</h1>
+        <p style={{ margin: '5px 0 0', color: '#666', fontSize: '14px' }}>Gestionnaire de championnats</p>
       </header>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-          gap: "20px",
-          marginBottom: "40px",
-        }}
-      >
-        <StatCard title="Compétitions" value={stats.compets} color="#e65100" />
-        <StatCard title="Équipes" value={stats.equipes} color="#0277bd" />
-        <StatCard title="Matchs" value={stats.matchs} color="#2e7d32" />
-        <StatCard title="Arbitres" value={stats.arbitres} color="#ef6c00" />
+      {/* STATISTIQUES */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', marginBottom: '30px' }}>
+        <div style={statBoxStyle}>
+          <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.compets}</span><br/>
+          <span style={{ color: '#666', fontSize: '12px' }}>Compétitions</span>
+        </div>
+        <div style={statBoxStyle}>
+          <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.equipes}</span><br/>
+          <span style={{ color: '#666', fontSize: '12px' }}>Équipes</span>
+        </div>
+        <div style={statBoxStyle}>
+          <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.matchs}</span><br/>
+          <span style={{ color: '#666', fontSize: '12px' }}>Matchs</span>
+        </div>
+        <div style={statBoxStyle}>
+          <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.arbitres}</span><br/>
+          <span style={{ color: '#666', fontSize: '12px' }}>Arbitres</span>
+        </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1.5fr 1fr",
-          gap: "30px",
-          alignItems: "start",
-        }}
-      >
-        <section className="card">
-          <h2 style={{ marginBottom: "25px" }}>ACTIONS RAPIDES</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-            <ActionLink href="/matchs" icon="➕" text="Enregistrer un résultat" />
-            <ActionLink href="/equipes" icon="👥" text="Inscrire une équipe" />
-            <ActionLink href="/competitions" icon="🏆" text="Créer un tournoi" />
-          </div>
-        </section>
-
-        {liveMatch ? (
-          <section style={liveMatchContainerStyle}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <h2 style={{ color: "#ff9800", fontSize: "1.2rem", margin: 0 }}>
-                DIRECT 🔴
-              </h2>
-              <Link
-                href={`/matchs/${liveMatch.id ?? ""}`}
-                style={{ color: "white", fontSize: "0.8rem" }}
-              >
-                Ouvrir l'e-marque
-              </Link>
+      {/* MENU DE NAVIGATION */}
+      <section style={{ background: '#f9f9f9', padding: '20px', borderRadius: '15px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+        <h2 style={{ fontSize: '16px', marginTop: 0, marginBottom: '15px', color: '#444', textAlign: 'center' }}>
+          {isAdmin ? "🛠️ ADMINISTRATION" : "🚀 ACCÈS RAPIDE"}
+        </h2>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <Link href="/matchs" style={linkStyle}>⏱️ Scores & Résultats</Link>
+          <Link href="/equipes" style={linkStyle}>👥 Liste des Équipes</Link>
+          <Link href="/arbitres" style={linkStyle}>🏁 Liste des Arbitres</Link>
+          
+          {isAdmin && (
+            <div style={{ marginTop: '10px', padding: '15px', border: '2px dashed #ffb74d', borderRadius: '10px', background: '#fff9f0' }}>
+              <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#e65100', fontWeight: 'bold', textAlign: 'center' }}>MODE ADMIN</p>
+              <Link href="/admin" style={{ ...linkStyle, background: '#e65100', color: 'white', border: 'none' }}>⚙️ Gérer le Système</Link>
             </div>
+          )}
+        </div>
+      </section>
 
-            <div style={scoreBoardStyle}>
-              <p style={{ fontSize: "0.8rem", color: "#ff9800" }}>
-                {liveMatch.competition}
-              </p>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={teamNameStyle}>{liveMatch.equipeA}</span>
-                <span style={liveScoreStyle}>
-                  {liveMatch.scoreA} - {liveMatch.scoreB}
-                </span>
-                <span style={teamNameStyle}>{liveMatch.equipeB}</span>
-              </div>
-            </div>
-          </section>
-        ) : (
-          <div className="card" style={{ textAlign: "center", color: "#999", padding: "40px" }}>
-            <p>Aucun match en cours actuellement.</p>
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
-
-function StatCard({
-  title,
-  value,
-  color,
-}: {
-  title: string;
-  value: number;
-  color: string;
-}) {
-  return (
-    <div className="card" style={{ borderLeft: `6px solid ${color}` }}>
-      <p style={{ fontSize: "0.9rem", color: "#666", fontWeight: 600 }}>
-        {title}
-      </p>
-      <h3 style={{ fontSize: "2rem" }}>{value}</h3>
     </div>
   );
 }
 
-function ActionLink({
-  href,
-  icon,
-  text,
-}: {
-  href: string;
-  icon: string;
-  text: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="nav-link"
-      style={{
-        background: "#f8f9fa",
-        color: "#333",
-        border: "1px solid #eee",
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-      }}
-    >
-      <span>{icon}</span> {text}
-    </Link>
-  );
-}
-
-const liveMatchContainerStyle = {
-  background: "#111",
-  padding: "25px",
-  borderRadius: "20px",
-  color: "white",
+// STYLES
+const statBoxStyle = {
+  background: 'white',
+  padding: '20px',
+  borderRadius: '12px',
+  textAlign: 'center' as const,
+  border: '1px solid #eee',
+  boxShadow: '0 2px 5px rgba(0,0,0,0.03)'
 };
 
-const scoreBoardStyle = { marginTop: "20px", textAlign: "center" as const };
-
-const liveScoreStyle = {
-  fontSize: "2.5rem",
-  fontWeight: "900",
-  color: "white",
-  margin: "0 15px",
+const linkStyle = {
+  display: 'block',
+  padding: '14px',
+  background: 'white',
+  borderRadius: '10px',
+  textDecoration: 'none',
+  color: '#333',
+  fontWeight: '600' as const,
+  border: '1px solid #eee',
+  textAlign: 'center' as const,
+  transition: '0.2s'
 };
-
-const teamNameStyle = { fontSize: "1rem", fontWeight: "bold", flex: 1 };
