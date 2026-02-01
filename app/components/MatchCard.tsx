@@ -1,3 +1,5 @@
+"use client";
+
 interface MatchProps {
     equipeA: string;
     equipeB: string;

@@ -1,3 +1,5 @@
+"use client";
+
 interface ScoreCardProps {
     equipeA: string;
     equipeB: string;
