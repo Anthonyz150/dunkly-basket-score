@@ -22,8 +22,10 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
 
   const isMatchFinished = chrono === 0 && quartTemps === 4;
 
+  // FIX: Sécurisation du typage pour éviter l'erreur "Property 'find' does not exist"
   useEffect(() => {
-    const matchs = getFromLocal("matchs") ?? [];
+    const data = getFromLocal("matchs");
+    const matchs = Array.isArray(data) ? data : [];
     const found = matchs.find((m: any) => m.id === matchId) || null;
     setMatch(found);
   }, [matchId]);
@@ -68,7 +70,9 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
     const key = equipe === "A" ? "scoreA" : "scoreB";
     const updatedMatch = { ...match, [key]: Math.max(0, match[key] + points) };
     setMatch(updatedMatch);
-    const matchs = getFromLocal("matchs") ?? [];
+    
+    const data = getFromLocal("matchs");
+    const matchs = Array.isArray(data) ? data : [];
     saveToLocal("matchs", matchs.map((m: any) => m.id === updatedMatch.id ? updatedMatch : m));
   };
 
@@ -80,27 +84,25 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
     setShowConfirmModal(true);
   };
 
-  // --- LOGIQUE DE SAUVEGARDE CORRIGÉE ---
   const sauvegarderEtQuitter = () => {
     if (!match) return;
 
-    // 1. On prépare l'objet du match terminé pour les résultats
+    // 1. Sauvegarde dans 'resultats'
+    const dataRes = getFromLocal("resultats");
+    const anciensResultats = Array.isArray(dataRes) ? dataRes : [];
     const matchTermine = { 
       ...match, 
       statut: "Terminé", 
       dateFin: new Date().toISOString() 
     };
-
-    // 2. On enregistre dans la clé 'resultats' (lue par ta page Resultats)
-    const anciensResultats = getFromLocal("resultats") ?? [];
     saveToLocal("resultats", [...anciensResultats, matchTermine]);
 
-    // 3. On nettoie la liste des matchs à venir
-    const matchsAvenir = getFromLocal("matchs") ?? [];
-    const miseAJourAvenir = matchsAvenir.filter((m: any) => m.id !== matchId);
-    saveToLocal("matchs", miseAJourAvenir);
+    // 2. Nettoyage de la liste 'matchs'
+    const dataMatchs = getFromLocal("matchs");
+    const matchsAvenir = Array.isArray(dataMatchs) ? dataMatchs : [];
+    saveToLocal("matchs", matchsAvenir.filter((m: any) => m.id !== matchId));
     
-    // 4. Redirection vers le dossier réel /resultats
+    // 3. Redirection vers le dossier existant
     router.push("/resultats");
   };
 
@@ -112,7 +114,7 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
       {showConfirmModal && (
         <div style={modalOverlay}>
           <div style={modalContent}>
-            <h3>Passer à la période {nextPeriod} ?</h3>
+            <h3 style={{ margin: '0 0 10px 0' }}>Passer à la période {nextPeriod} ?</h3>
             <p style={{ color: '#666', marginBottom: '25px' }}>Le chrono sera réinitialisé à 10:00.</p>
             <div style={{ display: 'flex', gap: '15px' }}>
               <button onClick={() => { setQuartTemps(nextPeriod!); setChrono(600); setShowConfirmModal(false); }} style={confirmBtn}>Confirmer</button>
@@ -192,12 +194,12 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
   );
 }
 
-// STYLES
+// STYLES 
 const mainCard = { backgroundColor: '#fff', borderRadius: '20px', padding: '40px', border: '1px solid #e2e8f0' };
 const scoreBtnGroup = { backgroundColor: '#fff', borderRadius: '16px', padding: '20px', display: 'flex', gap: '15px', border: '1px solid #e2e8f0' };
 const ptBtn = { flex: 1, padding: '20px', fontSize: '2rem', fontWeight: '900', borderRadius: '12px', border: 'none', backgroundColor: '#1a1a1a', color: '#fff', cursor: 'pointer' };
 const arrowTimeBtn = { background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '10px', width: '50px', height: '50px', fontSize: '1.3rem', cursor: 'pointer' };
-const corrBtn = { background: 'none', border: '1px solid #cbd5e1', color: '#64748b', padding: '5px 12px', borderRadius: '6px', fontSize: '0.8rem', marginTop: '10px' };
+const corrBtn = { background: 'none', border: '1px solid #cbd5e1', color: '#64748b', padding: '5px 12px', borderRadius: '6px', fontSize: '0.8rem', marginTop: '10px', cursor: 'pointer' };
 const periodArrowBtn = { background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer' };
 const startBtn = (isRunning: boolean) => ({ backgroundColor: isRunning ? '#ef4444' : '#22c55e', color: '#fff', border: 'none', padding: '12px 40px', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '1.1rem' });
 const quitBtn = { textDecoration: 'none', padding: '10px 20px', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', color: '#64748b', fontWeight: 'bold' };
