@@ -8,12 +8,13 @@ export default function ResultatsPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    // On va chercher dans la clé 'resultats' (là où l'e-marque enregistre)
-    const data = getFromLocal('resultats') || [];
+    // FIX: On vérifie explicitement si c'est un tableau
+    const dataRaw = getFromLocal('resultats');
+    const data = Array.isArray(dataRaw) ? dataRaw : [];
     setMatchs(data);
   }, []);
 
-  // Fonction pour vider l'historique si besoin
+  // Fonction pour vider l'historique
   const purgerResultats = () => {
     if(confirm("Voulez-vous vraiment effacer tous les résultats ?")) {
       saveToLocal('resultats', []);
@@ -49,7 +50,7 @@ export default function ResultatsPage() {
                   {m.equipeA} <span style={{ color: '#94a3b8', fontWeight: '400' }}>vs</span> {m.equipeB}
                 </span>
                 <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '600' }}>
-                  {m.competition} • Terminé le {m.dateFin ? new Date(m.dateFin).toLocaleDateString() : m.date}
+                  {m.competition} • Terminé le {m.dateFin ? new Date(m.dateFin).toLocaleDateString() : (m.date || "Date inconnue")}
                 </span>
               </div>
               

@@ -14,13 +14,16 @@ export default function MatchsAVenirPage() {
   });
 
   useEffect(() => {
-    // Chargement des matchs
-    const dataMatchs = getFromLocal('matchs') || [];
+    // FIX: Sécurisation des données avec Array.isArray pour éviter l'erreur de build
+    const dataRaw = getFromLocal('matchs');
+    const dataMatchs = Array.isArray(dataRaw) ? dataRaw : [];
     setMatchs(dataMatchs.filter((m: any) => m.status === 'a-venir'));
 
-    // Chargement des équipes et arbitres existants
-    setEquipes(getFromLocal('equipes') || []);
-    setArbitres(getFromLocal('arbitres') || []);
+    const dataEquipes = getFromLocal('equipes');
+    setEquipes(Array.isArray(dataEquipes) ? dataEquipes : []);
+
+    const dataArbitres = getFromLocal('arbitres');
+    setArbitres(Array.isArray(dataArbitres) ? dataArbitres : []);
   }, []);
 
   const ajouterMatch = (e: React.FormEvent) => {
@@ -30,7 +33,9 @@ export default function MatchsAVenirPage() {
       return;
     }
 
-    const allMatchs = getFromLocal('matchs') || [];
+    const dataRaw = getFromLocal('matchs');
+    const allMatchs = Array.isArray(dataRaw) ? dataRaw : [];
+    
     const createdMatch = {
       ...newMatch,
       id: Date.now().toString(),
@@ -41,6 +46,8 @@ export default function MatchsAVenirPage() {
     
     const updated = [...allMatchs, createdMatch];
     saveToLocal('matchs', updated);
+    
+    // On met à jour l'affichage local immédiatement
     setMatchs(updated.filter((m: any) => m.status === 'a-venir'));
     setShowForm(false);
     setNewMatch({ equipeA: "", equipeB: "", date: "", competition: "", arbitre: "" });
@@ -64,13 +71,11 @@ export default function MatchsAVenirPage() {
       {showForm && (
         <form onSubmit={ajouterMatch} className="card" style={{ marginBottom: '30px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
           
-          {/* Sélection Équipe A */}
           <select required value={newMatch.equipeA} onChange={e => setNewMatch({...newMatch, equipeA: e.target.value})} style={inputStyle}>
             <option value="">Sélectionner Équipe A</option>
             {equipes.map(eq => <option key={eq.id} value={eq.nom}>{eq.nom}</option>)}
           </select>
 
-          {/* Sélection Équipe B */}
           <select required value={newMatch.equipeB} onChange={e => setNewMatch({...newMatch, equipeB: e.target.value})} style={inputStyle}>
             <option value="">Sélectionner Équipe B</option>
             {equipes.map(eq => <option key={eq.id} value={eq.nom}>{eq.nom}</option>)}
@@ -79,10 +84,9 @@ export default function MatchsAVenirPage() {
           <input type="datetime-local" required value={newMatch.date} onChange={e => setNewMatch({...newMatch, date: e.target.value})} style={inputStyle} />
           <input type="text" placeholder="Nom de la Compétition" required value={newMatch.competition} onChange={e => setNewMatch({...newMatch, competition: e.target.value})} style={inputStyle} />
 
-          {/* Sélection Arbitre */}
           <select required value={newMatch.arbitre} onChange={e => setNewMatch({...newMatch, arbitre: e.target.value})} style={{...inputStyle, gridColumn: '1 / span 2'}}>
             <option value="">Choisir l'arbitre du match</option>
-            {arbitres.map(arb => <option key={arb.id} value={arb.nom}>{arb.nom} {arb.prenom}</option>)}
+            {arbitres.map(arb => <option key={arb.id} value={arb.nom + ' ' + arb.prenom}>{arb.nom} {arb.prenom}</option>)}
           </select>
 
           <button type="submit" style={{ gridColumn: '1 / span 2', backgroundColor: '#1a1a1a', color: 'white', padding: '12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', border: 'none' }}>
