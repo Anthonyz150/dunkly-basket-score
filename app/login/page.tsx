@@ -11,7 +11,9 @@ export default function LoginPage() {
 
   const handleAction = (e: React.FormEvent) => {
     e.preventDefault();
-    const users = getFromLocal('users') || [];
+    
+    // CORRECTION : On précise que c'est un tableau (any[])
+    const users: any[] = getFromLocal('users') || [];
 
     if (isRegister) {
       // INSCRIPTION
@@ -66,7 +68,7 @@ export default function LoginPage() {
 
         <button 
           onClick={() => setIsRegister(!isRegister)} 
-          style={{ background: 'none', border: 'none', color: '#e65100', marginTop: '20px', cursor: 'pointer', width: '100%' }}
+          style={{ background: 'none', border: 'none', color: '#F97316', marginTop: '20px', cursor: 'pointer', width: '100%' }}
         >
           {isRegister ? "Déjà un compte ? Connecte-toi" : "Pas de compte ? Inscris-toi"}
         </button>
@@ -75,6 +77,30 @@ export default function LoginPage() {
   );
 }
 
-const loginContainer: React.CSSProperties = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#111' };
-const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem' };
-const btnStyle = { background: '#e65100', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' };
+/* ---------- STYLES ---------- */
+
+const loginContainer: React.CSSProperties = { 
+  display: 'flex', 
+  justifyContent: 'center', 
+  alignItems: 'center', 
+  height: '100vh', 
+  backgroundColor: '#000' // Noir pur pour coller au reste du design
+};
+
+const inputStyle = { 
+  padding: '12px', 
+  borderRadius: '8px', 
+  border: '1px solid #ddd', 
+  fontSize: '1rem',
+  outlineColor: '#F97316'
+};
+
+const btnStyle = { 
+  background: '#F97316', 
+  color: 'white', 
+  border: 'none', 
+  padding: '12px', 
+  borderRadius: '8px', 
+  cursor: 'pointer', 
+  fontWeight: 'bold' 
+};
