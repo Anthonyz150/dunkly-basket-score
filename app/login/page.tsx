@@ -43,7 +43,7 @@ export default function LoginPage() {
              DUNKLY <span style={{ color: '#F97316' }}>APP</span>
            </h1>
            <p style={{ color: '#94a3b8', fontSize: '1rem' }}>
-             {isRegister ? 'Créez votre compte' : 'Connexion à l\'application'}
+             {isRegister ? 'Créer mon compte' : 'Se connecter'}
            </p>
         </div>
 
