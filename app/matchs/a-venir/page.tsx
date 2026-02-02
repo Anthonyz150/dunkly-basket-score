@@ -3,54 +3,111 @@ import { useState, useEffect } from "react";
 import { getFromLocal, saveToLocal } from "@/lib/store";
 import Link from "next/link";
 
+interface EquipeIntern { id: string; nom: string; }
+interface Club { id: string; nom: string; equipes: EquipeIntern[]; }
+
 export default function MatchsAVenirPage() {
   const [matchs, setMatchs] = useState<any[]>([]);
-  const [equipes, setEquipes] = useState<any[]>([]);
+  const [clubs, setClubs] = useState<Club[]>([]);
   const [arbitres, setArbitres] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   
+  // État pour savoir quel match on modifie
+  const [editingId, setEditingId] = useState<string | null>(null);
+  
+  const [selectedClubA, setSelectedClubA] = useState("");
+  const [selectedClubB, setSelectedClubB] = useState("");
+  const [dureePeriode, setDureePeriode] = useState("10"); 
+  const [tempsMortsMatch, setTempsMortsMatch] = useState("2");
+
   const [newMatch, setNewMatch] = useState({
-    equipeA: "", equipeB: "", date: "", competition: "", arbitre: ""
+    equipeA: "", clubA: "",
+    equipeB: "", clubB: "",
+    date: "", competition: "", arbitre: ""
   });
 
   useEffect(() => {
-    // FIX: Sécurisation des données avec Array.isArray pour éviter l'erreur de build
-    const dataRaw = getFromLocal('matchs');
-    const dataMatchs = Array.isArray(dataRaw) ? dataRaw : [];
-    setMatchs(dataMatchs.filter((m: any) => m.status === 'a-venir'));
-
-    const dataEquipes = getFromLocal('equipes');
-    setEquipes(Array.isArray(dataEquipes) ? dataEquipes : []);
-
-    const dataArbitres = getFromLocal('arbitres');
-    setArbitres(Array.isArray(dataArbitres) ? dataArbitres : []);
+    chargerDonnees();
   }, []);
 
-  const ajouterMatch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newMatch.equipeA === newMatch.equipeB) {
-      alert("Une équipe ne peut pas jouer contre elle-même !");
-      return;
-    }
-
+  const chargerDonnees = () => {
     const dataRaw = getFromLocal('matchs');
-    const allMatchs = Array.isArray(dataRaw) ? dataRaw : [];
-    
-    const createdMatch = {
+    setMatchs(Array.isArray(dataRaw) ? dataRaw.filter((m: any) => m.status === 'a-venir') : []);
+    setClubs(getFromLocal('equipes_clubs') || []);
+    setArbitres(getFromLocal('arbitres') || []);
+  };
+
+  const equipesDispoA = clubs.find(c => c.id === selectedClubA)?.equipes || [];
+  const equipesDispoB = clubs.find(c => c.id === selectedClubB)?.equipes || [];
+
+  // FONCTION POUR PRÉ-REMPLIR LE FORMULAIRE
+  const preparerEdition = (m: any) => {
+    setEditingId(m.id);
+    setNewMatch({
+      equipeA: m.equipeA,
+      clubA: m.clubA,
+      equipeB: m.equipeB,
+      clubB: m.clubB,
+      date: m.date,
+      competition: m.competition,
+      arbitre: m.arbitre
+    });
+    // On retrouve les IDs des clubs pour les sélecteurs
+    const cA = clubs.find(c => c.nom === m.clubA);
+    const cB = clubs.find(c => c.nom === m.clubB);
+    setSelectedClubA(cA?.id || "");
+    setSelectedClubB(cB?.id || "");
+    setDureePeriode((m.config?.tempsInitial / 60).toString());
+    setTempsMortsMatch(m.config?.maxTempsMorts.toString());
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSoumettre = (e: React.FormEvent) => {
+    e.preventDefault();
+    const allMatchs = getFromLocal('matchs') || [];
+
+    const matchData = {
       ...newMatch,
-      id: Date.now().toString(),
+      clubA: clubs.find(c => c.id === selectedClubA)?.nom,
+      clubB: clubs.find(c => c.id === selectedClubB)?.nom,
       status: 'a-venir',
       scoreA: 0,
-      scoreB: 0
+      scoreB: 0,
+      config: {
+        tempsInitial: parseInt(dureePeriode) * 60,
+        maxTempsMorts: parseInt(tempsMortsMatch)
+      }
     };
+
+    let updated;
+    if (editingId) {
+      // MODE ÉDITION
+      updated = allMatchs.map((m: any) => m.id === editingId ? { ...matchData, id: editingId } : m);
+    } else {
+      // MODE CRÉATION
+      updated = [...allMatchs, { ...matchData, id: Date.now().toString() }];
+    }
     
-    const updated = [...allMatchs, createdMatch];
     saveToLocal('matchs', updated);
-    
-    // On met à jour l'affichage local immédiatement
-    setMatchs(updated.filter((m: any) => m.status === 'a-venir'));
+    chargerDonnees();
+    resetForm();
+  };
+
+  const resetForm = () => {
     setShowForm(false);
-    setNewMatch({ equipeA: "", equipeB: "", date: "", competition: "", arbitre: "" });
+    setEditingId(null);
+    setNewMatch({ equipeA: "", clubA: "", equipeB: "", clubB: "", date: "", competition: "", arbitre: "" });
+    setSelectedClubA(""); setSelectedClubB("");
+  };
+
+  const supprimerMatch = (id: string) => {
+    if (confirm("Voulez-vous vraiment supprimer ce match ?")) {
+      const all = getFromLocal('matchs') || [];
+      const filtered = all.filter((m: any) => m.id !== id);
+      saveToLocal('matchs', filtered);
+      chargerDonnees();
+    }
   };
 
   return (
@@ -58,72 +115,115 @@ export default function MatchsAVenirPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <div>
           <h1 style={{ fontSize: '2.2rem', fontWeight: '800', margin: 0 }}>📅 Matchs à venir</h1>
-          <p style={{ color: '#666' }}>Utilisez vos équipes et arbitres enregistrés.</p>
+          <p style={{ color: '#666' }}>Planifiez ou modifiez vos rencontres.</p>
         </div>
-        <button 
-          onClick={() => setShowForm(!showForm)}
-          style={{ backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
-        >
+        <button onClick={() => showForm ? resetForm() : setShowForm(true)} style={addBtnStyle}>
           {showForm ? "Annuler" : "+ Programmer un match"}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={ajouterMatch} className="card" style={{ marginBottom: '30px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-          
-          <select required value={newMatch.equipeA} onChange={e => setNewMatch({...newMatch, equipeA: e.target.value})} style={inputStyle}>
-            <option value="">Sélectionner Équipe A</option>
-            {equipes.map(eq => <option key={eq.id} value={eq.nom}>{eq.nom}</option>)}
-          </select>
+        <form onSubmit={handleSoumettre} className="card" style={{...formCardStyle, border: editingId ? '2px solid #F97316' : '1px solid #e2e8f0'}}>
+          <h3 style={{marginTop: 0}}>{editingId ? "✏️ Modifier le match" : "🆕 Nouveau match"}</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            {/* BLOCS ÉQUIPES IDENTIQUES À TON CODE */}
+            <div style={colStyle}>
+              <label style={miniLabel}>DOMICILE</label>
+              <select required value={selectedClubA} onChange={e => {setSelectedClubA(e.target.value); setNewMatch({...newMatch, equipeA: ""})}} style={inputStyle}>
+                <option value="">Club...</option>
+                {clubs.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+              </select>
+              <select required value={newMatch.equipeA} onChange={e => setNewMatch({...newMatch, equipeA: e.target.value})} style={inputStyle} disabled={!selectedClubA}>
+                <option value="">Équipe...</option>
+                {equipesDispoA.map(eq => <option key={eq.id} value={eq.nom}>{eq.nom}</option>)}
+              </select>
+            </div>
 
-          <select required value={newMatch.equipeB} onChange={e => setNewMatch({...newMatch, equipeB: e.target.value})} style={inputStyle}>
-            <option value="">Sélectionner Équipe B</option>
-            {equipes.map(eq => <option key={eq.id} value={eq.nom}>{eq.nom}</option>)}
-          </select>
+            <div style={colStyle}>
+              <label style={miniLabel}>EXTÉRIEUR</label>
+              <select required value={selectedClubB} onChange={e => {setSelectedClubB(e.target.value); setNewMatch({...newMatch, equipeB: ""})}} style={inputStyle}>
+                <option value="">Club...</option>
+                {clubs.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+              </select>
+              <select required value={newMatch.equipeB} onChange={e => setNewMatch({...newMatch, equipeB: e.target.value})} style={inputStyle} disabled={!selectedClubB}>
+                <option value="">Équipe...</option>
+                {equipesDispoB.map(eq => <option key={eq.id} value={eq.nom}>{eq.nom}</option>)}
+              </select>
+            </div>
 
-          <input type="datetime-local" required value={newMatch.date} onChange={e => setNewMatch({...newMatch, date: e.target.value})} style={inputStyle} />
-          <input type="text" placeholder="Nom de la Compétition" required value={newMatch.competition} onChange={e => setNewMatch({...newMatch, competition: e.target.value})} style={inputStyle} />
+            <div style={{ gridColumn: '1 / span 2', background: '#f8fafc', padding: '15px', borderRadius: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <div style={colStyle}>
+                <label style={miniLabel}>⏱️ DURÉE PÉRIODE (MIN)</label>
+                <select value={dureePeriode} onChange={e => setDureePeriode(e.target.value)} style={inputStyle}>
+                  <option value="5">5 min</option><option value="7">7 min</option>
+                  <option value="8">8 min</option><option value="10">10 min</option><option value="12">12 min</option>
+                </select>
+              </div>
+              <div style={colStyle}>
+                <label style={miniLabel}>📣 TEMPS MORTS / ÉQUIPE</label>
+                <select value={tempsMortsMatch} onChange={e => setTempsMortsMatch(e.target.value)} style={inputStyle}>
+                  <option value="1">1 TM</option><option value="2">2 TM</option><option value="3">3 TM</option>
+                </select>
+              </div>
+            </div>
 
-          <select required value={newMatch.arbitre} onChange={e => setNewMatch({...newMatch, arbitre: e.target.value})} style={{...inputStyle, gridColumn: '1 / span 2'}}>
-            <option value="">Choisir l'arbitre du match</option>
-            {arbitres.map(arb => <option key={arb.id} value={arb.nom + ' ' + arb.prenom}>{arb.nom} {arb.prenom}</option>)}
-          </select>
-
-          <button type="submit" style={{ gridColumn: '1 / span 2', backgroundColor: '#1a1a1a', color: 'white', padding: '12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', border: 'none' }}>
-            Enregistrer le match
+            <div style={{ gridColumn: '1 / span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <input type="datetime-local" required value={newMatch.date} onChange={e => setNewMatch({...newMatch, date: e.target.value})} style={inputStyle} />
+              <input type="text" placeholder="Compétition" required value={newMatch.competition} onChange={e => setNewMatch({...newMatch, competition: e.target.value})} style={inputStyle} />
+              <select required value={newMatch.arbitre} onChange={e => setNewMatch({...newMatch, arbitre: e.target.value})} style={{...inputStyle, gridColumn: '1 / span 2'}}>
+                <option value="">Choisir l'arbitre</option>
+                {arbitres.map(arb => <option key={arb.id} value={arb.nom + ' ' + arb.prenom}>{arb.nom} {arb.prenom}</option>)}
+              </select>
+            </div>
+          </div>
+          <button type="submit" style={submitBtn}>
+            {editingId ? "METTRE À JOUR LE MATCH" : "CRÉER LE MATCH CONFIGURÉ"}
           </button>
         </form>
       )}
 
-      <div className="grid-container">
-        {matchs.length > 0 ? (
-          matchs.map((m) => (
-            <div key={m.id} className="card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <span style={{ fontWeight: '800', fontSize: '1.1rem' }}>{m.equipeA} 🆚 {m.equipeB}</span>
-                <span style={{ color: '#F97316', fontWeight: 'bold' }}>{m.date.replace('T', ' ')}</span>
+      <div className="grid-container" style={{ display: 'grid', gap: '15px' }}>
+        {matchs.map((m) => (
+          <div key={m.id} className="card" style={matchCardStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ flex: 1, textAlign: 'right' }}>
+                <span style={clubSmall}>{m.clubA}</span>
+                <span style={{ fontWeight: '800' }}>{m.equipeA}</span>
               </div>
-              <p style={{ fontSize: '0.85rem', color: '#666', margin: '5px 0' }}>🏆 {m.competition}</p>
-              <p style={{ fontSize: '0.85rem', color: '#1a1a1a', fontWeight: '600' }}>🏁 Arbitre : {m.arbitre}</p>
-              <Link href={`/matchs/${m.id}`} style={{ display: 'inline-block', marginTop: '15px', color: '#F97316', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.9rem', border: '1px solid #F97316', padding: '8px 15px', borderRadius: '6px' }}>
-                Démarrer la table ⏱️
-              </Link>
+              <div style={{ padding: '0 20px', fontWeight: '900', color: '#F97316' }}>VS</div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <span style={clubSmall}>{m.clubB}</span>
+                <span style={{ fontWeight: '800' }}>{m.equipeB}</span>
+              </div>
             </div>
-          ))
-        ) : (
-          <div className="card" style={{ gridColumn: '1/-1', textAlign: 'center', padding: '40px', color: '#666' }}>
-            Aucun match programmé. Utilisez le bouton ci-dessus pour commencer.
+            <div style={footerCard}>
+              <div>
+                <div style={{ fontSize: '0.8rem', color: '#F97316', fontWeight: 'bold' }}>📅 {m.date.replace('T', ' à ')}</div>
+                <div style={{ fontSize: '0.75rem', color: '#666' }}>📏 {m.config?.tempsInitial / 60} min | TM: {m.config?.maxTempsMorts}</div>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => preparerEdition(m)} style={editBtnStyle}>Modifier ✏️</button>
+                <button onClick={() => supprimerMatch(m.id)} style={deleteBtnStyle}>🗑️</button>
+                <Link href={`/matchs/${m.id}`} style={tableBtn}>Démarrer ⏱️</Link>
+              </div>
+            </div>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
 }
 
-const inputStyle = {
-  padding: '12px',
-  borderRadius: '8px',
-  border: '1px solid #ddd',
-  fontSize: '14px',
-  backgroundColor: 'white'
-};
+// STYLES SUPPLÉMENTAIRES
+const editBtnStyle = { background: 'none', border: '1px solid #ddd', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' };
+const deleteBtnStyle = { background: '#fee2e2', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer' };
+const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', backgroundColor: 'white' };
+const colStyle = { display: 'flex', flexDirection: 'column', gap: '5px' };
+const miniLabel = { fontSize: '0.65rem', fontWeight: '900', color: '#64748b', letterSpacing: '0.05em' };
+const addBtnStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' };
+const submitBtn = { width: '100%', marginTop: '20px', backgroundColor: '#1a1a1a', color: 'white', padding: '14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '900', border: 'none' };
+const matchCardStyle = { padding: '20px', border: '1px solid #f1f1f1', borderRadius: '12px', background: 'white' };
+const formCardStyle = { marginBottom: '30px', padding: '25px', borderRadius: '16px', backgroundColor: '#fff' };
+const clubSmall = { display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' as const, fontWeight: 'bold' };
+const footerCard = { marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
+const tableBtn = { color: '#F97316', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.8rem', border: '1px solid #F97316', padding: '6px 12px', borderRadius: '6px' };

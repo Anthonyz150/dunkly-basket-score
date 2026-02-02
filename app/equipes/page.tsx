@@ -2,163 +2,159 @@
 import { useState, useEffect } from 'react';
 import { saveToLocal, getFromLocal } from '@/lib/store';
 
-interface Equipe {
+interface EquipeIntern {
+  id: string;
+  nom: string;
+}
+
+interface Club {
   id: string;
   nom: string;
   ville: string;
   logoColor: string;
+  equipes: EquipeIntern[];
 }
 
 export default function EquipesPage() {
-  const [equipes, setEquipes] = useState<Equipe[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [clubs, setClubs] = useState<Club[]>([]);
   const [user, setUser] = useState<any>(null);
   
-  const [nom, setNom] = useState('');
+  // États pour les fenêtres (Modales)
+  const [showClubModal, setShowClubModal] = useState(false);
+  const [showEquipeModal, setShowEquipeModal] = useState(false);
+
+  // États formulaires
+  const [nomClub, setNomClub] = useState('');
   const [ville, setVille] = useState('');
+  const [nomEquipe, setNomEquipe] = useState('');
+  const [targetClubId, setTargetClubId] = useState('');
 
   useEffect(() => {
-    // Récupération de l'utilisateur
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) setUser(JSON.parse(storedUser));
-
-    // FIX BUILD: Sécurisation du chargement initial
-    const data = getFromLocal('equipes');
-    setEquipes(Array.isArray(data) ? data : []);
+    const data = getFromLocal('equipes_clubs');
+    setClubs(Array.isArray(data) ? data : []);
   }, []);
 
-  // PROTECTION : Seul 'admin' a les droits
   const isAdmin = user?.username === 'admin';
 
-  const ajouterEquipe = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!isAdmin) return;
-    if (!nom || !ville) return alert("Remplis le nom et la ville !");
-    
-    const nouvelle: Equipe = {
+  // --- ACTION : CRÉER UN CLUB ---
+  const handleCreateClub = () => {
+    if (!nomClub || !ville) return alert("Nom et ville requis !");
+    const nouveau: Club = {
       id: Date.now().toString(),
-      nom: nom.trim(),
+      nom: nomClub.trim(),
       ville: ville.trim(),
-      logoColor: `hsl(${Math.random() * 360}, 70%, 50%)`
+      logoColor: `hsl(${Math.random() * 360}, 70%, 50%)`,
+      equipes: []
     };
-
-    const nouvelleListe = [...equipes, nouvelle];
-    setEquipes(nouvelleListe);
-    saveToLocal('equipes', nouvelleListe);
-    
-    setNom('');
-    setVille('');
-    setIsModalOpen(false);
+    const nouvelleListe = [...clubs, nouveau];
+    setClubs(nouvelleListe);
+    saveToLocal('equipes_clubs', nouvelleListe);
+    setNomClub(''); setVille(''); setShowClubModal(false);
   };
 
-  const supprimerEquipe = (id: string) => {
-    if (!isAdmin) return;
-    if (confirm("Supprimer cette équipe ?")) {
-      const nouvelleListe = equipes.filter(e => e.id !== id);
-      setEquipes(nouvelleListe);
-      saveToLocal('equipes', nouvelleListe);
-    }
+  // --- ACTION : CRÉER UNE ÉQUIPE DANS UN CLUB ---
+  const handleCreateEquipe = () => {
+    if (!nomEquipe || !targetClubId) return alert("Nom d'équipe et Club requis !");
+    
+    const nouvelleListe = clubs.map(club => {
+      if (club.id === targetClubId) {
+        return {
+          ...club,
+          equipes: [...club.equipes, { id: Date.now().toString(), nom: nomEquipe.trim() }]
+        };
+      }
+      return club;
+    });
+
+    setClubs(nouvelleListe);
+    saveToLocal('equipes_clubs', nouvelleListe);
+    setNomEquipe(''); setTargetClubId(''); setShowEquipeModal(false);
   };
 
   return (
     <div style={{ padding: '30px', maxWidth: '1200px' }}>
-      {/* HEADER MODERNE */}
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '900', color: '#1a1a1a', margin: 0 }}>🏀 ÉQUIPES</h1>
-          <p style={{ color: '#64748b', fontSize: '1.1rem', marginTop: '5px' }}>
-            {isAdmin ? "Gestion administrative des clubs." : "Consultez la liste des clubs engagés."}
-          </p>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '900', color: '#1a1a1a', margin: 0 }}>🏀 GESTION</h1>
+          <p style={{ color: '#64748b' }}>Créez vos clubs puis ajoutez vos équipes.</p>
         </div>
-        
+
         {isAdmin && (
-          <button onClick={() => setIsModalOpen(true)} style={btnAjouterStyle}>
-            + AJOUTER UN CLUB
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={() => setShowClubModal(true)} style={btnClubStyle}>+ CRÉER UN CLUB</button>
+            <button onClick={() => setShowEquipeModal(true)} style={btnEquipeStyle}>+ CRÉER UNE ÉQUIPE</button>
+          </div>
         )}
       </header>
 
-      {/* MODALE ADMIN */}
-      {isModalOpen && isAdmin && (
-        <div style={modalOverlayStyle}>
-          <div style={modalContentStyle}>
-            <h2 style={{ marginTop: 0, fontWeight: '800' }}>Nouveau Club</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
-              <div style={inputGroup}>
-                <label style={labelStyle}>Nom du club</label>
-                <input 
-                  placeholder="ex: Dunkly Warriors" 
-                  value={nom} 
-                  onChange={(e) => setNom(e.target.value)}
-                  style={inputStyle}
-                />
+      {/* AFFICHAGE DES CLUBS ET LEURS ÉQUIPES */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '25px' }}>
+        {clubs.map((club) => (
+          <div key={club.id} style={cardStyle}>
+            <div style={{ padding: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                 <div style={{ ...logoStyle, backgroundColor: club.logoColor }}>{club.nom[0]}</div>
+                 <div>
+                    <h3 style={{ margin: 0 }}>{club.nom}</h3>
+                    <small style={{ color: '#64748b' }}>📍 {club.ville}</small>
+                 </div>
               </div>
-              <div style={inputGroup}>
-                <label style={labelStyle}>Ville</label>
-                <input 
-                  placeholder="ex: Paris" 
-                  value={ville} 
-                  onChange={(e) => setVille(e.target.value)}
-                  style={inputStyle}
-                />
+              <div style={{ marginTop: '15px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {club.equipes.map(eq => (
+                  <span key={eq.id} style={tagStyle}>🏀 {eq.nom}</span>
+                ))}
               </div>
-              <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
-                <button onClick={ajouterEquipe} style={confirmBtnStyle}>Enregistrer</button>
-                <button onClick={() => setIsModalOpen(false)} style={cancelBtnStyle}>Annuler</button>
-              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* MODALE : CRÉER UN CLUB */}
+      {showClubModal && (
+        <div style={overlayStyle}>
+          <div style={modalStyle}>
+            <h3>Nouveau Club</h3>
+            <input placeholder="Nom du club" value={nomClub} onChange={(e) => setNomClub(e.target.value)} style={inputStyle} />
+            <input placeholder="Ville" value={ville} onChange={(e) => setVille(e.target.value)} style={inputStyle} />
+            <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+              <button onClick={handleCreateClub} style={btnConfirm}>Enregistrer</button>
+              <button onClick={() => setShowClubModal(false)} style={btnCancel}>Annuler</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* GRILLE DES ÉQUIPES VERSION MODERNE */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '25px' }}>
-        {equipes.length > 0 ? equipes.map((e) => (
-          <div key={e.id} style={equipeCardStyle}>
-            {/* Barre latérale décorative utilisant la couleur générée */}
-            <div style={{ ...decorBar, backgroundColor: e.logoColor }}></div>
-            
-            <div style={{ padding: '25px', flex: 1, position: 'relative' }}>
-              {isAdmin && (
-                <button onClick={() => supprimerEquipe(e.id)} style={deleteBtnStyle} title="Supprimer">×</button>
-              )}
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                <div style={{ 
-                  width: '60px', height: '60px', borderRadius: '12px', backgroundColor: e.logoColor, 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'white', fontWeight: '900', fontSize: '1.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                }}>
-                  {e.nom.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '800', color: '#1e293b' }}>{e.nom}</h3>
-                  <span style={cityBadgeStyle}>📍 {e.ville}</span>
-                </div>
-              </div>
+      {/* MODALE : CRÉER UNE ÉQUIPE */}
+      {showEquipeModal && (
+        <div style={overlayStyle}>
+          <div style={modalStyle}>
+            <h3>Nouvelle Équipe</h3>
+            <select value={targetClubId} onChange={(e) => setTargetClubId(e.target.value)} style={inputStyle}>
+              <option value="">Sélectionner le club...</option>
+              {clubs.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+            </select>
+            <input placeholder="Nom de l'équipe (ex: U15)" value={nomEquipe} onChange={(e) => setNomEquipe(e.target.value)} style={inputStyle} />
+            <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+              <button onClick={handleCreateEquipe} style={btnConfirm}>Ajouter l'équipe</button>
+              <button onClick={() => setShowEquipeModal(false)} style={btnCancel}>Annuler</button>
             </div>
           </div>
-        )) : (
-          <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '100px', color: '#94a3b8', backgroundColor: '#f8fafc', borderRadius: '20px', border: '2px dashed #e2e8f0' }}>
-            <span style={{ fontSize: '3rem' }}>📁</span>
-            <p style={{ fontWeight: '600', marginTop: '10px' }}>Aucune équipe enregistrée pour le moment.</p>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // --- STYLES ---
-const btnAjouterStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '14px 28px', borderRadius: '12px', cursor: 'pointer', fontWeight: '900', fontSize: '0.9rem', boxShadow: '0 4px 14px rgba(249, 115, 22, 0.3)' };
-const modalOverlayStyle: React.CSSProperties = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(15, 23, 42, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, backdropFilter: 'blur(4px)' };
-const modalContentStyle: React.CSSProperties = { background: 'white', padding: '40px', borderRadius: '24px', width: '400px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' };
-const inputGroup = { display: 'flex', flexDirection: 'column' as const, gap: '8px' };
-const labelStyle = { fontSize: '0.8rem', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' as const, letterSpacing: '0.05em' };
-const inputStyle = { padding: '14px', borderRadius: '12px', border: '2px solid #f1f5f9', outline: 'none', backgroundColor: '#f8fafc', fontSize: '1rem' };
-const confirmBtnStyle = { flex: 1, backgroundColor: '#1a1a1a', color: 'white', border: 'none', padding: '14px', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold' };
-const cancelBtnStyle = { flex: 1, backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', padding: '14px', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold' };
-const equipeCardStyle: React.CSSProperties = { backgroundColor: '#fff', borderRadius: '20px', border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default' };
-const decorBar = { width: '8px' };
-const cityBadgeStyle = { display: 'inline-block', marginTop: '5px', backgroundColor: '#f1f5f9', color: '#64748b', padding: '4px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '700' };
-const deleteBtnStyle: React.CSSProperties = { position: 'absolute', top: '15px', right: '15px', background: '#fee2e2', border: 'none', color: '#ef4444', cursor: 'pointer', width: '30px', height: '30px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 'bold' };
+const btnClubStyle = { backgroundColor: '#1e293b', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' };
+const btnEquipeStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' };
+const overlayStyle: React.CSSProperties = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000 };
+const modalStyle: React.CSSProperties = { background: 'white', padding: '30px', borderRadius: '20px', width: '350px', display: 'flex', flexDirection: 'column', gap: '10px' };
+const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem' };
+const btnConfirm = { flex: 1, padding: '12px', background: '#1a1a1a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' };
+const btnCancel = { flex: 1, padding: '12px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '8px', cursor: 'pointer' };
+const cardStyle = { backgroundColor: 'white', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' };
+const logoStyle = { width: '45px', height: '45px', borderRadius: '10px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.2rem' };
+const tagStyle = { backgroundColor: '#f1f5f9', padding: '4px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '700' };
