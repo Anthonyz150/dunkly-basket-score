@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { getFromLocal } from '@/lib/store';
 import Link from 'next/link';
 
-// --- 1. TYPES ---
+// --- 1. TYPES (Pour éviter les erreurs rouges) ---
 interface User {
   username: string;
 }
@@ -15,10 +15,14 @@ interface Stats {
   matchs: number;
 }
 
-// --- 2. COMPOSANTS (En haut pour TypeScript) ---
+// --- 2. COMPOSANTS INTERNES (Placés en haut pour TypeScript) ---
+
 function StatCard({ label, value, icon, color }: { label: string; value: number; icon: string; color: string }) {
   return (
-    <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.02)', border: '1px solid #F1F5F9' }}>
+    <div style={{ 
+      backgroundColor: 'white', padding: '25px', borderRadius: '24px', 
+      boxShadow: '0 4px 15px rgba(0,0,0,0.02)', border: '1px solid #F1F5F9'
+    }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
         <div style={{ backgroundColor: `${color}15`, padding: '12px', borderRadius: '16px', fontSize: '1.5rem' }}>{icon}</div>
         <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#1E293B', lineHeight: '1' }}>{value}</div>
@@ -33,9 +37,10 @@ function ActionRow({ href, icon, text, sub, primary = false }: { href: string; i
     <Link href={href} style={{ 
       display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', borderRadius: '18px',
       textDecoration: 'none', backgroundColor: primary ? '#F9731610' : '#F8FAFC',
-      border: primary ? '1px solid #F9731630' : '1px solid #F1F5F9', marginBottom: '10px'
+      border: primary ? '1px solid #F9731630' : '1px solid #F1F5F9',
+      marginBottom: '10px'
     }}>
-      <div style={{ fontSize: '1.5rem' }}>{icon}</div>
+      <div style={{ fontSize: '1.5rem', filter: primary ? 'none' : 'grayscale(1)' }}>{icon}</div>
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: '700', color: primary ? '#F97316' : '#1E293B', fontSize: '0.95rem' }}>{text}</div>
         <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{sub}</div>
@@ -45,7 +50,8 @@ function ActionRow({ href, icon, text, sub, primary = false }: { href: string; i
   );
 }
 
-// --- 3. DASHBOARD ---
+// --- 3. COMPOSANT PRINCIPAL ---
+
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats>({ compets: 0, equipes: 0, matchs: 0 });
   const [user, setUser] = useState<User | null>(null);
@@ -53,16 +59,24 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
+    // Récupération utilisateur
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) setUser(JSON.parse(storedUser));
 
+    // CORRECTION TYPE : Forcer le type tableau pour éviter l'erreur de build .length
+    const c = (getFromLocal('competitions') || []) as any[];
+    const e = (getFromLocal('equipes') || []) as any[];
+    const m = (getFromLocal('matchs') || []) as any[];
+    
     setStats({ 
-        compets: (getFromLocal('competitions') || []).length, 
-        equipes: (getFromLocal('equipes') || []).length, 
-        matchs: (getFromLocal('matchs') || []).length 
+        compets: c.length, 
+        equipes: e.length, 
+        matchs: m.length 
     });
 
-    setAllUsers(getFromLocal('users') || []);
+    // Récupération des membres pour l'admin
+    const users = (getFromLocal('users') || []) as User[];
+    setAllUsers(users);
   }, []);
 
   const isAdmin = user?.username === 'admin';
@@ -70,35 +84,47 @@ export default function Dashboard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '90vh' }}>
       
-      {/* HEADER */}
+      {/* HEADER AVEC BOUTON MODALE */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <div>
-          <h1 style={{ fontSize: '2.2rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>Accueil <span style={{ color: '#F97316' }}>.</span></h1>
-          <p style={{ color: '#64748B', marginTop: '5px' }}>Ravi de vous revoir, <strong>{user?.username || 'Anthony'}</strong>.</p>
+          <h1 style={{ fontSize: '2.2rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+            Accueil <span style={{ color: '#F97316' }}>.</span>
+          </h1>
+          <p style={{ color: '#64748B', marginTop: '5px' }}>
+            Ravi de vous revoir, <strong>{user?.username || 'Anthony'}</strong>.
+          </p>
         </div>
+
         {isAdmin && (
-          <button onClick={() => setIsModalOpen(true)} style={btnAdminStyle}>👥 VOIR LES MEMBRES</button>
+          <button onClick={() => setIsModalOpen(true)} style={btnAdminStyle}>
+            👥 VOIR LES MEMBRES
+          </button>
         )}
       </div>
 
-      {/* STATS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '25px', marginBottom: '40px' }}>
+      {/* GRILLE DE STATS */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+        gap: '25px', 
+        marginBottom: '40px' 
+      }}>
         <StatCard label="Championnats" value={stats.compets} icon="🏆" color="#F97316" />
         <StatCard label="Clubs & Équipes" value={stats.equipes} icon="🛡️" color="#3B82F6" />
         <StatCard label="Matchs Joués" value={stats.matchs} icon="⏱️" color="#10B981" />
       </div>
 
-      {/* SECTION CENTRALE (Actions + Live) */}
+      {/* SECTION CENTRALE : ACTIONS + LIVE */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
         
         {/* PANEL ACTIONS */}
-        <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', border: '1px solid #F1F5F9', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}>
+        <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', border: '1px solid #F1F5F9' }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '25px', color: '#1E293B' }}>⚡ Actions Prioritaires</h3>
           <ActionRow href="/matchs" icon="🏀" text="Saisir un score" sub="Mise à jour live" primary />
           <ActionRow href="/equipes" icon="👥" text="Ajouter équipe" sub="Gestion des clubs" />
         </div>
 
-        {/* PANEL LIVE (REMIS ICI) */}
+        {/* PANEL LIVE (REMIS AVEC STYLE SOMBRE) */}
         <div style={{ backgroundColor: '#1E293B', padding: '30px', borderRadius: '24px', color: 'white', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'relative', zIndex: 2 }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '10px' }}>État du Live</h3>
@@ -112,43 +138,89 @@ export default function Dashboard() {
               Voir le calendrier complet →
             </Link>
           </div>
-          {/* L'icône basket géante en fond */}
           <div style={{ position: 'absolute', bottom: '-20px', right: '-20px', fontSize: '120px', opacity: 0.1, transform: 'rotate(-15deg)' }}>🏀</div>
         </div>
       </div>
 
-      {/* MODALE MEMBRES */}
+      {/* MODALE MEMBRES (ADMIN SEULEMENT) */}
       {isModalOpen && isAdmin && (
         <div style={modalOverlay} onClick={() => setIsModalOpen(false)}>
           <div style={modalContent} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ margin: 0 }}>🛡️ Accès Membres</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+              <h2 style={{ margin: 0, fontWeight: '900' }}>🛡️ Gestion des Accès</h2>
               <button onClick={() => setIsModalOpen(false)} style={closeBtn}>×</button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '350px', overflowY: 'auto' }}>
-              {allUsers.map((u, i) => (
-                <div key={i} style={userRow}>
-                  <div style={avatar(u.username === 'admin')}>{u.username[0].toUpperCase()}</div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
+              {allUsers.map((u, index) => (
+                <div key={index} style={userRow}>
+                  <div style={avatarStyle(u.username === 'admin')}>
+                    {u.username.charAt(0).toUpperCase()}
+                  </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '700' }}>{u.username}</div>
-                    <div style={{ fontSize: '0.7rem', color: u.username === 'admin' ? '#F97316' : '#64748B' }}>{u.username === 'admin' ? 'ADMIN' : 'MEMBRE'}</div>
+                    <div style={{ fontWeight: '700', fontSize: '1rem' }}>{u.username}</div>
+                    <div style={{ fontSize: '0.75rem', color: u.username === 'admin' ? '#F97316' : '#64748B', fontWeight: '800' }}>
+                      {u.username === 'admin' ? 'ADMINISTRATEUR' : 'UTILISATEUR'}
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
-            <Link href="/admin/users" style={manageLink}>Gérer les membres →</Link>
+            
+            <Link href="/admin/users" style={manageLink}>
+              Aller à la page de gestion complète →
+            </Link>
           </div>
         </div>
       )}
+
+      {/* FOOTER */}
+      <footer style={{ marginTop: 'auto', padding: '40px 0 20px', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#94A3B8', fontSize: '0.85rem' }}>
+        <div>© 2026 <strong>DUNKLY</strong> by Anthony</div>
+        <div style={{ display: 'flex', gap: '20px' }}>
+          <span>Version 1.0.4</span>
+          <span style={{ color: '#10B981' }}>● Système en ligne</span>
+        </div>
+      </footer>
     </div>
   );
 }
 
-// --- 4. STYLES ---
-const btnAdminStyle = { backgroundColor: '#1a1a1a', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: '800' as const, cursor: 'pointer' };
-const modalOverlay: React.CSSProperties = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 };
-const modalContent: React.CSSProperties = { backgroundColor: 'white', padding: '35px', borderRadius: '28px', width: '90%', maxWidth: '400px' };
-const userRow = { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', backgroundColor: '#F8FAFC', borderRadius: '12px' };
-const avatar = (admin: boolean) => ({ width: '35px', height: '35px', borderRadius: '10px', backgroundColor: admin ? '#F97316' : '#1E293B', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' as const });
-const closeBtn = { background: '#F1F5F9', border: 'none', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', fontWeight: 'bold' as const };
-const manageLink: React.CSSProperties = { display: 'block', textAlign: 'center', marginTop: '20px', color: '#F97316', fontWeight: 'bold', textDecoration: 'none' };
+// --- 4. STYLES (En bas pour la propreté) ---
+
+const btnAdminStyle = {
+  backgroundColor: '#1a1a1a', color: 'white', border: 'none', padding: '12px 20px', 
+  borderRadius: '12px', fontWeight: '800' as const, cursor: 'pointer', fontSize: '0.8rem'
+};
+
+const modalOverlay: React.CSSProperties = {
+  position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+  backgroundColor: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(4px)',
+  display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999
+};
+
+const modalContent: React.CSSProperties = {
+  backgroundColor: 'white', padding: '35px', borderRadius: '28px',
+  width: '90%', maxWidth: '450px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+};
+
+const userRow = {
+  display: 'flex', alignItems: 'center', gap: '15px', padding: '15px',
+  backgroundColor: '#F8FAFC', borderRadius: '16px', border: '1px solid #F1F5F9'
+};
+
+const avatarStyle = (isAdmin: boolean) => ({
+  width: '40px', height: '40px', borderRadius: '12px',
+  backgroundColor: isAdmin ? '#F97316' : '#1E293B', color: 'white',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900' as const
+});
+
+const closeBtn = {
+  background: '#F1F5F9', border: 'none', width: '35px', height: '35px',
+  borderRadius: '50%', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 'bold' as const
+};
+
+const manageLink: React.CSSProperties = {
+  display: 'block', textAlign: 'center', marginTop: '25px', color: '#F97316',
+  textDecoration: 'none', fontWeight: '800', fontSize: '0.9rem'
+};
