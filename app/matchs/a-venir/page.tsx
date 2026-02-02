@@ -209,16 +209,16 @@ export default function MatchsAVenirPage() {
   );
 }
 
-// STYLES
-const editBtnStyle = { background: 'none', border: '1px solid #ddd', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' };
-const deleteBtnStyle = { background: '#fee2e2', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer' };
-const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', backgroundColor: 'white' };
-const colStyle = { display: 'flex', flexDirection: 'column', gap: '5px' };
-const miniLabel = { fontSize: '0.65rem', fontWeight: '900', color: '#64748b', letterSpacing: '0.05em' };
-const addBtnStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' };
-const submitBtn = { width: '100%', marginTop: '20px', backgroundColor: '#1a1a1a', color: 'white', padding: '14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '900', border: 'none' };
-const matchCardStyle = { padding: '20px', border: '1px solid #f1f1f1', borderRadius: '12px', background: 'white' };
-const formCardStyle = { marginBottom: '30px', padding: '25px', borderRadius: '16px', backgroundColor: '#fff' };
-const clubSmall = { display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' as const, fontWeight: 'bold' };
-const footerCard = { marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const tableBtn = { color: '#F97316', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.8rem', border: '1px solid #F97316', padding: '6px 12px', borderRadius: '6px' };
+// STYLES AVEC TYPAGE FORCÉ (as const)
+const editBtnStyle = { background: 'none', border: '1px solid #ddd', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' } as const;
+const deleteBtnStyle = { background: '#fee2e2', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer' } as const;
+const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', backgroundColor: 'white' } as const;
+const colStyle = { display: 'flex', flexDirection: 'column', gap: '5px' } as const; // <-- C'était lui le coupable
+const miniLabel = { fontSize: '0.65rem', fontWeight: '900', color: '#64748b', letterSpacing: '0.05em' } as const;
+const addBtnStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' } as const;
+const submitBtn = { width: '100%', marginTop: '20px', backgroundColor: '#1a1a1a', color: 'white', padding: '14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '900', border: 'none' } as const;
+const matchCardStyle = { padding: '20px', border: '1px solid #f1f1f1', borderRadius: '12px', background: 'white' } as const;
+const formCardStyle = { marginBottom: '30px', padding: '25px', borderRadius: '16px', backgroundColor: '#fff' } as const;
+const clubSmall = { display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' as const, fontWeight: 'bold' } as const;
+const footerCard = { marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } as const;
+const tableBtn = { color: '#F97316', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.8rem', border: '1px solid #F97316', padding: '6px 12px', borderRadius: '6px' } as const;
