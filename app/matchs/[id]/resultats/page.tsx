@@ -7,8 +7,8 @@ export default function ResultatsPage() {
   const [matchs, setMatchs] = useState<any[]>([]);
 
   useEffect(() => {
-    // On récupère et on garde uniquement les matchs terminés
-    const allMatchs = getFromLocal('matchs') || [];
+    // CORRECTION : On précise : any[] pour que TypeScript autorise le .filter()
+    const allMatchs: any[] = getFromLocal('matchs') || [];
     setMatchs(allMatchs.filter((m: any) => m.status === 'termine'));
   }, []);
 
@@ -16,7 +16,7 @@ export default function ResultatsPage() {
     return (
       <div style={emptyStateStyle}>
         <span style={{ fontSize: '3.5rem' }}>✅</span>
-        <h2 style={{ color: '#1E293B', margin: '10px 0 5px 0' }}>Aucun résultat</h2>
+        <h2 style={{ color: '#1E293B', margin: '10px 0 5px 0', fontWeight: '800' }}>Aucun résultat</h2>
         <p style={{ color: '#64748B' }}>Les scores des matchs terminés s'afficheront ici.</p>
       </div>
     );
@@ -24,17 +24,20 @@ export default function ResultatsPage() {
 
   return (
     <div style={{ padding: '20px' }}>
-      <h1 style={{ fontWeight: '800', marginBottom: '30px' }}>Résultats des matchs</h1>
+      <h1 style={{ fontSize: '2rem', fontWeight: '900', color: '#1E293B', marginBottom: '30px' }}>
+        Résultats <span style={{ color: '#F97316' }}>.</span>
+      </h1>
+      
       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         {matchs.map((m) => (
-          <div key={m.id} className="card" style={matchCardStyle}>
-             <div style={{fontSize: '0.8rem', color: '#F97316', fontWeight: 'bold'}}>{m.competition}</div>
+          <div key={m.id} style={matchCardStyle}>
+             <div style={{fontSize: '0.7rem', color: '#F97316', fontWeight: '800', textTransform: 'uppercase'}}>{m.competition}</div>
              <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', margin: '15px 0'}}>
-                <span style={{fontWeight: '700'}}>{m.equipeA}</span>
+                <span style={{fontWeight: '700', flex: 1, textAlign: 'right'}}>{m.equipeA}</span>
                 <span style={scoreStyle}>{m.scoreA} - {m.scoreB}</span>
-                <span style={{fontWeight: '700'}}>{m.equipeB}</span>
+                <span style={{fontWeight: '700', flex: 1, textAlign: 'left'}}>{m.equipeB}</span>
              </div>
-             <div style={{fontSize: '0.8rem', color: '#94A3B8'}}>📅 Joué le {m.date}</div>
+             <div style={{fontSize: '0.8rem', color: '#94A3B8', textAlign: 'center'}}>📅 Joué le {m.date}</div>
           </div>
         ))}
       </div>
@@ -42,16 +45,27 @@ export default function ResultatsPage() {
   );
 }
 
-// Styles partagés
+// STYLES
 const emptyStateStyle: React.CSSProperties = {
   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
   minHeight: '70vh', textAlign: 'center'
 };
 
-const matchCardStyle = {
-  padding: '20px', backgroundColor: 'white', borderRadius: '16px', border: '1px solid #F1F5F9', boxShadow: '0 4px 6px rgba(0,0,0,0.02)'
+const matchCardStyle: React.CSSProperties = {
+  padding: '20px', 
+  backgroundColor: 'white', 
+  borderRadius: '20px', 
+  border: '1px solid #F1F5F9', 
+  boxShadow: '0 4px 6px rgba(0,0,0,0.02)'
 };
 
-const scoreStyle = {
-  backgroundColor: '#1E293B', color: 'white', padding: '5px 15px', borderRadius: '8px', fontWeight: '900'
+const scoreStyle: React.CSSProperties = {
+  backgroundColor: '#1E293B', 
+  color: 'white', 
+  padding: '8px 20px', 
+  borderRadius: '12px', 
+  fontWeight: '900',
+  fontSize: '1.2rem',
+  minWidth: '100px',
+  textAlign: 'center'
 };
