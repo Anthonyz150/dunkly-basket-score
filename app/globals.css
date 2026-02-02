@@ -1,52 +1,61 @@
-/* --- 1. CONFIGURATION GÉNÉRALE --- */
+/* --- 1. CONFIGURATION GÉNÉRALE & VARIABLES --- */
 :root {
   --orange-basket: #e65100;
   --noir-sidebar: #1a1a1a;
   --gris-fond: #f4f4f4;
+  --blanc-pur: #ffffff;
 }
 
-* { box-sizing: border-box; }
+* { 
+  box-sizing: border-box; 
+}
 
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
   font-family: 'Inter', sans-serif;
+  /* On force le gris ici pour que tout le site soit propre par défaut */
+  background-color: var(--gris-fond) !important;
+  color: #1a1a1a;
 }
 
-/* --- 2. STRUCTURE LOGIN (Indépendante) --- */
+/* --- 2. STRUCTURE LOGIN (Fond noir uniquement ici) --- */
 .login-body {
   background-color: #111 !important;
   display: flex !important;
   align-items: center;
   justify-content: center;
   height: 100vh;
+  color: white;
 }
 
 /* --- 3. STRUCTURE APPLI (Sidebar + Contenu) --- */
 .app-body {
-  background-color: var(--gris-fond);
-  display: block !important; /* On annule le flex sur le body */
+  background-color: var(--gris-fond) !important;
+  display: block !important;
 }
 
 .sidebar {
   width: 250px;
   background-color: var(--noir-sidebar) !important;
   height: 100vh;
-  position: fixed; /* Fixée à gauche quoi qu'il arrive */
+  position: fixed;
   top: 0;
   left: 0;
   display: flex;
   flex-direction: column;
   z-index: 1000;
   color: white;
+  border-right: 1px solid #333;
 }
 
 .main-content {
-  margin-left: 250px; /* Décale tout le contenu à droite de la sidebar */
+  margin-left: 250px;
   padding: 40px;
   min-height: 100vh;
-  background-color: var(--gris-fond);
+  background-color: var(--gris-fond) !important;
+  transition: margin-left 0.3s ease;
 }
 
 /* --- 4. NAVIGATION --- */
@@ -64,374 +73,70 @@ html, body {
   transition: 0.2s;
 }
 
-.nav-link:hover {
+.nav-link:hover, .nav-link.active {
   background: var(--orange-basket);
   color: white !important;
 }
 
-.admin-section {
-  margin-top: 20px;
-  border-top: 1px solid #333;
-  padding-top: 15px;
+/* --- 5. COMPOSANTS (CARDS & WRAPPERS) --- */
+.dashboard-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.admin-title {
-  font-size: 0.65rem;
-  color: var(--orange-basket);
-  font-weight: bold;
-  margin: 0 0 10px 15px;
-  text-transform: uppercase;
+.card {
+  background: var(--blanc-pur) !important;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  border: 1px solid #eee;
+  color: #1a1a1a;
 }
 
-/* --- 5. BAS DE SIDEBAR --- */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* --- 6. ÉLÉMENTS SPÉCIFIQUES --- */
+.header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.header-title-row h1 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.welcome-text {
+  color: #666;
+  margin-bottom: 30px;
+}
+
 .profile-box {
   background: #111;
   padding: 20px;
   border-top: 1px solid #333;
 }
 
-.profile-box button {
-  width: 100%;
-  background: transparent;
-  border: 1px solid #ff4444;
-  color: #ff4444;
-  padding: 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.profile-box button:hover {
-  background: #ff4444;
-  color: white;
-}/* --- DASHBOARD STYLES --- */
-.dashboard-header { margin-bottom: 40px; }
-.version-tag { font-size: 0.9rem; color: #999; vertical-align: middle; }
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 40px;
-}
-
-.stat-card .stat-title { margin: 0; font-size: 0.9rem; color: #666; font-weight: 600; }
-.stat-card .stat-value { margin: 10px 0 0; font-size: 2.5rem; font-weight: 800; }
-
-.dashboard-lower-grid {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 30px;
-}
-
-.actions-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-
-.action-btn {
-  text-decoration: none;
-  background: white;
-  color: #333;
-  padding: 15px;
-  border-radius: 10px;
-  border: 1px solid #eee;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  font-weight: 600;
-  transition: 0.2s;
-}
-
-.action-btn:hover {
-  border-color: var(--orange-basket);
-  transform: translateX(5px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-/* LIVE MATCH BOX */
-.live-match-box {
-  background: #111;
-  padding: 30px;
-  border-radius: 20px;
-  color: white;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-}
-
-.live-header { display: flex; justify-content: space-between; align-items: center; }
-.live-header h2 { color: #ff9800 !important; font-size: 1.1rem !important; margin: 0; }
-.live-link { color: #888; text-decoration: none; font-size: 0.8rem; border: 1px solid #333; padding: 5px 10px; border-radius: 5px; }
-
-.scoreboard { text-align: center; margin-top: 30px; }
-.comp-name { color: #ff9800; font-size: 0.8rem; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
-.score-display { display: flex; justify-content: space-between; align-items: center; }
-.score-numbers { font-size: 3rem; font-weight: 900; margin: 0 20px; }
-.team-name { flex: 1; font-weight: bold; font-size: 1rem; }
-
-.empty-live { text-align: center; color: #999; padding: 60px; display: flex; align-items: center; justify-content: center; }
-
-/* Responsive */
-@media (max-width: 900px) {
-  .dashboard-lower-grid { grid-template-columns: 1fr; }
-}
-/* --- DASHBOARD RECONSTRUCTION --- */
-.dashboard-wrapper {
-  max-width: 1200px;
-}
-
-.header-title-row {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 5px;
-}
-
-.header-title-row h1 {
-  font-size: 2.2rem;
-  margin: 0;
-  font-weight: 800;
-  color: #1a1a1a;
-}
-
-.welcome-text {
-  color: #666;
-  margin: 0 0 35px 0;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  margin-bottom: 30px;
-}
-
-.card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-}
-
-.stat-card .stat-label { color: #555; font-weight: 600; font-size: 0.85rem; margin: 0; }
-.stat-card .stat-number { font-size: 2.8rem; margin: 10px 0 0 0; font-weight: 700; }
-
-.dashboard-lower-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 25px;
-}
-
-.section-title {
-  color: var(--orange-basket);
-  font-size: 1.3rem;
-  font-weight: 800;
-  margin-top: 0;
-  margin-bottom: 25px;
-}
-
-.actions-list { display: flex; flex-direction: column; gap: 12px; }
-
-.action-row {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  text-decoration: none;
-  color: #444;
-  font-weight: 600;
-  transition: 0.2s;
-}
-
-.action-row:hover { background: #eee; transform: translateX(5px); }
-
-/* MATCH EN COURS STYLE (Noir comme sur l'image) */
-.live-match-card {
-  background: #1a1a1a;
-  border-radius: 15px;
-  padding: 25px;
-  color: white;
-}
-
-.live-title {
-  color: var(--orange-basket);
-  font-size: 1.3rem;
-  font-weight: 800;
-  margin-top: 0;
-  margin-bottom: 30px;
-}
-
-.live-display {
-  background: #111;
-  border: 1px solid #333;
-  border-radius: 10px;
-  padding: 30px 20px;
-  text-align: center;
-}
-
-.live-comp-name { color: #f39c12; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 1px; }
-.live-score-row { display: flex; justify-content: space-around; align-items: center; }
-.live-team { font-size: 1rem; font-weight: 600; flex: 1; }
-.live-score-digits { font-size: 2.8rem; font-weight: 900; margin: 0 15px; }
-
-@media (max-width: 1000px) {
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .dashboard-lower-grid { grid-template-columns: 1fr; }
-}
-/* --- BURGER BUTTON --- */
-.burger-toggle {
-  display: none; /* Caché sur PC */
-  position: fixed;
-  top: 15px;
-  right: 15px;
-  z-index: 1000;
-  background: var(--orange-basket);
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: 8px;
-  font-size: 1.5rem;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
-
-/* --- RESPONSIVE MOBILE (< 768px) --- */
-@media (max-width: 768px) {
-  .burger-toggle {
-    display: block; /* Visible sur mobile */
-  }
-
-  .sidebar {
-    position: fixed;
-    left: -280px; /* Caché à gauche */
-    top: 0;
-    bottom: 0;
-    z-index: 999;
-    transition: 0.3s ease;
-    width: 260px;
-  }
-
-  .sidebar.mobile-open {
-    left: 0; /* Glisse vers l'intérieur */
-  }
-
-  .main-content {
-    margin-left: 0 !important; /* On annule la marge de la sidebar */
-    padding-top: 50px; /* On laisse de la place pour le bouton burger */
-  }
-
-  .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 998;
-  }
-
-  /* On adapte les grilles du dashboard pour qu'elles soient sur 1 colonne */
-  .stats-grid, .dashboard-lower-grid {
-    grid-template-columns: 1fr !important;
-  }
-}
-/* --- 1. AJUSTEMENTS DESKTOP --- */
-.main-content {
-  margin-left: 250px;
-  padding: 40px;
-  min-height: 100vh;
-  background-color: var(--gris-fond);
-  transition: margin-left 0.3s ease, padding 0.3s ease; /* Animation fluide */
-}
-
-/* --- 2. BURGER TOGGLE (Caché sur PC) --- */
-.burger-toggle {
-  display: none;
-  position: fixed;
-  top: 15px;
-  right: 15px;
-  z-index: 2000;
-  background: var(--orange-basket);
-  color: white;
-  border: none;
-  width: 45px;
-  height: 45px;
-  border-radius: 8px;
-  font-size: 1.5rem;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-  align-items: center;
-  justify-content: center;
-}
-
-/* --- 3. RESPONSIVE MOBILE (Tablettes et Smartphones) --- */
-@media (max-width: 992px) {
-  .burger-toggle {
-    display: flex; /* Apparition du bouton */
-  }
-
-  .sidebar {
-    left: -260px; /* Sortie complète */
-    transition: left 0.3s ease;
-    width: 260px;
-  }
-
-  .sidebar.mobile-open {
-    left: 0; /* Entrée fluide */
-  }
-
-  .main-content {
-    margin-left: 0 !important; /* SUPPRIME la marge qui écrasait ton contenu */
-    padding: 20px; /* Moins de padding sur mobile */
-    padding-top: 80px; /* Espace pour ne pas être caché sous le bouton burger */
-    width: 100%;
-  }
-
-  /* Overlay de fond pour focaliser sur le menu */
-  .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(3px);
-    z-index: 998;
-  }
-
-  /* --- ADAPTATION DES GRILLES DU DASHBOARD --- */
-  .stats-grid {
-    grid-template-columns: 1fr 1fr !important; /* 2 colonnes pour les stats */
-    gap: 15px !important;
-  }
-
-  .dashboard-lower-grid {
-    grid-template-columns: 1fr !important; /* Actions et Live l'un sous l'autre */
-  }
-
-  .header-title-row h1 {
-    font-size: 1.6rem !important; /* Titre plus petit pour mobile */
-  }
-}
-
-/* --- TRÈS PETITS ÉCRANS (< 480px) --- */
-@media (max-width: 480px) {
-  .stats-grid {
-    grid-template-columns: 1fr !important; /* Stats sur 1 colonne */
-  }
-  
-  .live-score-digits {
-    font-size: 2rem !important; /* Score plus petit */
-  }
-}
+/* --- 7. CHARGEMENT (LOADER) --- */
 .loader-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 60vh;
+  height: 100vh;
+  background-color: var(--gris-fond) !important;
 }
 
 .bouncing-ball {
-  font-size: 3rem;
+  font-size: 3.5rem;
   animation: bounce 0.6s infinite alternate;
 }
 
@@ -439,42 +144,46 @@ html, body {
   from { transform: translateY(0); }
   to { transform: translateY(-30px); }
 }
-.search-input-pro {
-  width: 100%;
-  padding: 12px 15px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  font-size: 1rem;
-  outline: none;
-  transition: border-color 0.2s;
-}
 
-.search-input-pro:focus {
-  border-color: var(--orange-basket);
-}
+/* --- 8. RESPONSIVE MOBILE --- */
+@media (max-width: 992px) {
+  .sidebar {
+    left: -260px;
+    transition: left 0.3s ease;
+  }
 
-.export-btn {
-  width: 100%;
-  margin-top: 15px;
-  padding: 12px;
-  background: #f8f9fa;
-  border: 2px dashed #ddd;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  color: #666;
-  transition: all 0.2s;
-}
+  .sidebar.mobile-open {
+    left: 0;
+  }
 
-.export-btn:hover {
-  background: #eee;
-  border-color: #999;
-  color: #333;
-}
+  .main-content {
+    margin-left: 0 !important;
+    padding: 20px;
+    padding-top: 80px;
+  }
 
-.empty-live {
-  text-align: center;
-  padding: 40px;
-  color: #888;
-  font-style: italic;
+  .burger-toggle {
+    display: flex;
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    z-index: 2000;
+    background: var(--orange-basket);
+    color: white;
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 8px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(3px);
+    z-index: 998;
+  }
 }
