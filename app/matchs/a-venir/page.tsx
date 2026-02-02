@@ -12,9 +12,7 @@ export default function MatchsAVenirPage() {
   const [arbitres, setArbitres] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   
-  // État pour savoir quel match on modifie
   const [editingId, setEditingId] = useState<string | null>(null);
-  
   const [selectedClubA, setSelectedClubA] = useState("");
   const [selectedClubB, setSelectedClubB] = useState("");
   const [dureePeriode, setDureePeriode] = useState("10"); 
@@ -31,16 +29,16 @@ export default function MatchsAVenirPage() {
   }, []);
 
   const chargerDonnees = () => {
-    const dataRaw = getFromLocal('matchs');
-    setMatchs(Array.isArray(dataRaw) ? dataRaw.filter((m: any) => m.status === 'a-venir') : []);
-    setClubs(getFromLocal('equipes_clubs') || []);
-    setArbitres(getFromLocal('arbitres') || []);
+    // Cast immédiat en any[] pour éviter toute erreur de filtrage
+    const all = (getFromLocal('matchs') || []) as any[];
+    setMatchs(all.filter((m: any) => m.status === 'a-venir'));
+    setClubs((getFromLocal('equipes_clubs') || []) as Club[]);
+    setArbitres((getFromLocal('arbitres') || []) as any[]);
   };
 
   const equipesDispoA = clubs.find(c => c.id === selectedClubA)?.equipes || [];
   const equipesDispoB = clubs.find(c => c.id === selectedClubB)?.equipes || [];
 
-  // FONCTION POUR PRÉ-REMPLIR LE FORMULAIRE
   const preparerEdition = (m: any) => {
     setEditingId(m.id);
     setNewMatch({
@@ -52,7 +50,6 @@ export default function MatchsAVenirPage() {
       competition: m.competition,
       arbitre: m.arbitre
     });
-    // On retrouve les IDs des clubs pour les sélecteurs
     const cA = clubs.find(c => c.nom === m.clubA);
     const cB = clubs.find(c => c.nom === m.clubB);
     setSelectedClubA(cA?.id || "");
@@ -65,7 +62,9 @@ export default function MatchsAVenirPage() {
 
   const handleSoumettre = (e: React.FormEvent) => {
     e.preventDefault();
-    const allMatchs = getFromLocal('matchs') || [];
+    
+    // LA CORRECTION CRUCIALE : cast forcé 'as any[]'
+    const allMatchs = (getFromLocal('matchs') || []) as any[];
 
     const matchData = {
       ...newMatch,
@@ -80,12 +79,13 @@ export default function MatchsAVenirPage() {
       }
     };
 
-    let updated;
+    let updated: any[];
     if (editingId) {
-      // MODE ÉDITION
-      updated = allMatchs.map((m: any) => m.id === editingId ? { ...matchData, id: editingId } : m);
+      // TypeScript accepte maintenant le .map car allMatchs est casté
+      updated = allMatchs.map((m: any) => 
+        m.id === editingId ? { ...matchData, id: editingId } : m
+      );
     } else {
-      // MODE CRÉATION
       updated = [...allMatchs, { ...matchData, id: Date.now().toString() }];
     }
     
@@ -103,7 +103,7 @@ export default function MatchsAVenirPage() {
 
   const supprimerMatch = (id: string) => {
     if (confirm("Voulez-vous vraiment supprimer ce match ?")) {
-      const all = getFromLocal('matchs') || [];
+      const all = (getFromLocal('matchs') || []) as any[];
       const filtered = all.filter((m: any) => m.id !== id);
       saveToLocal('matchs', filtered);
       chargerDonnees();
@@ -111,7 +111,7 @@ export default function MatchsAVenirPage() {
   };
 
   return (
-    <div className="dashboard-wrapper">
+    <div style={{ padding: '30px', maxWidth: '1000px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <div>
           <h1 style={{ fontSize: '2.2rem', fontWeight: '800', margin: 0 }}>📅 Matchs à venir</h1>
@@ -123,10 +123,9 @@ export default function MatchsAVenirPage() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleSoumettre} className="card" style={{...formCardStyle, border: editingId ? '2px solid #F97316' : '1px solid #e2e8f0'}}>
+        <form onSubmit={handleSoumettre} style={{...formCardStyle, border: editingId ? '2px solid #F97316' : '1px solid #e2e8f0'}}>
           <h3 style={{marginTop: 0}}>{editingId ? "✏️ Modifier le match" : "🆕 Nouveau match"}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            {/* BLOCS ÉQUIPES IDENTIQUES À TON CODE */}
             <div style={colStyle}>
               <label style={miniLabel}>DOMICILE</label>
               <select required value={selectedClubA} onChange={e => {setSelectedClubA(e.target.value); setNewMatch({...newMatch, equipeA: ""})}} style={inputStyle}>
@@ -138,7 +137,6 @@ export default function MatchsAVenirPage() {
                 {equipesDispoA.map(eq => <option key={eq.id} value={eq.nom}>{eq.nom}</option>)}
               </select>
             </div>
-
             <div style={colStyle}>
               <label style={miniLabel}>EXTÉRIEUR</label>
               <select required value={selectedClubB} onChange={e => {setSelectedClubB(e.target.value); setNewMatch({...newMatch, equipeB: ""})}} style={inputStyle}>
@@ -150,13 +148,11 @@ export default function MatchsAVenirPage() {
                 {equipesDispoB.map(eq => <option key={eq.id} value={eq.nom}>{eq.nom}</option>)}
               </select>
             </div>
-
             <div style={{ gridColumn: '1 / span 2', background: '#f8fafc', padding: '15px', borderRadius: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
               <div style={colStyle}>
                 <label style={miniLabel}>⏱️ DURÉE PÉRIODE (MIN)</label>
                 <select value={dureePeriode} onChange={e => setDureePeriode(e.target.value)} style={inputStyle}>
-                  <option value="5">5 min</option><option value="7">7 min</option>
-                  <option value="8">8 min</option><option value="10">10 min</option><option value="12">12 min</option>
+                  <option value="5">5 min</option><option value="7">7 min</option><option value="8">8 min</option><option value="10">10 min</option><option value="12">12 min</option>
                 </select>
               </div>
               <div style={colStyle}>
@@ -166,7 +162,6 @@ export default function MatchsAVenirPage() {
                 </select>
               </div>
             </div>
-
             <div style={{ gridColumn: '1 / span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
               <input type="datetime-local" required value={newMatch.date} onChange={e => setNewMatch({...newMatch, date: e.target.value})} style={inputStyle} />
               <input type="text" placeholder="Compétition" required value={newMatch.competition} onChange={e => setNewMatch({...newMatch, competition: e.target.value})} style={inputStyle} />
@@ -182,9 +177,9 @@ export default function MatchsAVenirPage() {
         </form>
       )}
 
-      <div className="grid-container" style={{ display: 'grid', gap: '15px' }}>
+      <div style={{ display: 'grid', gap: '15px' }}>
         {matchs.map((m) => (
-          <div key={m.id} className="card" style={matchCardStyle}>
+          <div key={m.id} style={matchCardStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ flex: 1, textAlign: 'right' }}>
                 <span style={clubSmall}>{m.clubA}</span>
@@ -198,7 +193,7 @@ export default function MatchsAVenirPage() {
             </div>
             <div style={footerCard}>
               <div>
-                <div style={{ fontSize: '0.8rem', color: '#F97316', fontWeight: 'bold' }}>📅 {m.date.replace('T', ' à ')}</div>
+                <div style={{ fontSize: '0.8rem', color: '#F97316', fontWeight: 'bold' }}>📅 {m.date?.replace('T', ' à ')}</div>
                 <div style={{ fontSize: '0.75rem', color: '#666' }}>📏 {m.config?.tempsInitial / 60} min | TM: {m.config?.maxTempsMorts}</div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -214,7 +209,7 @@ export default function MatchsAVenirPage() {
   );
 }
 
-// STYLES SUPPLÉMENTAIRES
+// STYLES
 const editBtnStyle = { background: 'none', border: '1px solid #ddd', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' };
 const deleteBtnStyle = { background: '#fee2e2', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer' };
 const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', backgroundColor: 'white' };
