@@ -5,102 +5,121 @@ import { getFromLocal } from '@/lib/store';
 import Link from 'next/link';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState({ compets: 0, equipes: 0, matchs: 0, arbitres: 0 });
+  const [stats, setStats] = useState({ compets: 0, equipes: 0, matchs: 0 });
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    // 1. Récupération de l'utilisateur (uniquement côté client)
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) setUser(JSON.parse(storedUser));
 
-    // 2. Récupération des stats avec gestion de secours (fallback)
     const c = getFromLocal('competitions') || [];
     const e = getFromLocal('equipes') || [];
     const m = getFromLocal('matchs') || [];
-    const a = getFromLocal('arbitres') || [];
     
     setStats({ 
-        compets: Array.isArray(c) ? c.length : 0, 
-        equipes: Array.isArray(e) ? e.length : 0, 
-        matchs: Array.isArray(m) ? m.length : 0, 
-        arbitres: Array.isArray(a) ? a.length : 0 
+        compets: c.length, 
+        equipes: e.length, 
+        matchs: m.length 
     });
   }, []);
 
-  const isAdmin = user?.username === 'admin';
-
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif', color: '#333', maxWidth: '600px', margin: '0 auto' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '90vh' }}>
       
-      {/* HEADER DUNKLY */}
-      <header style={{ marginBottom: '30px', borderBottom: '2px solid #eee', paddingBottom: '15px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '28px', margin: 0, color: '#e65100' }}>🏀 DUNKLY</h1>
-        <p style={{ margin: '5px 0 0', color: '#666', fontSize: '14px' }}>Gestionnaire de championnats</p>
-      </header>
+      {/* SECTION BIENVENUE */}
+      <div style={{ marginBottom: '40px' }}>
+        <h1 style={{ fontSize: '2.2rem', fontWeight: '900', color: '#0F172A', letterSpacing: '-1px', margin: 0 }}>
+          Accueil <span style={{ color: '#F97316' }}>.</span>
+        </h1>
+        <p style={{ color: '#64748B', fontSize: '1.1rem', marginTop: '5px' }}>
+          Ravi de vous revoir, <strong>{user?.username || 'Anthony'}</strong>.
+        </p>
+      </div>
 
-      {/* STATISTIQUES */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', marginBottom: '30px' }}>
-        <div style={statBoxStyle}>
-          <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.compets}</span><br/>
-          <span style={{ color: '#666', fontSize: '12px' }}>Compétitions</span>
+      {/* GRILLE DE STATS */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+        gap: '25px', 
+        marginBottom: '40px' 
+      }}>
+        <StatCard label="Championnats" value={stats.compets} icon="🏆" color="#F97316" trend="+1 cette semaine" />
+        <StatCard label="Clubs & Équipes" value={stats.equipes} icon="🛡️" color="#3B82F6" trend="Actifs" />
+        <StatCard label="Matchs Joués" value={stats.matchs} icon="⏱️" color="#10B981" trend="En temps réel" />
+      </div>
+
+      {/* SECTION CENTRALE */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px', flex: 1 }}>
+        
+        {/* PANEL ACTIONS */}
+        <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', border: '1px solid #F1F5F9' }}>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '25px', color: '#1E293B' }}>⚡ Actions Prioritaires</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <ActionRow href="/matchs" icon="🏀" text="Saisir un nouveau score" sub="Mise à jour immédiate du classement" primary />
+            <ActionRow href="/equipes" icon="👥" text="Ajouter une équipe" sub="Inscrire un club à un tournoi" />
+          </div>
         </div>
-        <div style={statBoxStyle}>
-          <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.equipes}</span><br/>
-          <span style={{ color: '#666', fontSize: '12px' }}>Équipes</span>
-        </div>
-        <div style={statBoxStyle}>
-          <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.matchs}</span><br/>
-          <span style={{ color: '#666', fontSize: '12px' }}>Matchs</span>
-        </div>
-        <div style={statBoxStyle}>
-          <span style={{ fontSize: '20px', fontWeight: 'bold' }}>{stats.arbitres}</span><br/>
-          <span style={{ color: '#666', fontSize: '12px' }}>Arbitres</span>
+
+        {/* PANEL INFO / LIVE */}
+        <div style={{ backgroundColor: '#1E293B', padding: '30px', borderRadius: '24px', color: 'white', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '10px' }}>État du Live</h3>
+            <div style={{ display: 'inline-block', padding: '4px 12px', backgroundColor: 'rgba(239, 68, 68, 0.2)', color: '#F87171', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '20px' }}>
+              ● AUCUN MATCH EN COURS
+            </div>
+            <p style={{ color: '#94A3B8', lineHeight: '1.6' }}>
+              Tous les résultats sont à jour. Les prochaines rencontres débuteront selon le calendrier programmé.
+            </p>
+            <Link href="/matchs" style={{ display: 'inline-block', marginTop: '20px', color: '#F97316', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.9rem' }}>
+              Voir le calendrier complet →
+            </Link>
+          </div>
+          <div style={{ position: 'absolute', bottom: '-20px', right: '-20px', fontSize: '120px', opacity: 0.1, transform: 'rotate(-15deg)' }}>🏀</div>
         </div>
       </div>
 
-      {/* MENU DE NAVIGATION */}
-      <section style={{ background: '#f9f9f9', padding: '20px', borderRadius: '15px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-        <h2 style={{ fontSize: '16px', marginTop: 0, marginBottom: '15px', color: '#444', textAlign: 'center' }}>
-          {isAdmin ? "🛠️ ADMINISTRATION" : "🚀 ACCÈS RAPIDE"}
-        </h2>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <Link href="/matchs" style={linkStyle}>⏱️ Scores & Résultats</Link>
-          <Link href="/equipes" style={linkStyle}>👥 Liste des Équipes</Link>
-          <Link href="/arbitres" style={linkStyle}>🏁 Liste des Arbitres</Link>
-          
-          {isAdmin && (
-            <div style={{ marginTop: '10px', padding: '15px', border: '2px dashed #ffb74d', borderRadius: '10px', background: '#fff9f0' }}>
-              <p style={{ margin: '0 0 10px 0', fontSize: '12px', color: '#e65100', fontWeight: 'bold', textAlign: 'center' }}>MODE ADMIN</p>
-              <Link href="/admin" style={{ ...linkStyle, background: '#e65100', color: 'white', border: 'none' }}>⚙️ Gérer le Système</Link>
-            </div>
-          )}
+      {/* FOOTER */}
+      <footer style={{ marginTop: '50px', padding: '20px 0', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#94A3B8', fontSize: '0.85rem' }}>
+        <div>© 2026 <strong>DUNKLY</strong> by Anthony</div>
+        <div style={{ display: 'flex', gap: '20px' }}>
+          <span>Version 1.0.4</span>
+          <span style={{ color: '#10B981' }}>● Système en ligne</span>
         </div>
-      </section>
-
+      </footer>
     </div>
   );
 }
 
-// STYLES
-const statBoxStyle = {
-  background: 'white',
-  padding: '20px',
-  borderRadius: '12px',
-  textAlign: 'center' as const,
-  border: '1px solid #eee',
-  boxShadow: '0 2px 5px rgba(0,0,0,0.03)'
-};
+// COMPOSANTS INTERNES
+function StatCard({ label, value, icon, color, trend }: any) {
+  return (
+    <div style={{ 
+      backgroundColor: 'white', padding: '25px', borderRadius: '24px', 
+      boxShadow: '0 4px 15px rgba(0,0,0,0.02)', border: '1px solid #F1F5F9'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+        <div style={{ backgroundColor: `${color}15`, padding: '12px', borderRadius: '16px', fontSize: '1.5rem' }}>{icon}</div>
+        <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#1E293B', lineHeight: '1' }}>{value}</div>
+      </div>
+      <div style={{ fontWeight: '700', color: '#475569', fontSize: '1rem' }}>{label}</div>
+      <div style={{ color: '#94A3B8', fontSize: '0.75rem', marginTop: '5px', fontWeight: '500' }}>{trend}</div>
+    </div>
+  );
+}
 
-const linkStyle = {
-  display: 'block',
-  padding: '14px',
-  background: 'white',
-  borderRadius: '10px',
-  textDecoration: 'none',
-  color: '#333',
-  fontWeight: '600' as const,
-  border: '1px solid #eee',
-  textAlign: 'center' as const,
-  transition: '0.2s'
-};
+function ActionRow({ href, icon, text, sub, primary = false }: any) {
+  return (
+    <Link href={href} style={{ 
+      display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', borderRadius: '18px',
+      textDecoration: 'none', backgroundColor: primary ? '#F9731610' : '#F8FAFC',
+      border: primary ? '1px solid #F9731630' : '1px solid #F1F5F9'
+    }}>
+      <div style={{ fontSize: '1.5rem', filter: primary ? 'none' : 'grayscale(1)' }}>{icon}</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: '700', color: primary ? '#F97316' : '#1E293B', fontSize: '0.95rem' }}>{text}</div>
+        <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{sub}</div>
+      </div>
+      <div style={{ color: primary ? '#F97316' : '#CBD5E1' }}>→</div>
+    </Link>
+  );
+}
