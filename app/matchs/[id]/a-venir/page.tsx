@@ -7,8 +7,10 @@ export default function MatchsAVenirPage() {
   const [matchs, setMatchs] = useState<any[]>([]);
 
   useEffect(() => {
-    const allMatchs = getFromLocal('matchs') || [];
-    // On filtre pour ne garder que le futur
+    // CORRECTION : On précise que c'est un tableau avec : any[]
+    const allMatchs: any[] = getFromLocal('matchs') || [];
+    
+    // Désormais, .filter() ne posera plus de problème au build
     setMatchs(allMatchs.filter((m: any) => m.status === 'a-venir'));
   }, []);
 
@@ -54,7 +56,7 @@ export default function MatchsAVenirPage() {
   );
 }
 
-// STYLES
+// STYLES (Conservés à l'identique)
 const emptyStateStyle: React.CSSProperties = {
   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
   minHeight: '70vh', textAlign: 'center'
