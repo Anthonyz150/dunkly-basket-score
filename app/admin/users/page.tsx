@@ -22,7 +22,8 @@ export default function AdminUsersPage() {
     if (usernameToDelete === 'admin') return alert("Impossible de supprimer l'admin !");
     
     if (confirm(`Voulez-vous vraiment supprimer ${usernameToDelete} ?`)) {
-      const currentUsers = getFromLocal('users') || [];
+      // CORRECTION ICI : Ajout de : any[]
+      const currentUsers: any[] = getFromLocal('users') || [];
       const nouvelleListe = currentUsers.filter((u: any) => u.username !== usernameToDelete);
       saveToLocal('users', nouvelleListe);
       setUsers(nouvelleListe);
@@ -37,7 +38,8 @@ export default function AdminUsersPage() {
   const sauvegarderEdition = (oldUsername: string) => {
     if (!editForm.username) return alert("Pseudo requis");
     
-    const currentUsers = getFromLocal('users') || [];
+    // CORRECTION ICI : Ajout de : any[]
+    const currentUsers: any[] = getFromLocal('users') || [];
     const nouvelleListe = currentUsers.map((u: any) => 
       u.username === oldUsername ? { ...u, username: editForm.username, password: editForm.password } : u
     );
@@ -113,10 +115,10 @@ export default function AdminUsersPage() {
   );
 }
 
-// STYLES (Repris de ton image)
+// STYLES 
 const thStyle = { padding: '15px 20px', textAlign: 'left' as const, fontSize: '0.8rem' };
 const tdStyle = { padding: '15px 20px' };
-const editInputStyle = { padding: '8px', borderRadius: '4px', border: '1px solid var(--orange-basket)', width: '120px' };
+const editInputStyle = { padding: '8px', borderRadius: '4px', border: '1px solid #F97316', width: '120px' };
 const btnEditStyle = { background: '#f0f0f0', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' };
 const btnDeleteStyle = { background: '#ffebee', color: '#c62828', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' };
 const btnSaveStyle = { background: '#2e7d32', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' };
