@@ -12,9 +12,10 @@ export default function Dashboard() {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) setUser(JSON.parse(storedUser));
 
-    const c = getFromLocal('competitions') || [];
-    const e = getFromLocal('equipes') || [];
-    const m = getFromLocal('matchs') || [];
+    // CORRECTION : Ajout de : any[] pour débloquer le .length au build
+    const c: any[] = getFromLocal('competitions') || [];
+    const e: any[] = getFromLocal('equipes') || [];
+    const m: any[] = getFromLocal('matchs') || [];
     
     setStats({ 
         compets: c.length, 
@@ -70,7 +71,7 @@ export default function Dashboard() {
             <p style={{ color: '#94A3B8', lineHeight: '1.6' }}>
               Tous les résultats sont à jour. Les prochaines rencontres débuteront selon le calendrier programmé.
             </p>
-            <Link href="/matchs" style={{ display: 'inline-block', marginTop: '20px', color: '#F97316', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.9rem' }}>
+            <Link href="/matchs/a-venir" style={{ display: 'inline-block', marginTop: '20px', color: '#F97316', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.9rem' }}>
               Voir le calendrier complet →
             </Link>
           </div>
