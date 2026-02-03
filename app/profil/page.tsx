@@ -130,7 +130,7 @@ export default function ProfilPage() {
               type="text" 
               value={prenom} 
               onChange={(e) => setPrenom(e.target.value)} 
-              placeholder="Michael"
+              placeholder="ex:Michael"
               style={inputStyle} 
               required
             />
@@ -141,7 +141,7 @@ export default function ProfilPage() {
               type="text" 
               value={nom} 
               onChange={(e) => setNom(e.target.value)} 
-              placeholder="Jordan"
+              placeholder="ex:Jordan"
               style={inputStyle} 
               required
             />
