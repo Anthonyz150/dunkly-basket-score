@@ -30,7 +30,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     setLoading(false);
     setIsMenuOpen(false);
 
-    // Redirection si déconnecté (sauf sur login)
     if (!localStorage.getItem('currentUser') && pathname !== '/login') {
       router.push('/login');
     }
@@ -90,10 +89,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </div>
 
+              {/* SECTION PROFIL MISE À JOUR */}
               <div className="profile-box">
-                <strong style={{ color: 'white', display: 'block', marginBottom: '10px' }}>
-                   {user?.prenom ? `${user.prenom} ${user.nom}` : (user?.username || 'Utilisateur')}
-                </strong>
+                <div style={{ marginBottom: '12px' }}>
+                  <p style={{ margin: 0, fontSize: '0.65rem', color: '#94A3B8', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Connecté en tant que
+                  </p>
+                  <strong style={{ color: 'white', display: 'block', fontSize: '1.05rem', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                     {user?.username || 'Utilisateur'}
+                  </strong>
+                </div>
+                
                 <button onClick={() => { localStorage.clear(); window.location.href='/login'; }} style={logoutBtn}>
                   Déconnexion
                 </button>
@@ -112,4 +118,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 const navGroup = { marginTop: '25px', marginBottom: '10px' };
 const groupLabel = { fontSize: '0.7rem', color: '#555', marginLeft: '20px', fontWeight: 'bold' as const };
-const logoutBtn = { width: '100%', color: '#ff4444', border: '1px solid #ff4444', background: 'rgba(255, 68, 68, 0.1)', padding: '8px', borderRadius: '6px', cursor: 'pointer' };
+const logoutBtn = { 
+  width: '100%', 
+  color: '#ff4444', 
+  border: '1px solid #ff4444', 
+  background: 'rgba(255, 68, 68, 0.1)', 
+  padding: '10px', 
+  borderRadius: '10px', 
+  cursor: 'pointer',
+  fontSize: '0.8rem',
+  fontWeight: '800',
+  transition: '0.2s'
+};
