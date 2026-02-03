@@ -64,18 +64,22 @@ export default function Dashboard() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      // ÉTAPE 1 : Récupérer la session de manière asynchrone
+      const { data: { user: supabaseUser }, error } = await supabase.auth.getUser();
       
       if (supabaseUser) {
+        // ÉTAPE 2 : On a un utilisateur, on met à jour l'état et on arrête le loading
         setUser({ username: supabaseUser.email?.split('@')[0] || 'Anthony' });
         setLoading(false);
       } else {
+        // ÉTAPE 3 : Vraiment aucun utilisateur après vérification ? Direction login
         router.push('/login');
       }
     };
 
     checkUser();
 
+    // Stats
     const c = (getFromLocal('competitions') || []) as any[];
     const e = (getFromLocal('equipes') || []) as any[];
     const m = (getFromLocal('matchs') || []) as any[];
@@ -92,6 +96,7 @@ export default function Dashboard() {
 
   const isAdmin = user?.username === 'admin' || user?.username === 'anthony.didier.prop';
 
+  // ÉTAPE 4 : SI LOADING EST TRUE, ON N'AFFICHE PAS LA PAGE (Évite le bug des 0.5s)
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC' }}>
