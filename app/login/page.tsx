@@ -51,7 +51,7 @@ export default function LoginPage() {
           <div style={inputGroup}>
             <label style={labelStyle}>Utilisateur</label>
             <input 
-              placeholder="Entrez votre nom" 
+              placeholder="Entrez votre nom d'utilisateur" 
               style={inputStyle}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
