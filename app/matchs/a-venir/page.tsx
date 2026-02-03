@@ -6,11 +6,14 @@ import Link from "next/link";
 interface EquipeIntern { id: string; nom: string; }
 interface Club { id: string; nom: string; equipes: EquipeIntern[]; }
 interface Joueur { id: string; numero: string; nom: string; estCoach: boolean; }
+interface Competition { id: string; nom: string; } // Interface pour les compétitions
 
 export default function MatchsAVenirPage() {
   const [matchs, setMatchs] = useState<any[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [arbitres, setArbitres] = useState<any[]>([]);
+  const [competitions, setCompetitions] = useState<Competition[]>([]); // État pour les compétitions
+  
   const [showForm, setShowForm] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   
@@ -18,7 +21,6 @@ export default function MatchsAVenirPage() {
   const [selectedClubA, setSelectedClubA] = useState("");
   const [selectedClubB, setSelectedClubB] = useState("");
   
-  // Paramètres du match
   const [dureePeriode, setDureePeriode] = useState("10"); 
   const [tmMT1, setTmMT1] = useState("2");
   const [tmMT2, setTmMT2] = useState("3");
@@ -36,11 +38,15 @@ export default function MatchsAVenirPage() {
   useEffect(() => { chargerDonnees(); }, []);
 
   const chargerDonnees = () => {
-    const all = (getFromLocal('matchs') || []) as any[];
-    // On affiche uniquement les matchs qui ne sont pas encore terminés
-    setMatchs(all.filter((m: any) => m.status === 'a-venir'));
+    const allMatchs = (getFromLocal('matchs') || []) as any[];
+    setMatchs(allMatchs.filter((m: any) => m.status === 'a-venir'));
+    
     setClubs((getFromLocal('equipes_clubs') || []) as Club[]);
     setArbitres((getFromLocal('arbitres') || []) as any[]);
+    
+    // CHARGEMENT DES COMPÉTITIONS DEPUIS LE STORE
+    const allComps = (getFromLocal('competitions') || []) as Competition[];
+    setCompetitions(allComps);
   };
 
   const trierEffectif = (liste: Joueur[]) => {
@@ -221,9 +227,22 @@ export default function MatchsAVenirPage() {
                 <div style={colStyle}><label style={miniLabel}>DATE & HEURE</label>
                   <input type="datetime-local" required value={newMatch.date} onChange={e => setNewMatch({...newMatch, date: e.target.value})} style={inputStyle} />
                 </div>
+                
+                {/* MODIFICATION ICI : SELECT POUR LA COMPÉTITION */}
                 <div style={colStyle}><label style={miniLabel}>COMPÉTITION</label>
-                  <input type="text" placeholder="Ex: Championnat" required value={newMatch.competition} onChange={e => setNewMatch({...newMatch, competition: e.target.value})} style={inputStyle} />
+                  <select 
+                    required 
+                    value={newMatch.competition} 
+                    onChange={e => setNewMatch({...newMatch, competition: e.target.value})} 
+                    style={inputStyle}
+                  >
+                    <option value="">Sélectionner...</option>
+                    {competitions.map(comp => (
+                      <option key={comp.id} value={comp.nom}>{comp.nom}</option>
+                    ))}
+                  </select>
                 </div>
+
                 <div style={{...colStyle, gridColumn:'1/span 2'}}><label style={miniLabel}>ARBITRE PRINCIPAL</label>
                   <select required value={newMatch.arbitre} onChange={e => setNewMatch({...newMatch, arbitre: e.target.value})} style={inputStyle}>
                     <option value="">Sélectionner...</option>
@@ -238,7 +257,7 @@ export default function MatchsAVenirPage() {
         </div>
       )}
 
-      {/* LISTE DES MATCHS (LA PARTIE QUI MANQUAIT) */}
+      {/* LISTE DES MATCHS */}
       <div style={{ display: 'grid', gap: '15px', marginTop: '20px' }}>
         {matchs.map((m) => (
           <div key={m.id} style={matchCardStyle}>
@@ -255,7 +274,7 @@ export default function MatchsAVenirPage() {
             </div>
             <div style={footerCard}>
               <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                📅 {m.date ? m.date.replace('T', ' ') : 'Date non définie'}
+                📅 {m.date ? m.date.replace('T', ' ') : 'Date non définie'} | {m.competition}
               </div>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <button onClick={() => supprimerMatch(m.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>🗑️</button>
@@ -272,7 +291,7 @@ export default function MatchsAVenirPage() {
   );
 }
 
-// STYLES
+// STYLES (Conservés à l'identique)
 const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', backgroundColor: 'white', width: '100%', boxSizing: 'border-box' as const };
 const addBtnStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '8px', fontWeight: 'bold' as const, cursor: 'pointer' };
 const submitBtn = { width: '100%', backgroundColor: '#1a1a1a', color: 'white', padding: '14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '900' as const, border: 'none' };
