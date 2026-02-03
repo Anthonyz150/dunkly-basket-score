@@ -18,7 +18,7 @@ export default function MatchsAVenirPage() {
   const [selectedClubA, setSelectedClubA] = useState("");
   const [selectedClubB, setSelectedClubB] = useState("");
   
-  // Paramètres du match (Mis à jour pour mi-temps)
+  // Paramètres du match
   const [dureePeriode, setDureePeriode] = useState("10"); 
   const [tmMT1, setTmMT1] = useState("2");
   const [tmMT2, setTmMT2] = useState("3");
@@ -37,6 +37,7 @@ export default function MatchsAVenirPage() {
 
   const chargerDonnees = () => {
     const all = (getFromLocal('matchs') || []) as any[];
+    // On affiche uniquement les matchs qui ne sont pas encore terminés
     setMatchs(all.filter((m: any) => m.status === 'a-venir'));
     setClubs((getFromLocal('equipes_clubs') || []) as Club[]);
     setArbitres((getFromLocal('arbitres') || []) as any[]);
@@ -86,22 +87,39 @@ export default function MatchsAVenirPage() {
   const handleSoumettre = (e: React.FormEvent) => {
     e.preventDefault();
     const allMatchs = (getFromLocal('matchs') || []) as any[];
+    
     const matchData = {
       ...newMatch,
       clubA: clubs.find(c => c.id === selectedClubA)?.nom,
       clubB: clubs.find(c => c.id === selectedClubB)?.nom,
-      joueursA, joueursB,
-      status: 'a-venir', scoreA: 0, scoreB: 0,
+      joueursA, 
+      joueursB,
+      status: 'a-venir', 
+      scoreA: 0, 
+      scoreB: 0,
       config: { 
         tempsInitial: parseInt(dureePeriode) * 60, 
         tmMT1: parseInt(tmMT1),
         tmMT2: parseInt(tmMT2)
       }
     };
-    let updated = editingId ? allMatchs.map((m: any) => m.id === editingId ? { ...matchData, id: editingId } : m) : [...allMatchs, { ...matchData, id: Date.now().toString() }];
+
+    let updated = editingId 
+      ? allMatchs.map((m: any) => m.id === editingId ? { ...matchData, id: editingId } : m) 
+      : [...allMatchs, { ...matchData, id: Date.now().toString() }];
+    
     saveToLocal('matchs', updated);
     chargerDonnees();
     resetForm();
+  };
+
+  const supprimerMatch = (id: string) => {
+    if (confirm("Supprimer ce match ?")) {
+      const all = (getFromLocal('matchs') || []) as any[];
+      const updated = all.filter((m: any) => m.id !== id);
+      saveToLocal('matchs', updated);
+      chargerDonnees();
+    }
   };
 
   const resetForm = () => {
@@ -187,22 +205,19 @@ export default function MatchsAVenirPage() {
                     <option value="12">12 minutes</option>
                   </select>
                 </div>
-
-                {/* Nouveaux champs Temps-morts */}
                 <div style={colStyle}><label style={miniLabel}>TM 1ÈRE MI-TEMPS</label>
                   <select value={tmMT1} onChange={e => setTmMT1(e.target.value)} style={inputStyle}>
-                    <option value="1">1 Temps mort</option>
-                    <option value="2">2 Temps morts</option>
+                    <option value="1">1 TM</option>
+                    <option value="2">2 TM</option>
                   </select>
                 </div>
                 <div style={colStyle}><label style={miniLabel}>TM 2ÈME MI-TEMPS</label>
                   <select value={tmMT2} onChange={e => setTmMT2(e.target.value)} style={inputStyle}>
-                    <option value="1">1 Temps mort</option>
-                    <option value="2">2 Temps morts</option>
-                    <option value="3">3 Temps morts</option>
+                    <option value="1">1 TM</option>
+                    <option value="2">2 TM</option>
+                    <option value="3">3 TM</option>
                   </select>
                 </div>
-
                 <div style={colStyle}><label style={miniLabel}>DATE & HEURE</label>
                   <input type="datetime-local" required value={newMatch.date} onChange={e => setNewMatch({...newMatch, date: e.target.value})} style={inputStyle} />
                 </div>
@@ -211,7 +226,7 @@ export default function MatchsAVenirPage() {
                 </div>
                 <div style={{...colStyle, gridColumn:'1/span 2'}}><label style={miniLabel}>ARBITRE PRINCIPAL</label>
                   <select required value={newMatch.arbitre} onChange={e => setNewMatch({...newMatch, arbitre: e.target.value})} style={inputStyle}>
-                    <option value="">Sélectionner un arbitre...</option>
+                    <option value="">Sélectionner...</option>
                     {arbitres.map(a => <option key={a.id} value={a.nom + ' ' + a.prenom}>{a.nom} {a.prenom}</option>)}
                   </select>
                 </div>
@@ -222,11 +237,42 @@ export default function MatchsAVenirPage() {
           </form>
         </div>
       )}
+
+      {/* LISTE DES MATCHS (LA PARTIE QUI MANQUAIT) */}
+      <div style={{ display: 'grid', gap: '15px', marginTop: '20px' }}>
+        {matchs.map((m) => (
+          <div key={m.id} style={matchCardStyle}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ flex: 1, textAlign: 'right' }}>
+                <span style={clubSmall}>{m.clubA}</span>
+                <span style={{ fontWeight: '800' }}>{m.equipeA}</span>
+              </div>
+              <div style={{ padding: '0 20px', fontWeight: '900', color: '#F97316' }}>VS</div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <span style={clubSmall}>{m.clubB}</span>
+                <span style={{ fontWeight: '800' }}>{m.equipeB}</span>
+              </div>
+            </div>
+            <div style={footerCard}>
+              <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                📅 {m.date ? m.date.replace('T', ' ') : 'Date non définie'}
+              </div>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button onClick={() => supprimerMatch(m.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>🗑️</button>
+                <Link href={`/matchs/${m.id}`} style={startBtnStyle}>DÉMARRER</Link>
+              </div>
+            </div>
+          </div>
+        ))}
+        {matchs.length === 0 && !showForm && (
+          <p style={{ textAlign: 'center', color: '#94a3b8', marginTop: '40px' }}>Aucun match programmé.</p>
+        )}
+      </div>
     </div>
   );
 }
 
-// TES STYLES CONSERVÉS
+// STYLES
 const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', backgroundColor: 'white', width: '100%', boxSizing: 'border-box' as const };
 const addBtnStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '8px', fontWeight: 'bold' as const, cursor: 'pointer' };
 const submitBtn = { width: '100%', backgroundColor: '#1a1a1a', color: 'white', padding: '14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '900' as const, border: 'none' };
@@ -238,3 +284,7 @@ const playerListContainer = { background:'#f8fafc', padding:'10px', borderRadius
 const playerRowStyle = { display:'flex', justifyContent:'space-between', fontSize:'0.8rem', padding:'4px 0', borderBottom: '1px solid #f1f5f9' };
 const miniEditBtn = { border:'none', background:'none', color:'#F97316', cursor:'pointer' };
 const errorTextStyle = { fontSize:'0.7rem', color:'red', textAlign:'center' as const, marginTop:'10px' };
+const matchCardStyle = { padding: '20px', border: '1px solid #f1f1f1', borderRadius: '12px', background: 'white' };
+const clubSmall = { display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' as const, fontWeight: 'bold' as const };
+const footerCard = { marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
+const startBtnStyle = { backgroundColor: '#F97316', color: 'white', textDecoration: 'none', padding: '8px 15px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' };
