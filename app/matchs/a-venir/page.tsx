@@ -32,7 +32,8 @@ export default function MatchsAVenirPage() {
 
   const [newMatch, setNewMatch] = useState({
     equipeA: "", clubA: "", equipeB: "", clubB: "",
-    date: "", competition: "", arbitre: ""
+    date: "", competition: "", arbitre: "",
+    lieu: "" // Ajout du lieu
   });
 
   useEffect(() => { chargerDonnees(); }, []);
@@ -90,7 +91,8 @@ export default function MatchsAVenirPage() {
       clubB: m.clubB,
       date: m.date,
       competition: m.competition,
-      arbitre: m.arbitre
+      arbitre: m.arbitre,
+      lieu: m.lieu || "" // Récupération du lieu pour l'édition
     });
     
     const clubAObj = clubs.find(c => c.nom === m.clubA);
@@ -153,7 +155,7 @@ export default function MatchsAVenirPage() {
   const resetForm = () => {
     setShowForm(false); setEditingId(null); setCurrentStep(1);
     setJoueursA([]); setJoueursB([]);
-    setNewMatch({ equipeA: "", clubA: "", equipeB: "", clubB: "", date: "", competition: "", arbitre: "" });
+    setNewMatch({ equipeA: "", clubA: "", equipeB: "", clubB: "", date: "", competition: "", arbitre: "", lieu: "" });
     setSelectedClubA(""); setSelectedClubB("");
   };
 
@@ -163,7 +165,7 @@ export default function MatchsAVenirPage() {
   };
 
   return (
-    <div style={{ padding: '30px', maxWidth: '1000px', margin: '0 auto' }}>
+    <div style={{ padding: '30px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'sans-serif' }}>
       
       {/* MODAL JOUEUR */}
       {showPlayerModal.show && (
@@ -199,7 +201,7 @@ export default function MatchsAVenirPage() {
             {currentStep === 1 && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 {[ {side:'A', sel:selectedClubA, setSel:setSelectedClubA, eq:newMatch.equipeA, setEq:(v:string)=>setNewMatch({...newMatch, equipeA:v}), j:joueursA, label:'DOMICILE'},
-                   {side:'B', sel:selectedClubB, setSel:setSelectedClubB, eq:newMatch.equipeB, setEq:(v:string)=>setNewMatch({...newMatch, equipeB:v}), j:joueursB, label:'EXTÉRIEUR'}
+                    {side:'B', sel:selectedClubB, setSel:setSelectedClubB, eq:newMatch.equipeB, setEq:(v:string)=>setNewMatch({...newMatch, equipeB:v}), j:joueursB, label:'EXTÉRIEUR'}
                 ].map((item, idx) => (
                   <div key={idx} style={colStyle}>
                     <label style={miniLabel}>{item.label}</label>
@@ -231,12 +233,15 @@ export default function MatchsAVenirPage() {
 
             {currentStep === 2 && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div style={{...colStyle, gridColumn: '1/span 2'}}><label style={miniLabel}>DURÉE PÉRIODE (MIN)</label>
+                <div style={colStyle}><label style={miniLabel}>DURÉE PÉRIODE (MIN)</label>
                   <select value={dureePeriode} onChange={e => setDureePeriode(e.target.value)} style={inputStyle}>
                     <option value="8">8 minutes</option>
                     <option value="10">10 minutes</option>
                     <option value="12">12 minutes</option>
                   </select>
+                </div>
+                <div style={colStyle}><label style={miniLabel}>DATE & HEURE</label>
+                  <input type="datetime-local" required value={newMatch.date} onChange={e => setNewMatch({...newMatch, date: e.target.value})} style={inputStyle} />
                 </div>
                 <div style={colStyle}><label style={miniLabel}>TM 1ÈRE MI-TEMPS</label>
                   <select value={tmMT1} onChange={e => setTmMT1(e.target.value)} style={inputStyle}>
@@ -251,21 +256,31 @@ export default function MatchsAVenirPage() {
                     <option value="3">3 TM</option>
                   </select>
                 </div>
-                <div style={colStyle}><label style={miniLabel}>DATE & HEURE</label>
-                  <input type="datetime-local" required value={newMatch.date} onChange={e => setNewMatch({...newMatch, date: e.target.value})} style={inputStyle} />
-                </div>
                 <div style={colStyle}><label style={miniLabel}>COMPÉTITION</label>
                   <select required value={newMatch.competition} onChange={e => setNewMatch({...newMatch, competition: e.target.value})} style={inputStyle}>
                     <option value="">Sélectionner...</option>
                     {competitions.map(comp => <option key={comp.id} value={comp.nom}>{comp.nom}</option>)}
                   </select>
                 </div>
-                <div style={{...colStyle, gridColumn:'1/span 2'}}><label style={miniLabel}>ARBITRE PRINCIPAL</label>
+                <div style={colStyle}><label style={miniLabel}>ARBITRE PRINCIPAL</label>
                   <select required value={newMatch.arbitre} onChange={e => setNewMatch({...newMatch, arbitre: e.target.value})} style={inputStyle}>
                     <option value="">Sélectionner...</option>
                     {arbitres.map(a => <option key={a.id} value={a.nom + ' ' + a.prenom}>{a.nom} {a.prenom}</option>)}
                   </select>
                 </div>
+
+                {/* NOUVEAU CHAMP LIEU */}
+                <div style={{...colStyle, gridColumn: '1/span 2'}}>
+                  <label style={miniLabel}>📍 LIEU DU MATCH / ADRESSE (POUR GOOGLE MAPS)</label>
+                  <input 
+                    type="text" 
+                    placeholder="Ex: Gymnase Herzog, Cagnes-sur-Mer" 
+                    value={newMatch.lieu} 
+                    onChange={e => setNewMatch({...newMatch, lieu: e.target.value})} 
+                    style={inputStyle} 
+                  />
+                </div>
+
                 <button type="button" onClick={() => setCurrentStep(1)} style={{...submitBtn, background:'#64748b'}}>← RETOUR</button>
                 <button type="submit" style={submitBtn}>{editingId ? "METTRE À JOUR" : "CRÉER LE MATCH"}</button>
               </div>
@@ -291,10 +306,24 @@ export default function MatchsAVenirPage() {
             </div>
             <div style={footerCard}>
               <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                📅 {m.date ? m.date.replace('T', ' ') : 'Date non définie'} | {m.competition}
+                <div>📅 {m.date ? m.date.replace('T', ' ') : 'Date non définie'} | {m.competition}</div>
+                
+                {/* AFFICHAGE DU LIEN GOOGLE MAPS */}
+                {m.lieu && (
+                  <div style={{ marginTop: '5px' }}>
+                    <a 
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.lieu)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#F97316', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      📍 {m.lieu} <span style={{fontSize:'0.6rem', opacity:0.8}}>(Ouvrir Maps ↗)</span>
+                    </a>
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <button onClick={() => supprimerMatch(m.id)} style={iconBtn}>🗑️</button>
+                <button onClick={() => supprimerMatch(m.id)} style={iconBtn} title="Supprimer">🗑️</button>
                 <button onClick={() => handleEditer(m)} style={editBtnSmall}>ÉDITER ✎</button>
                 <Link href={`/matchs/marque/${m.id}`} style={startBtnStyle}>DÉMARRER</Link>
               </div>
@@ -321,7 +350,7 @@ const playerListContainer = { background:'#f8fafc', padding:'10px', borderRadius
 const playerRowStyle = { display:'flex', justifyContent:'space-between', fontSize:'0.8rem', padding:'4px 0', borderBottom: '1px solid #f1f5f9' };
 const miniEditBtn = { border:'none', background:'none', color:'#F97316', cursor:'pointer' };
 const errorTextStyle = { fontSize:'0.7rem', color:'red', textAlign:'center' as const, marginTop:'10px' };
-const matchCardStyle = { padding: '20px', border: '1px solid #f1f1f1', borderRadius: '12px', background: 'white' };
+const matchCardStyle = { padding: '20px', border: '1px solid #f1f1f1', borderRadius: '12px', background: 'white', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' };
 const clubSmall = { display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' as const, fontWeight: 'bold' as const };
 const footerCard = { marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
 const startBtnStyle = { backgroundColor: '#F97316', color: 'white', textDecoration: 'none', padding: '8px 15px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' };
