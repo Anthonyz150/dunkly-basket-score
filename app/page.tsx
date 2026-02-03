@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { getFromLocal } from '@/lib/store';
+import { supabase } from '@/lib/supabase'; // Import de Supabase
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-// --- 1. TYPES (Pour éviter les erreurs rouges) ---
+// --- 1. TYPES ---
 interface User {
   username: string;
 }
@@ -15,7 +17,7 @@ interface Stats {
   matchs: number;
 }
 
-// --- 2. COMPOSANTS INTERNES (Placés en haut pour TypeScript) ---
+// --- 2. COMPOSANTS INTERNES ---
 
 function StatCard({ label, value, icon, color }: { label: string; value: number; icon: string; color: string }) {
   return (
@@ -57,13 +59,26 @@ export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    // Récupération utilisateur
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) setUser(JSON.parse(storedUser));
+    // RÉCUPÉRATION UTILISATEUR VIA SUPABASE
+    const checkUser = async () => {
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      
+      if (supabaseUser) {
+        // On extrait le nom avant le @ pour le pseudo
+        const displayName = supabaseUser.email?.split('@')[0] || 'Anthony';
+        setUser({ username: displayName });
+      } else {
+        // Si pas de session, on redirige vers le login
+        router.push('/login');
+      }
+    };
 
-    // CORRECTION TYPE : Forcer le type tableau pour éviter l'erreur de build .length
+    checkUser();
+
+    // Stats de la base locale (à remplacer par des appels Supabase plus tard)
     const c = (getFromLocal('competitions') || []) as any[];
     const e = (getFromLocal('equipes') || []) as any[];
     const m = (getFromLocal('matchs') || []) as any[];
@@ -74,12 +89,12 @@ export default function Dashboard() {
         matchs: m.length 
     });
 
-    // Récupération des membres pour l'admin
     const users = (getFromLocal('users') || []) as User[];
     setAllUsers(users);
-  }, []);
+  }, [router]);
 
-  const isAdmin = user?.username === 'admin';
+  // Détection Admin : On ajoute ton nouveau pseudo Supabase à la liste
+  const isAdmin = user?.username === 'admin' || user?.username === 'anthony.didier.prop';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '90vh' }}>
@@ -124,7 +139,7 @@ export default function Dashboard() {
           <ActionRow href="/equipes" icon="👥" text="Ajouter équipe" sub="Gestion des clubs" />
         </div>
 
-        {/* PANEL LIVE (REMIS AVEC STYLE SOMBRE) */}
+        {/* PANEL LIVE */}
         <div style={{ backgroundColor: '#1E293B', padding: '30px', borderRadius: '24px', color: 'white', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'relative', zIndex: 2 }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '10px' }}>État du Live</h3>
@@ -154,13 +169,13 @@ export default function Dashboard() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
               {allUsers.map((u, index) => (
                 <div key={index} style={userRow}>
-                  <div style={avatarStyle(u.username === 'admin')}>
+                  <div style={avatarStyle(u.username === 'admin' || u.username === 'anthony.didier.prop')}>
                     {u.username.charAt(0).toUpperCase()}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '700', fontSize: '1rem' }}>{u.username}</div>
-                    <div style={{ fontSize: '0.75rem', color: u.username === 'admin' ? '#F97316' : '#64748B', fontWeight: '800' }}>
-                      {u.username === 'admin' ? 'ADMINISTRATEUR' : 'UTILISATEUR'}
+                    <div style={{ fontSize: '0.75rem', color: (u.username === 'admin' || u.username === 'anthony.didier.prop') ? '#F97316' : '#64748B', fontWeight: '800' }}>
+                      {(u.username === 'admin' || u.username === 'anthony.didier.prop') ? 'ADMINISTRATEUR' : 'UTILISATEUR'}
                     </div>
                   </div>
                 </div>
@@ -186,7 +201,7 @@ export default function Dashboard() {
   );
 }
 
-// --- 4. STYLES (En bas pour la propreté) ---
+// --- STYLES ---
 
 const btnAdminStyle = {
   backgroundColor: '#1a1a1a', color: 'white', border: 'none', padding: '12px 20px', 
