@@ -32,6 +32,7 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
   const adjustTimerRef = useRef<NodeJS.Timeout | null>(null);
   const longPressDelayRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Chargement du match
   useEffect(() => {
     const data = getFromLocal("matchs");
     const matchs = Array.isArray(data) ? data : [];
@@ -42,6 +43,7 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
     }
   }, [matchId]);
 
+  // Chrono principal
   useEffect(() => {
     if (!isRunning || chrono <= 0) {
       if (chrono === 0) setIsRunning(false);
@@ -51,6 +53,7 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
     return () => clearInterval(interval);
   }, [isRunning, chrono]);
 
+  // Chrono Temps Mort
   useEffect(() => {
     if (!isTmActive || tmChrono === null || tmChrono <= 0) {
       if (tmChrono === 0) setIsTmActive(false);
@@ -101,33 +104,52 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
     if (longPressDelayRef.current) clearTimeout(longPressDelayRef.current);
   };
 
-  // --- LOGIQUE REDIRECTION CORRIGÉE ---
+  // --- LOGIQUE REDIRECTION ET SAUVEGARDE (CORRIGÉE POUR LE BUILD) ---
   const finaliserLeMatch = () => {
     if (!match) return;
     
     if (confirm("Clôturer le match et enregistrer le résultat ?")) {
-      const data = getFromLocal("matchs") || [];
-      const updatedMatchs = data.map((m: any) => 
-        m.id === matchId ? { 
-          ...m, 
-          scoreA: match.scoreA, 
-          scoreB: match.scoreB, 
-          status: 'termine', 
-          dateFin: new Date().toISOString() 
-        } : m
-      );
+      try {
+        // Fix Type Error: Cast as any[]
+        const data = (getFromLocal("matchs") || []) as any[];
+        
+        const updatedMatchs = data.map((m: any) => 
+          m.id === matchId ? { 
+            ...m, 
+            scoreA: match.scoreA, 
+            scoreB: match.scoreB, 
+            status: 'termine', 
+            dateFin: new Date().toISOString() 
+          } : m
+        );
 
-      saveToLocal("matchs", updatedMatchs);
+        // 1. Mise à jour matchs globaux
+        saveToLocal("matchs", updatedMatchs);
 
-      // REDIRECTION VERS LE BON CHEMIN (vu dans ton dossier)
-      router.push("/matchs/resultats");
-      
-      // Sécurité ultime
-      setTimeout(() => {
-        if (window.location.pathname !== "/matchs/resultats") {
-          window.location.href = "/matchs/resultats";
-        }
-      }, 300);
+        // 2. Sauvegarde spécifique pour la page Résultats
+        const resultatsExistants = (getFromLocal("resultats") || []) as any[];
+        const nouveauResultat = {
+          ...match,
+          scoreA: match.scoreA,
+          scoreB: match.scoreB,
+          dateFin: new Date().toISOString(),
+          status: 'termine'
+        };
+        saveToLocal("resultats", [nouveauResultat, ...resultatsExistants]);
+
+        // 3. Redirection
+        router.push("/matchs/resultats");
+        
+        // Sécurité redirection
+        setTimeout(() => {
+          if (window.location.pathname !== "/matchs/resultats") {
+            window.location.href = "/matchs/resultats";
+          }
+        }, 300);
+
+      } catch (e) {
+        console.error("Erreur sauvegarde:", e);
+      }
     }
   };
 
@@ -209,11 +231,10 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-          
+          {/* ÉQUIPE A */}
           <div style={{ textAlign: 'center', flex: 1 }}>
             <h2 style={equipeNameStyle}>{match.equipeA}</h2>
             <div style={scoreValueStyle}>{match.scoreA}</div>
-            
             <div style={{ marginBottom: '20px' }}>
               <p style={{ fontSize: '0.8rem', fontWeight: '900', color: '#64748b' }}>FAUTES D'ÉQUIPE</p>
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
@@ -225,12 +246,12 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
                 <button onClick={() => setFautesA(prev => Math.min(5, prev + 1))} style={fautesSmallBtn}>+</button>
               </div>
             </div>
-
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
               {tmA.map((pris, i) => <button key={i} onClick={() => toggleTM("A", i)} style={tmSquareStyle(pris)}>TM {i+1}</button>)}
             </div>
           </div>
 
+          {/* CHRONO CENTRAL */}
           <div style={{ flex: 1.5, textAlign: 'center' }}>
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px' }}>
               <button onMouseDown={() => startAdjusting("DOWN")} onMouseUp={stopAdjusting} style={arrowBtn}>▼</button>
@@ -244,10 +265,10 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
             </button>
           </div>
 
+          {/* ÉQUIPE B */}
           <div style={{ textAlign: 'center', flex: 1 }}>
             <h2 style={equipeNameStyle}>{match.equipeB}</h2>
             <div style={scoreValueStyle}>{match.scoreB}</div>
-            
             <div style={{ marginBottom: '20px' }}>
               <p style={{ fontSize: '0.8rem', fontWeight: '900', color: '#64748b' }}>FAUTES D'ÉQUIPE</p>
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
@@ -259,7 +280,6 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
                 <button onClick={() => setFautesB(prev => Math.min(5, prev + 1))} style={fautesSmallBtn}>+</button>
               </div>
             </div>
-
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
               {tmB.map((pris, i) => <button key={i} onClick={() => toggleTM("B", i)} style={tmSquareStyle(pris)}>TM {i+1}</button>)}
             </div>

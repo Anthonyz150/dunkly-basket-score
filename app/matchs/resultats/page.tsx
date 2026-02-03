@@ -10,27 +10,20 @@ export default function ResultatsPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    refreshData();
+    // On récupère les résultats stockés par l'E-Marque
+    const dataRaw = getFromLocal('resultats');
+    const data = Array.isArray(dataRaw) ? dataRaw : [];
+    
+    // On trie pour avoir le match le plus récent en premier
+    const sortedData = data.sort((a: any, b: any) => 
+      new Date(b.dateFin || 0).getTime() - new Date(a.dateFin || 0).getTime()
+    );
+    
+    setMatchs(sortedData);
   }, []);
 
-  const refreshData = () => {
-    // On récupère les données du tiroir 'resultats'
-    const dataRaw = getFromLocal('resultats');
-    let data = Array.isArray(dataRaw) ? dataRaw : [];
-
-    // TRI : On s'assure que le match le plus récent est en haut
-    // On compare les dates de fin (dateFin)
-    data.sort((a: any, b: any) => {
-      const dateA = new Date(a.dateFin || 0).getTime();
-      const dateB = new Date(b.dateFin || 0).getTime();
-      return dateB - dateA;
-    });
-
-    setMatchs(data);
-  };
-
   const purgerResultats = () => {
-    if (confirm("Voulez-vous vraiment effacer tout l'historique des scores ?")) {
+    if(confirm("Voulez-vous vraiment effacer l'historique des résultats ?")) {
       saveToLocal('resultats', []);
       setMatchs([]);
     }
@@ -39,60 +32,47 @@ export default function ResultatsPage() {
   if (!isMounted) return null;
 
   return (
-    <div className="dashboard-wrapper" style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
-      
-      {/* HEADER DE LA PAGE */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+    <div style={containerStyle}>
+      <div style={headerStyle}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: '900', margin: 0 }}>✅ Résultats</h1>
-          <p style={{ color: '#64748b', marginTop: '5px' }}>Historique des rencontres terminées.</p>
+          <h1 style={{ margin: 0, fontWeight: '900', fontSize: '2rem' }}>✅ RÉSULTATS</h1>
+          <p style={{ color: '#64748b', marginTop: '5px' }}>Historique des matchs terminés</p>
         </div>
-        
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <Link href="/matchs/a-venir" style={backBtnStyle}>
-            ← Retour aux matchs
-          </Link>
+        <div style={{ display: 'flex', gap: '15px' }}>
+          <Link href="/matchs/a-venir" style={linkBtnStyle}>← Retour</Link>
           {matchs.length > 0 && (
-            <button onClick={purgerResultats} style={purgeBtnStyle}>
-              Effacer tout
-            </button>
+            <button onClick={purgerResultats} style={purgeBtnStyle}>Effacer tout</button>
           )}
         </div>
       </div>
 
-      {/* LISTE DES RÉSULTATS */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '15px' }}>
+      <div style={gridStyle}>
         {matchs.length > 0 ? (
           matchs.map((m, index) => (
-            <div key={m.id || index} style={cardStyle}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={badgeStyle}>{m.competition || "Match Amical"}</span>
-                  <span style={dateStyle}>
-                    {m.dateFin ? `Terminé le ${new Date(m.dateFin).toLocaleDateString()} à ${new Date(m.dateFin).toLocaleTimeString([], {hour: '2h', minute:'2h'})}` : "Date inconnue"}
-                  </span>
-                </div>
-                
-                <div style={{ marginTop: '10px' }}>
+            <div key={index} style={cardStyle}>
+              <div style={infoSideStyle}>
+                <span style={dateBadgeStyle}>
+                  {m.dateFin ? new Date(m.dateFin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : "Date inconnue"}
+                </span>
+                <span style={competitionStyle}>{m.competition || "Championnat"}</span>
+                <div style={teamsRowStyle}>
                   <span style={teamNameStyle}>{m.equipeA}</span>
-                  <span style={{ color: '#94a3b8', margin: '0 10px', fontWeight: 'normal' }}>vs</span>
+                  <span style={{ color: '#cbd5e1', fontWeight: 'normal' }}>vs</span>
                   <span style={teamNameStyle}>{m.equipeB}</span>
                 </div>
               </div>
               
-              {/* BLOC SCORE */}
               <div style={scoreBoxStyle}>
-                <span style={{ color: m.scoreA >= m.scoreB ? '#fff' : '#94a3b8' }}>{m.scoreA}</span>
-                <span style={{ color: '#F97316', margin: '0 5px' }}>-</span>
-                <span style={{ color: m.scoreB >= m.scoreA ? '#fff' : '#94a3b8' }}>{m.scoreB}</span>
+                <span style={m.scoreA >= m.scoreB ? winScore : loseScore}>{m.scoreA}</span>
+                <span style={{ color: '#F97316' }}>-</span>
+                <span style={m.scoreB >= m.scoreA ? winScore : loseScore}>{m.scoreB}</span>
               </div>
             </div>
           ))
         ) : (
-          <div style={emptyStateStyle}>
-            <span style={{ fontSize: '3rem' }}>📁</span>
-            <p style={{ fontWeight: '600', marginTop: '10px' }}>Aucun résultat enregistré.</p>
-            <p style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Terminez un match via l'e-marque pour le voir apparaître ici.</p>
+          <div style={emptyCardStyle}>
+            <span style={{ fontSize: '3rem' }}>📂</span>
+            <p>Aucun match enregistré pour le moment.</p>
           </div>
         )}
       </div>
@@ -100,34 +80,19 @@ export default function ResultatsPage() {
   );
 }
 
-// STYLES CSS-IN-JS
-const cardStyle = {
-  backgroundColor: '#fff',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '25px',
-  borderRadius: '16px',
-  border: '1px solid #e2e8f0',
-  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
-  transition: 'transform 0.2s'
-};
-
-const scoreBoxStyle = {
-  background: '#1e293b',
-  padding: '15px 30px',
-  borderRadius: '12px',
-  fontWeight: '900',
-  fontSize: '2rem',
-  minWidth: '140px',
-  textAlign: 'center' as const,
-  fontFamily: 'monospace',
-  boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.3)'
-};
-
-const teamNameStyle = { fontWeight: '800', fontSize: '1.3rem', color: '#1e293b' };
-const badgeStyle = { backgroundColor: '#f1f5f9', color: '#64748b', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase' as const };
-const dateStyle = { fontSize: '0.85rem', color: '#94a3b8' };
-const emptyStateStyle = { textAlign: 'center' as const, padding: '80px', backgroundColor: '#fff', borderRadius: '20px', border: '2px border-dashed #e2e8f0', color: '#94a3b8' };
-const backBtnStyle = { padding: '10px 20px', color: '#1e293b', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.9rem' };
-const purgeBtnStyle = { padding: '10px 20px', backgroundColor: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' };
+// STYLES 
+const containerStyle = { padding: '40px 20px', maxWidth: '900px', margin: '0 auto', fontFamily: 'sans-serif' };
+const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' };
+const gridStyle = { display: 'flex', flexDirection: 'column' as const, gap: '20px' };
+const cardStyle = { backgroundColor: '#fff', borderRadius: '20px', padding: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' };
+const infoSideStyle = { display: 'flex', flexDirection: 'column' as const, gap: '8px' };
+const teamsRowStyle = { display: 'flex', gap: '12px', alignItems: 'center', marginTop: '5px' };
+const teamNameStyle = { fontWeight: '800', fontSize: '1.2rem', color: '#1e293b' };
+const dateBadgeStyle = { fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase' as const };
+const competitionStyle = { fontSize: '0.85rem', color: '#F97316', fontWeight: 'bold' };
+const scoreBoxStyle = { background: '#1e293b', padding: '15px 25px', borderRadius: '15px', display: 'flex', gap: '10px', alignItems: 'center', fontFamily: 'monospace', fontSize: '2rem', fontWeight: '900' };
+const winScore = { color: '#fff' };
+const loseScore = { color: '#64748b' };
+const emptyCardStyle = { textAlign: 'center' as const, padding: '100px', backgroundColor: '#f8fafc', borderRadius: '30px', color: '#94a3b8', border: '2px dashed #e2e8f0' };
+const linkBtnStyle = { textDecoration: 'none', color: '#1e293b', fontWeight: 'bold' };
+const purgeBtnStyle = { backgroundColor: '#fee2e2', color: '#ef4444', border: 'none', padding: '8px 15px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' };
