@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getFromLocal } from '@/lib/store';
-import { supabase } from '@/lib/supabase'; // Import de Supabase
+import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -57,28 +57,25 @@ function ActionRow({ href, icon, text, sub, primary = false }: { href: string; i
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats>({ compets: 0, equipes: 0, matchs: 0 });
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    // RÉCUPÉRATION UTILISATEUR VIA SUPABASE
     const checkUser = async () => {
       const { data: { user: supabaseUser } } = await supabase.auth.getUser();
       
       if (supabaseUser) {
-        // On extrait le nom avant le @ pour le pseudo
-        const displayName = supabaseUser.email?.split('@')[0] || 'Anthony';
-        setUser({ username: displayName });
+        setUser({ username: supabaseUser.email?.split('@')[0] || 'Anthony' });
+        setLoading(false);
       } else {
-        // Si pas de session, on redirige vers le login
         router.push('/login');
       }
     };
 
     checkUser();
 
-    // Stats de la base locale (à remplacer par des appels Supabase plus tard)
     const c = (getFromLocal('competitions') || []) as any[];
     const e = (getFromLocal('equipes') || []) as any[];
     const m = (getFromLocal('matchs') || []) as any[];
@@ -93,8 +90,18 @@ export default function Dashboard() {
     setAllUsers(users);
   }, [router]);
 
-  // Détection Admin : On ajoute ton nouveau pseudo Supabase à la liste
   const isAdmin = user?.username === 'admin' || user?.username === 'anthony.didier.prop';
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '10px' }}>🏀</div>
+          <p style={{ fontWeight: 'bold', color: '#64748B', fontFamily: 'sans-serif' }}>Chargement de Dunkly...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '90vh' }}>
@@ -106,7 +113,7 @@ export default function Dashboard() {
             Accueil <span style={{ color: '#F97316' }}>.</span>
           </h1>
           <p style={{ color: '#64748B', marginTop: '5px' }}>
-            Ravi de vous revoir, <strong>{user?.username || 'Anthony'}</strong>.
+            Ravi de vous revoir, <strong>{user?.username}</strong>.
           </p>
         </div>
 
@@ -139,7 +146,7 @@ export default function Dashboard() {
           <ActionRow href="/equipes" icon="👥" text="Ajouter équipe" sub="Gestion des clubs" />
         </div>
 
-        {/* PANEL LIVE */}
+        {/* PANEL LIVE (STYLE SOMBRE) */}
         <div style={{ backgroundColor: '#1E293B', padding: '30px', borderRadius: '24px', color: 'white', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'relative', zIndex: 2 }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '10px' }}>État du Live</h3>
@@ -149,7 +156,7 @@ export default function Dashboard() {
             <p style={{ color: '#94A3B8', lineHeight: '1.6' }}>
               Tous les résultats sont à jour. Les prochaines rencontres débuteront selon le calendrier programmé.
             </p>
-            <Link href="/matchs/a-venir" style={{ display: 'inline-block', marginTop: '20px', color: '#F97316', textDecoration: 'none', fontWeight: 'bold' }}>
+            <Link href="/matchs" style={{ display: 'inline-block', marginTop: '20px', color: '#F97316', textDecoration: 'none', fontWeight: 'bold' }}>
               Voir le calendrier complet →
             </Link>
           </div>
@@ -201,7 +208,7 @@ export default function Dashboard() {
   );
 }
 
-// --- STYLES ---
+// --- 4. STYLES ---
 
 const btnAdminStyle = {
   backgroundColor: '#1a1a1a', color: 'white', border: 'none', padding: '12px 20px', 
