@@ -5,24 +5,44 @@ import { getFromLocal, saveToLocal } from '@/lib/store';
 
 export default function LoginPage() {
   const [isRegister, setIsRegister] = useState(false);
-  const [username, setUsername] = useState('');
+  const [identifier, setIdentifier] = useState(''); // Email ou Username
+  const [email, setEmail] = useState(''); // Pour l'inscription
   const [password, setPassword] = useState('');
   const router = useRouter();
 
-  const handleAction = (e: React.FormEvent) => {
+  const handleAction = async (e: React.FormEvent) => {
     e.preventDefault();
     const users: any[] = getFromLocal('users') || [];
 
     if (isRegister) {
-      if (users.find((u: any) => u.username === username)) {
-        return alert("Cet utilisateur existe déjà !");
+      // Vérification doublons (Username ou Email)
+      if (users.find((u: any) => u.username === identifier || u.email === email)) {
+        return alert("Cet utilisateur ou email existe déjà !");
       }
-      const newUsers = [...users, { username, password }];
+
+      const newUser = { username: identifier, email: email, password: password };
+      const newUsers = [...users, newUser];
       saveToLocal('users', newUsers);
-      alert("Compte créé ! Connectez-vous.");
+
+      // --- APPEL API ENVOI MAIL ---
+      try {
+        await fetch('/api/send-welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, username: identifier }),
+        });
+      } catch (err) {
+        console.error("Erreur envoi mail:", err);
+      }
+
+      alert("Compte créé ! Un mail de confirmation a été envoyé.");
       setIsRegister(false);
     } else {
-      const user = users.find((u: any) => u.username === username && u.password === password);
+      // Connexion Hybride : on cherche par username OU par email
+      const user = users.find((u: any) => 
+        (u.username === identifier || u.email === identifier) && u.password === password
+      );
+
       if (user) {
         localStorage.setItem('currentUser', JSON.stringify(user));
         router.push('/');
@@ -36,7 +56,6 @@ export default function LoginPage() {
   return (
     <main style={loginWrapper}>
       <div style={loginCard}>
-        {/* En-tête avec Logo */}
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
            <div style={logoCircle}>🏀</div>
            <h1 style={{ fontSize: '2.2rem', fontWeight: '900', color: '#fff', margin: '10px 0 5px' }}>
@@ -49,15 +68,29 @@ export default function LoginPage() {
 
         <form onSubmit={handleAction} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={inputGroup}>
-            <label style={labelStyle}>Utilisateur</label>
+            <label style={labelStyle}>{isRegister ? "Nom d'utilisateur" : "Utilisateur ou Email"}</label>
             <input 
-              placeholder="Entrez votre nom d'utilisateur" 
+              placeholder={isRegister ? "Ex: Jordan23" : "Nom d'utilisateur ou email"} 
               style={inputStyle}
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
             />
           </div>
+
+          {isRegister && (
+            <div style={inputGroup}>
+              <label style={labelStyle}>Adresse Email</label>
+              <input 
+                type="email"
+                placeholder="votre@email.com" 
+                style={inputStyle}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+          )}
           
           <div style={inputGroup}>
             <label style={labelStyle}>Mot de passe</label>
@@ -76,16 +109,15 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <button 
-          onClick={() => setIsRegister(!isRegister)} 
-          style={switchBtnStyle}
-        >
+        <button onClick={() => setIsRegister(!isRegister)} style={switchBtnStyle}>
           {isRegister ? "Déjà membre ? Connectez-vous" : "Pas encore de compte ? Inscrivez-vous ici"}
         </button>
       </div>
     </main>
   );
 }
+
+// ... garder les styles identiques à votre code précédent ...
 
 /* ---------- STYLES AMÉLIORÉS (PC & MOBILE) ---------- */
 
