@@ -63,39 +63,35 @@ export default function Dashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
+    // Écouteur de session en temps réel (Supprime le lag de 0.5s)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser({ username: session.user.email?.split('@')[0] || 'Anthony' });
         
-        if (session?.user) {
-          setUser({ username: session.user.email?.split('@')[0] || 'Anthony' });
-          
-          // Correction TypeScript : on force le cast en any[] pour éviter l'erreur .length
-          const c = (getFromLocal('competitions') || []) as any[];
-          const e = (getFromLocal('equipes') || []) as any[];
-          const m = (getFromLocal('matchs') || []) as any[];
-          
-          setStats({ 
-              compets: c.length, 
-              equipes: e.length, 
-              matchs: m.length 
-          });
+        // Chargement des données locales
+        const c = (getFromLocal('competitions') || []) as any[];
+        const e = (getFromLocal('equipes') || []) as any[];
+        const m = (getFromLocal('matchs') || []) as any[];
+        
+        setStats({ 
+            compets: c.length, 
+            equipes: e.length, 
+            matchs: m.length 
+        });
 
-          const users = (getFromLocal('users') || []) as User[];
-          setAllUsers(users);
-          setLoading(false);
-        } else {
-          // Petit délai pour éviter les erreurs de session sur Vercel
-          setTimeout(() => {
-            router.replace('/login');
-          }, 500);
-        }
-      } catch (err) {
-        router.replace('/login');
+        const users = (getFromLocal('users') || []) as User[];
+        setAllUsers(users);
+        setLoading(false); // On affiche l'interface dès que la session est détectée
+      } else {
+        // On laisse une seconde de sécurité avant de rediriger
+        const timer = setTimeout(() => {
+          if (!session) router.replace('/login');
+        }, 1000);
+        return () => clearTimeout(timer);
       }
-    };
+    });
 
-    initAuth();
+    return () => subscription.unsubscribe();
   }, [router]);
 
   const isAdmin = user?.username === 'admin' || user?.username === 'anthony.didier.prop';
