@@ -18,6 +18,7 @@ interface Stats {
 }
 
 // --- 2. COMPOSANTS INTERNES ---
+
 function StatCard({ label, value, icon, color }: { label: string; value: number; icon: string; color: string }) {
   return (
     <div style={{ 
@@ -52,6 +53,7 @@ function ActionRow({ href, icon, text, sub, primary = false }: { href: string; i
 }
 
 // --- 3. COMPOSANT PRINCIPAL ---
+
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats>({ compets: 0, equipes: 0, matchs: 0 });
   const [user, setUser] = useState<User | null>(null);
@@ -66,24 +68,18 @@ export default function Dashboard() {
         const userData = { username: session.user.email?.split('@')[0] || 'Anthony' };
         setUser(userData);
         
-        // --- CRUCIAL : On synchronise avec le Layout ---
+        // Sync avec le Layout
         localStorage.setItem('currentUser', JSON.stringify(userData));
         
-        // Chargement des données locales (Correction TypeScript .length incluse)
+        // Stats et Users
         const c = (getFromLocal('competitions') || []) as any[];
         const e = (getFromLocal('equipes') || []) as any[];
         const m = (getFromLocal('matchs') || []) as any[];
-        
-        setStats({ 
-            compets: c.length, 
-            equipes: e.length, 
-            matchs: m.length 
-        });
-
+        setStats({ compets: c.length, equipes: e.length, matchs: m.length });
         setAllUsers((getFromLocal('users') || []) as User[]);
+        
         setLoading(false);
       } else {
-        // Sécurité : on laisse 1.5s à Supabase pour récupérer la session avant de rediriger
         const timer = setTimeout(() => {
           if (!session) {
             localStorage.removeItem('currentUser');
@@ -116,6 +112,8 @@ export default function Dashboard() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '90vh' }}>
+      
+      {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <div>
           <h1 style={{ fontSize: '2.2rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
@@ -125,6 +123,7 @@ export default function Dashboard() {
             Ravi de vous revoir, <strong>{user?.username}</strong>.
           </p>
         </div>
+
         {isAdmin && (
           <button onClick={() => setIsModalOpen(true)} style={btnAdminStyle}>
             👥 VOIR LES MEMBRES
@@ -132,18 +131,21 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* STATS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '25px', marginBottom: '40px' }}>
         <StatCard label="Championnats" value={stats.compets} icon="🏆" color="#F97316" />
         <StatCard label="Clubs & Équipes" value={stats.equipes} icon="🛡️" color="#3B82F6" />
         <StatCard label="Matchs Joués" value={stats.matchs} icon="⏱️" color="#10B981" />
       </div>
 
+      {/* ACTIONS ET LIVE */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
         <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', border: '1px solid #F1F5F9' }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '25px', color: '#1E293B' }}>⚡ Actions Prioritaires</h3>
           <ActionRow href="/matchs" icon="🏀" text="Saisir un score" sub="Mise à jour live" primary />
           <ActionRow href="/equipes" icon="👥" text="Ajouter équipe" sub="Gestion des clubs" />
         </div>
+
         <div style={{ backgroundColor: '#1E293B', padding: '30px', borderRadius: '24px', color: 'white', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'relative', zIndex: 2 }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '10px' }}>État du Live</h3>
@@ -151,23 +153,30 @@ export default function Dashboard() {
               ● AUCUN MATCH EN COURS
             </div>
             <p style={{ color: '#94A3B8', lineHeight: '1.6' }}>Tous les résultats sont à jour.</p>
-            <Link href="/matchs" style={{ display: 'inline-block', marginTop: '20px', color: '#F97316', textDecoration: 'none', fontWeight: 'bold' }}>Voir le calendrier complet →</Link>
           </div>
           <div style={{ position: 'absolute', bottom: '-20px', right: '-20px', fontSize: '120px', opacity: 0.1, transform: 'rotate(-15deg)' }}>🏀</div>
         </div>
       </div>
 
+      {/* MODALE MEMBRES (REMISE ICI) */}
       {isModalOpen && isAdmin && (
         <div style={modalOverlay} onClick={() => setIsModalOpen(false)}>
           <div style={modalContent} onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ marginBottom: '25px', fontWeight: '900' }}>🛡️ Gestion des Accès</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+              <h2 style={{ margin: 0, fontWeight: '900' }}>🛡️ Gestion des Accès</h2>
+              <button onClick={() => setIsModalOpen(false)} style={closeBtn}>×</button>
+            </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
               {allUsers.map((u, index) => (
                 <div key={index} style={userRow}>
-                  <div style={avatarStyle(u.username === 'admin' || u.username === 'anthony.didier.prop')}>{u.username.charAt(0).toUpperCase()}</div>
+                  <div style={avatarStyle(u.username === 'admin' || u.username === 'anthony.didier.prop')}>
+                    {u.username.charAt(0).toUpperCase()}
+                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '700' }}>{u.username}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{(u.username === 'admin' || u.username === 'anthony.didier.prop') ? 'ADMIN' : 'USER'}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                      {(u.username === 'admin' || u.username === 'anthony.didier.prop') ? 'ADMINISTRATEUR' : 'UTILISATEUR'}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -184,9 +193,10 @@ export default function Dashboard() {
   );
 }
 
-// --- 4. STYLES (Inchangés) ---
+// --- 4. STYLES ---
 const btnAdminStyle = { backgroundColor: '#1a1a1a', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: '800' as const, cursor: 'pointer', fontSize: '0.8rem' };
 const modalOverlay: React.CSSProperties = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 };
-const modalContent: React.CSSProperties = { backgroundColor: 'white', padding: '35px', borderRadius: '28px', width: '90%', maxWidth: '450px' };
-const userRow = { display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', backgroundColor: '#F8FAFC', borderRadius: '16px' };
+const modalContent: React.CSSProperties = { backgroundColor: 'white', padding: '35px', borderRadius: '28px', width: '90%', maxWidth: '450px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' };
+const userRow = { display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', backgroundColor: '#F8FAFC', borderRadius: '16px', border: '1px solid #F1F5F9' };
 const avatarStyle = (isAdmin: boolean) => ({ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: isAdmin ? '#F97316' : '#1E293B', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900' as const });
+const closeBtn = { background: '#F1F5F9', border: 'none', width: '35px', height: '35px', borderRadius: '50%', cursor: 'pointer' };
