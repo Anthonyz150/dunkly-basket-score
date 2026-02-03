@@ -11,33 +11,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  useEffect(() => {
-    // On récupère juste l'utilisateur pour l'affichage du menu
-    // MAI ON NE REDIRIGE PLUS ICI !
+  const loadUser = () => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
-    
-    // On libère le loading du layout rapidement
+  };
+
+  useEffect(() => {
+    loadUser();
     setLoading(false);
     setIsMenuOpen(false);
+
+    // Écouter les changements de profil pour mettre à jour le nom en temps réel
+    window.addEventListener('storage', loadUser);
+    return () => window.removeEventListener('storage', loadUser);
   }, [pathname]);
 
   const isLoginPage = pathname === '/login';
   const bgColor = isLoginPage ? '#111111' : '#f4f4f4';
 
-  if (loading) {
-    return (
-      <html lang="fr">
-        <body style={{ backgroundColor: '#f4f4f4', margin: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-             <span style={{ fontSize: '3rem' }}>🏀</span>
-          </div>
-        </body>
-      </html>
-    );
-  }
+  if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>🏀</div>;
 
   return (
     <html lang="fr" style={{ backgroundColor: bgColor }}>
@@ -67,18 +61,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <Link href="/matchs/resultats" className={`nav-link ${pathname === '/matchs/resultats' ? 'active' : ''}`}>✅ Résultats</Link>
                   <Link href="/matchs/a-venir" className={`nav-link ${pathname === '/matchs/a-venir' ? 'active' : ''}`}>📅 Matchs à venir</Link>
                 </div>
-                <Link href="/arbitres" className={`nav-link ${pathname === '/arbitres' ? 'active' : ''}`}>🏁 Arbitres</Link>
+
+                <div style={{ marginTop: '25px', marginBottom: '10px' }}>
+                  <p style={{ fontSize: '0.7rem', color: '#555', marginLeft: '20px', fontWeight: 'bold' }}>PARAMÈTRES</p>
+                  <Link href="/profil" className={`nav-link ${pathname === '/profil' ? 'active' : ''}`}>👤 Mon Profil</Link>
+                </div>
               </div>
 
               <div className="profile-box">
-                <strong style={{ color: 'white', display: 'block', marginBottom: '10px' }}>{user?.username || 'Admin'}</strong>
-                <button onClick={() => { localStorage.removeItem('currentUser'); window.location.href='/login'; }} style={{ width: '100%', color: '#ff4444', border: '1px solid #ff4444', background: 'transparent', padding: '8px', borderRadius: '6px' }}>
+                <strong style={{ color: 'white', display: 'block', marginBottom: '10px' }}>
+                   {user?.prenom ? `${user.prenom} ${user.nom}` : (user?.username || 'Admin')}
+                </strong>
+                <button onClick={() => { localStorage.removeItem('currentUser'); window.location.href='/login'; }} style={logoutBtn}>
                   Déconnexion
                 </button>
               </div>
             </nav>
 
-            <main className="main-content" style={{ backgroundColor: '#f4f4f4', minHeight: '100vh' }}>
+            <main className="main-content" style={{ backgroundColor: '#f4f4f4', minHeight: '100vh', padding: '20px' }}>
               {children}
             </main>
           </>
@@ -87,3 +87,5 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
+
+const logoutBtn = { width: '100%', color: '#ff4444', border: '1px solid #ff4444', background: 'transparent', padding: '8px', borderRadius: '6px', cursor: 'pointer' };
