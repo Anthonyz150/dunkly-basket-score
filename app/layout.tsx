@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import "./globals.css";
 
@@ -10,38 +10,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
 
   useEffect(() => {
-    // 1. On enveloppe dans un try/finally pour garantir que loading passe à false
-    try {
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      } else if (pathname !== '/login') {
-        router.push('/login');
-      }
-    } catch (e) {
-      console.error("Erreur Auth:", e);
-    } finally {
-      // 2. On attend un tout petit peu pour laisser le routeur se caler
-      setTimeout(() => setLoading(false), 300);
+    // On récupère juste l'utilisateur pour l'affichage du menu
+    // MAI ON NE REDIRIGE PLUS ICI !
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
     
+    // On libère le loading du layout rapidement
+    setLoading(false);
     setIsMenuOpen(false);
-  }, [pathname, router]);
+  }, [pathname]);
 
   const isLoginPage = pathname === '/login';
   const bgColor = isLoginPage ? '#111111' : '#f4f4f4';
 
-  // 3. SECURITÉ : Si loading est vrai, on affiche le loader
   if (loading) {
     return (
       <html lang="fr">
         <body style={{ backgroundColor: '#f4f4f4', margin: 0 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-            <span style={{ fontSize: '3rem', animation: 'bounce 0.6s infinite alternate' }}>🏀</span>
-            <p style={{ fontWeight: 'bold', marginTop: '10px', color: '#1a1a1a' }}>Chargement Dunkly...</p>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+             <span style={{ fontSize: '3rem' }}>🏀</span>
           </div>
         </body>
       </html>
@@ -87,7 +78,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </nav>
 
-            <main className="main-content" style={{ backgroundColor: '#f4f4f4', minHeight: '100vh', marginLeft: '250px' }}>
+            <main className="main-content" style={{ backgroundColor: '#f4f4f4', minHeight: '100vh' }}>
               {children}
             </main>
           </>
