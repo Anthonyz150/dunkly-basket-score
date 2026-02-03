@@ -1,27 +1,32 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from "react";
-import { getFromLocal } from "@/lib/store";
+import { supabase } from "@/lib/supabase"; // Import du client Supabase
 import Link from "next/link";
 
 export default function ResultatsPage() {
   const [matchs, setMatchs] = useState<any[]>([]);
-  const [isMounted, setIsMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setIsMounted(true);
-    const dataRaw = getFromLocal('matchs');
-    const tousLesMatchs = Array.isArray(dataRaw) ? dataRaw : [];
-    
-    // Tri : les plus récents en premier
-    const sorted = tousLesMatchs.sort((a: any, b: any) => 
-      new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
-    );
-    
-    setMatchs(sorted);
+    chargerTousLesMatchs();
   }, []);
 
-  if (!isMounted) return null;
+  const chargerTousLesMatchs = async () => {
+    setLoading(true);
+    // On récupère tous les matchs, triés par date (les plus récents en premier)
+    const { data, error } = await supabase
+      .from('matchs')
+      .select('*')
+      .order('date', { ascending: false });
+
+    if (error) {
+      console.error("Erreur de chargement:", error.message);
+    } else {
+      setMatchs(data || []);
+    }
+    setLoading(false);
+  };
 
   const renderStatus = (status: string) => {
     switch (status) {
@@ -33,6 +38,14 @@ export default function ResultatsPage() {
         return <span style={{ ...statusBadge, backgroundColor: '#f1f5f9', color: '#64748b' }}>📅 À VENIR</span>;
     }
   };
+
+  if (loading) {
+    return (
+      <div style={containerStyle}>
+        <p style={{ textAlign: 'center', color: '#94a3b8', marginTop: '50px' }}>Chargement des matchs en direct...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={containerStyle}>
@@ -46,10 +59,9 @@ export default function ResultatsPage() {
 
       <div style={gridStyle}>
         {matchs.length > 0 ? (
-          matchs.map((m, index) => (
-            /* CHANGEMENT ICI : On entoure la carte d'un Link vers le dossier [id] */
+          matchs.map((m) => (
             <Link 
-              key={m.id || index} 
+              key={m.id} 
               href={`/matchs/resultats/${m.id}`} 
               style={{ textDecoration: 'none', color: 'inherit' }}
             >
@@ -62,7 +74,6 @@ export default function ResultatsPage() {
                         {m.date ? m.date.replace('T', ' à ') : "Date non fixée"}
                       </span>
                     </div>
-                    {/* Petit indicateur visuel pour l'action */}
                     <span style={{ fontSize: '0.7rem', color: '#F97316', fontWeight: 'bold' }}>VOIR STATS →</span>
                   </div>
                   
@@ -89,7 +100,7 @@ export default function ResultatsPage() {
                   </div>
                   
                   <div style={footerDetail}>
-                    📍 {m.competition} {m.arbitre && ` | ⚖️ ${m.arbitre}`}
+                    📍 {m.competition} {m.arbitre && ` | ⚖️ ${m.arbitre}`} {m.lieu && ` | 🏢 ${m.lieu}`}
                   </div>
                 </div>
               </div>
@@ -102,7 +113,6 @@ export default function ResultatsPage() {
         )}
       </div>
 
-      {/* Petit ajout CSS pour l'interaction */}
       <style jsx>{`
         .match-card {
           transition: all 0.2s ease-in-out;
@@ -117,7 +127,7 @@ export default function ResultatsPage() {
   );
 }
 
-// STYLES (Inchangés par rapport à ton code initial)
+// STYLES
 const containerStyle = { padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'sans-serif' };
 const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' };
 const gridStyle = { display: 'flex', flexDirection: 'column' as const, gap: '20px' };

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { getFromLocal, saveToLocal } from "@/lib/store";
+import { supabase } from "@/lib/supabase"; // Ton client Supabase
 import Link from "next/link";
 
 interface EquipeIntern { id: string; nom: string; }
@@ -16,11 +16,10 @@ export default function MatchsAVenirPage() {
   
   const [showForm, setShowForm] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  
   const [editingId, setEditingId] = useState<string | null>(null);
+  
   const [selectedClubA, setSelectedClubA] = useState("");
   const [selectedClubB, setSelectedClubB] = useState("");
-  
   const [dureePeriode, setDureePeriode] = useState("10"); 
   const [tmMT1, setTmMT1] = useState("2");
   const [tmMT2, setTmMT2] = useState("3");
@@ -32,20 +31,35 @@ export default function MatchsAVenirPage() {
 
   const [newMatch, setNewMatch] = useState({
     equipeA: "", clubA: "", equipeB: "", clubB: "",
-    date: "", competition: "", arbitre: "",
-    lieu: "" // Ajout du lieu
+    date: "", competition: "", arbitre: "", lieu: "" 
   });
 
-  useEffect(() => { chargerDonnees(); }, []);
+  // --- CHARGEMENT DEPUIS LE BACKEND (SUPABASE) ---
+  useEffect(() => { 
+    chargerDonnees(); 
+  }, []);
 
-  const chargerDonnees = () => {
-    const allMatchs = (getFromLocal('matchs') || []) as any[];
-    setMatchs(allMatchs.filter((m: any) => m.status === 'a-venir'));
-    setClubs((getFromLocal('equipes_clubs') || []) as Club[]);
-    setArbitres((getFromLocal('arbitres') || []) as any[]);
-    setCompetitions((getFromLocal('competitions') || []) as Competition[]);
+  const chargerDonnees = async () => {
+    // Récupération des matchs à venir
+    const { data: listMatchs } = await supabase
+      .from('matchs')
+      .select('*')
+      .eq('status', 'a-venir')
+      .order('date', { ascending: true });
+    
+    if (listMatchs) setMatchs(listMatchs);
+
+    // Récupération des tables de référence (Clubs, Arbitres, etc.)
+    const { data: listClubs } = await supabase.from('equipes_clubs').select('*');
+    const { data: listArb } = await supabase.from('arbitres').select('*');
+    const { data: listComp } = await supabase.from('competitions').select('*');
+
+    if (listClubs) setClubs(listClubs);
+    if (listArb) setArbitres(listArb);
+    if (listComp) setCompetitions(listComp);
   };
 
+  // --- LOGIQUE JOUEURS ---
   const trierEffectif = (liste: Joueur[]) => {
     return [...liste].sort((a, b) => {
       if (a.estCoach) return 1;
@@ -82,17 +96,55 @@ export default function MatchsAVenirPage() {
     setShowPlayerModal({ show: false, cote: 'A', editIndex: null });
   };
 
+  // --- SOUMISSION AU BACKEND ---
+  const handleSoumettre = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const matchData = {
+      clubA: clubs.find(c => c.id === selectedClubA)?.nom,
+      equipeA: newMatch.equipeA,
+      clubB: clubs.find(c => c.id === selectedClubB)?.nom,
+      equipeB: newMatch.equipeB,
+      date: newMatch.date,
+      competition: newMatch.competition,
+      arbitre: newMatch.arbitre,
+      lieu: newMatch.lieu,
+      joueursA, 
+      joueursB,
+      status: 'a-venir', 
+      scoreA: 0, 
+      scoreB: 0,
+      config: { 
+        tempsInitial: parseInt(dureePeriode) * 60, 
+        tmMT1: parseInt(tmMT1),
+        tmMT2: parseInt(tmMT2)
+      }
+    };
+
+    if (editingId) {
+      const { error } = await supabase.from('matchs').update(matchData).eq('id', editingId);
+      if (error) alert("Erreur MAJ: " + error.message);
+    } else {
+      const { error } = await supabase.from('matchs').insert([matchData]);
+      if (error) alert("Erreur Création: " + error.message);
+    }
+    
+    chargerDonnees();
+    resetForm();
+  };
+
+  const supprimerMatch = async (id: string) => {
+    if (confirm("Supprimer ce match pour TOUT LE SITE ?")) {
+      const { error } = await supabase.from('matchs').delete().eq('id', id);
+      if (!error) chargerDonnees();
+    }
+  };
+
   const handleEditer = (m: any) => {
     setEditingId(m.id);
     setNewMatch({
-      equipeA: m.equipeA,
-      clubA: m.clubA,
-      equipeB: m.equipeB,
-      clubB: m.clubB,
-      date: m.date,
-      competition: m.competition,
-      arbitre: m.arbitre,
-      lieu: m.lieu || "" // Récupération du lieu pour l'édition
+      equipeA: m.equipeA, clubA: m.clubA, equipeB: m.equipeB, clubB: m.clubB,
+      date: m.date, competition: m.competition, arbitre: m.arbitre, lieu: m.lieu || ""
     });
     
     const clubAObj = clubs.find(c => c.nom === m.clubA);
@@ -111,45 +163,6 @@ export default function MatchsAVenirPage() {
 
     setShowForm(true);
     setCurrentStep(1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleSoumettre = (e: React.FormEvent) => {
-    e.preventDefault();
-    const allMatchs = (getFromLocal('matchs') || []) as any[];
-    
-    const matchData = {
-      ...newMatch,
-      clubA: clubs.find(c => c.id === selectedClubA)?.nom,
-      clubB: clubs.find(c => c.id === selectedClubB)?.nom,
-      joueursA, 
-      joueursB,
-      status: 'a-venir', 
-      scoreA: 0, 
-      scoreB: 0,
-      config: { 
-        tempsInitial: parseInt(dureePeriode) * 60, 
-        tmMT1: parseInt(tmMT1),
-        tmMT2: parseInt(tmMT2)
-      }
-    };
-
-    let updated = editingId 
-      ? allMatchs.map((m: any) => m.id === editingId ? { ...matchData, id: editingId } : m) 
-      : [...allMatchs, { ...matchData, id: Date.now().toString() }];
-    
-    saveToLocal('matchs', updated);
-    chargerDonnees();
-    resetForm();
-  };
-
-  const supprimerMatch = (id: string) => {
-    if (confirm("Supprimer ce match ?")) {
-      const all = (getFromLocal('matchs') || []) as any[];
-      const updated = all.filter((m: any) => m.id !== id);
-      saveToLocal('matchs', updated);
-      chargerDonnees();
-    }
   };
 
   const resetForm = () => {
@@ -268,19 +281,10 @@ export default function MatchsAVenirPage() {
                     {arbitres.map(a => <option key={a.id} value={a.nom + ' ' + a.prenom}>{a.nom} {a.prenom}</option>)}
                   </select>
                 </div>
-
-                {/* NOUVEAU CHAMP LIEU */}
                 <div style={{...colStyle, gridColumn: '1/span 2'}}>
-                  <label style={miniLabel}>📍 LIEU DU MATCH / ADRESSE (POUR GOOGLE MAPS)</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ex: Gymnase Herzog, Cagnes-sur-Mer" 
-                    value={newMatch.lieu} 
-                    onChange={e => setNewMatch({...newMatch, lieu: e.target.value})} 
-                    style={inputStyle} 
-                  />
+                  <label style={miniLabel}>📍 LIEU DU MATCH / ADRESSE</label>
+                  <input type="text" placeholder="Ex: Gymnase Herzog, Cagnes-sur-Mer" value={newMatch.lieu} onChange={e => setNewMatch({...newMatch, lieu: e.target.value})} style={inputStyle} />
                 </div>
-
                 <button type="button" onClick={() => setCurrentStep(1)} style={{...submitBtn, background:'#64748b'}}>← RETOUR</button>
                 <button type="submit" style={submitBtn}>{editingId ? "METTRE À JOUR" : "CRÉER LE MATCH"}</button>
               </div>
@@ -289,7 +293,7 @@ export default function MatchsAVenirPage() {
         </div>
       )}
 
-      {/* LISTE DES MATCHS */}
+      {/* LISTE DES MATCHS RÉCUPÉRÉS DE SUPABASE */}
       <div style={{ display: 'grid', gap: '15px', marginTop: '20px' }}>
         {matchs.map((m) => (
           <div key={m.id} style={matchCardStyle}>
@@ -306,39 +310,29 @@ export default function MatchsAVenirPage() {
             </div>
             <div style={footerCard}>
               <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                <div>📅 {m.date ? m.date.replace('T', ' ') : 'Date non définie'} | {m.competition}</div>
-                
-                {/* AFFICHAGE DU LIEN GOOGLE MAPS */}
+                <div>📅 {m.date ? m.date.replace('T', ' ') : 'Non définie'} | {m.competition}</div>
                 {m.lieu && (
                   <div style={{ marginTop: '5px' }}>
-                    <a 
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.lieu)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: '#F97316', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      📍 {m.lieu} <span style={{fontSize:'0.6rem', opacity:0.8}}>(Ouvrir Maps ↗)</span>
+                    <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.lieu)}`} target="_blank" rel="noopener noreferrer" style={{ color: '#F97316', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.75rem' }}>
+                      📍 {m.lieu} ↗
                     </a>
                   </div>
                 )}
               </div>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <button onClick={() => supprimerMatch(m.id)} style={iconBtn} title="Supprimer">🗑️</button>
+                <button onClick={() => supprimerMatch(m.id)} style={iconBtn}>🗑️</button>
                 <button onClick={() => handleEditer(m)} style={editBtnSmall}>ÉDITER ✎</button>
                 <Link href={`/matchs/marque/${m.id}`} style={startBtnStyle}>DÉMARRER</Link>
               </div>
             </div>
           </div>
         ))}
-        {matchs.length === 0 && !showForm && (
-          <p style={{ textAlign: 'center', color: '#94a3b8', marginTop: '40px' }}>Aucun match programmé.</p>
-        )}
       </div>
     </div>
   );
 }
 
-// STYLES
+// --- STYLES (Conservés et nettoyés) ---
 const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', backgroundColor: 'white', width: '100%', boxSizing: 'border-box' as const };
 const addBtnStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '8px', fontWeight: 'bold' as const, cursor: 'pointer' };
 const submitBtn = { width: '100%', backgroundColor: '#1a1a1a', color: 'white', padding: '14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '900' as const, border: 'none' };

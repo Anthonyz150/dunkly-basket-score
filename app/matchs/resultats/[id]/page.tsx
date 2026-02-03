@@ -1,28 +1,51 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
-import { getFromLocal } from "@/lib/store";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase"; // Import de la connexion Supabase
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 
-export default function DetailMatchPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const matchId = resolvedParams.id;
+export default function DetailMatchPage() {
+  const params = useParams();
+  const matchId = params.id;
   const router = useRouter();
   const [match, setMatch] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const allMatchs = (getFromLocal("matchs") || []) as any[];
-    const found = allMatchs.find((m: any) => m.id === matchId);
-    if (found) {
-      setMatch(found);
+    if (matchId) {
+      chargerDetailMatch();
     }
   }, [matchId]);
+
+  const chargerDetailMatch = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('matchs')
+      .select('*')
+      .eq('id', matchId)
+      .single(); // On ne veut qu'un seul résultat
+
+    if (error) {
+      console.error("Erreur:", error.message);
+    } else {
+      setMatch(data);
+    }
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: "50px", textAlign: "center", fontFamily: 'sans-serif' }}>
+        <p>Chargement des statistiques en direct...</p>
+      </div>
+    );
+  }
 
   if (!match) {
     return (
       <div style={{ padding: "50px", textAlign: "center", fontFamily: 'sans-serif' }}>
-        <p>Chargement du match...</p>
+        <p>Match introuvable.</p>
         <Link href="/matchs/resultats" style={{ color: '#F97316' }}>Retour aux résultats</Link>
       </div>
     );
@@ -42,7 +65,9 @@ export default function DetailMatchPage({ params }: { params: Promise<{ id: stri
       {/* Barre de navigation */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <button onClick={() => router.back()} style={backBtn}>← RETOUR</button>
-        <div style={badgeTermine}>MATCH TERMINÉ ✅</div>
+        <div style={match.status === 'termine' ? badgeTermine : badgeEnCours}>
+          {match.status === 'termine' ? 'MATCH TERMINÉ ✅' : 'MATCH EN COURS ⏱️'}
+        </div>
       </div>
 
       {/* SCORE FINAL */}
@@ -67,7 +92,7 @@ export default function DetailMatchPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      {/* --- BLOC ADRESSE / LIEU DU MATCH --- */}
+      {/* BLOC LIEU */}
       {match.lieu && (
         <div style={lieuContainer}>
           <a 
@@ -142,6 +167,7 @@ export default function DetailMatchPage({ params }: { params: Promise<{ id: stri
 const containerStyle = { padding: '20px', maxWidth: '1200px', margin: '0 auto', backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: 'sans-serif' };
 const backBtn = { backgroundColor: 'white', border: '1px solid #e2e8f0', padding: '10px 20px', borderRadius: '12px', fontWeight: 'bold' as const, cursor: 'pointer', color: '#64748b' };
 const badgeTermine = { backgroundColor: '#22c55e', color: 'white', padding: '8px 15px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold' as const };
+const badgeEnCours = { backgroundColor: '#f97316', color: 'white', padding: '8px 15px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold' as const };
 const scoreCard = { display: 'flex', justifyContent: 'space-around', alignItems: 'center', backgroundColor: '#1e293b', color: 'white', padding: '40px', borderRadius: '24px', marginBottom: '20px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' };
 const teamSide = { flex: 1, textAlign: 'center' as const };
 const teamTitle = { fontSize: '2rem', margin: '0 0 5px 0' };
@@ -149,11 +175,8 @@ const teamSub = { fontSize: '1rem', opacity: 0.7, margin: 0 };
 const scoreCenter = { flex: 1, textAlign: 'center' as const };
 const scoreDisplay = { fontSize: '5rem', fontWeight: '900', color: '#F97316', lineHeight: 1 };
 const dateLabel = { marginTop: '10px', fontSize: '0.9rem', opacity: 0.8 };
-
-// Nouveau style pour le bloc adresse
 const lieuContainer = { backgroundColor: 'white', padding: '15px 25px', borderRadius: '16px', marginBottom: '30px', border: '1px solid #e2e8f0', textAlign: 'center' as const };
 const lieuLink = { color: '#1e293b', textDecoration: 'none', fontSize: '0.95rem' };
-
 const statsGrid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' };
 const tableContainer = { backgroundColor: 'white', padding: '25px', borderRadius: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' };
 const tableHeader = { fontSize: '1.4rem', fontWeight: '800', marginBottom: '20px', borderBottom: '3px solid #F97316', paddingBottom: '10px', color: '#1e293b' };

@@ -1,30 +1,31 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getFromLocal, saveToLocal } from '@/lib/store';
+import { supabase } from '@/lib/supabase'; // On importe la connexion créée à l'étape 2
 
 export default function LoginPage() {
   const [isRegister, setIsRegister] = useState(false);
-  const [identifier, setIdentifier] = useState(''); // Email ou Username
-  const [email, setEmail] = useState(''); // Pour l'inscription
+  const [identifier, setIdentifier] = useState(''); // Username
+  const [email, setEmail] = useState(''); 
   const [password, setPassword] = useState('');
   const router = useRouter();
 
   const handleAction = async (e: React.FormEvent) => {
     e.preventDefault();
-    const users: any[] = getFromLocal('users') || [];
 
     if (isRegister) {
-      // Vérification doublons (Username ou Email)
-      if (users.find((u: any) => u.username === identifier || u.email === email)) {
-        return alert("Cet utilisateur ou email existe déjà !");
-      }
+      // 1. Inscription via Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+          data: { username: identifier } // On stocke le pseudo dans les métadonnées
+        }
+      });
 
-      const newUser = { username: identifier, email: email, password: password };
-      const newUsers = [...users, newUser];
-      saveToLocal('users', newUsers);
+      if (error) return alert(error.message);
 
-      // --- APPEL API ENVOI MAIL ---
+      // 2. Appel de votre API pour l'envoi du mail de bienvenue personnalisé
       try {
         await fetch('/api/send-welcome', {
           method: 'POST',
@@ -32,24 +33,22 @@ export default function LoginPage() {
           body: JSON.stringify({ email, username: identifier }),
         });
       } catch (err) {
-        console.error("Erreur envoi mail:", err);
+        console.error("Erreur API mail:", err);
       }
 
-      alert("Compte créé ! Un mail de confirmation a été envoyé.");
+      alert("Compte créé ! Vérifiez vos e-mails pour confirmer.");
       setIsRegister(false);
     } else {
-      // Connexion Hybride : on cherche par username OU par email
-      const user = users.find((u: any) => 
-        (u.username === identifier || u.email === identifier) && u.password === password
-      );
+      // Connexion : Supabase gère l'email ou le username si configuré
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: identifier.includes('@') ? identifier : `${identifier}@fake.com`, // Logique simplifiée
+        password: password,
+      });
 
-      if (user) {
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        router.push('/');
-        router.refresh();
-      } else {
-        alert("Identifiants incorrects ❌");
-      }
+      if (error) return alert("Identifiants incorrects ❌");
+
+      router.push('/');
+      router.refresh();
     }
   };
 
@@ -68,9 +67,9 @@ export default function LoginPage() {
 
         <form onSubmit={handleAction} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div style={inputGroup}>
-            <label style={labelStyle}>{isRegister ? "Nom d'utilisateur" : "Utilisateur ou Email"}</label>
+            <label style={labelStyle}>{isRegister ? "Nom d'utilisateur" : "Email"}</label>
             <input 
-              placeholder={isRegister ? "Ex: Jordan23" : "Nom d'utilisateur ou email"} 
+              placeholder={isRegister ? "Ex: Jordan23" : "votre@email.com"} 
               style={inputStyle}
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}

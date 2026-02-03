@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { saveToLocal, getFromLocal } from '@/lib/store';
+import { supabase } from '@/lib/supabase'; // Connexion Supabase
 
 interface EquipeIntern {
   id: string;
@@ -18,63 +18,87 @@ interface Club {
 export default function EquipesPage() {
   const [clubs, setClubs] = useState<Club[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
-  // États pour les fenêtres (Modales)
   const [showClubModal, setShowClubModal] = useState(false);
   const [showEquipeModal, setShowEquipeModal] = useState(false);
 
-  // États formulaires
   const [nomClub, setNomClub] = useState('');
   const [ville, setVille] = useState('');
   const [nomEquipe, setNomEquipe] = useState('');
   const [targetClubId, setTargetClubId] = useState('');
 
   useEffect(() => {
+    // Récupération de l'utilisateur (toujours via localStorage pour la session simple)
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) setUser(JSON.parse(storedUser));
-    const data = getFromLocal('equipes_clubs');
-    setClubs(Array.isArray(data) ? data : []);
+    
+    chargerClubs();
   }, []);
+
+  const chargerClubs = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('equipes_clubs')
+      .select('*');
+    
+    if (!error && data) {
+      setClubs(data);
+    }
+    setLoading(false);
+  };
 
   const isAdmin = user?.username === 'admin';
 
   // --- ACTION : CRÉER UN CLUB ---
-  const handleCreateClub = () => {
+  const handleCreateClub = async () => {
     if (!nomClub || !ville) return alert("Nom et ville requis !");
-    const nouveau: Club = {
-      id: Date.now().toString(),
+    
+    const nouveauClub = {
       nom: nomClub.trim(),
       ville: ville.trim(),
       logoColor: `hsl(${Math.random() * 360}, 70%, 50%)`,
       equipes: []
     };
-    const nouvelleListe = [...clubs, nouveau];
-    setClubs(nouvelleListe);
-    saveToLocal('equipes_clubs', nouvelleListe);
-    setNomClub(''); setVille(''); setShowClubModal(false);
+
+    const { data, error } = await supabase
+      .from('equipes_clubs')
+      .insert([nouveauClub])
+      .select();
+
+    if (!error) {
+      setClubs([...clubs, data[0]]);
+      setNomClub(''); setVille(''); setShowClubModal(false);
+    }
   };
 
-  // --- ACTION : CRÉER UNE ÉQUIPE DANS UN CLUB ---
-  const handleCreateEquipe = () => {
+  // --- ACTION : CRÉER UNE ÉQUIPE ---
+  const handleCreateEquipe = async () => {
     if (!nomEquipe || !targetClubId) return alert("Nom d'équipe et Club requis !");
     
-    const nouvelleListe = clubs.map(club => {
-      if (club.id === targetClubId) {
-        return {
-          ...club,
-          equipes: [...club.equipes, { id: Date.now().toString(), nom: nomEquipe.trim() }]
-        };
-      }
-      return club;
-    });
+    const clubActuel = clubs.find(c => c.id === targetClubId);
+    if (!clubActuel) return;
 
-    setClubs(nouvelleListe);
-    saveToLocal('equipes_clubs', nouvelleListe);
-    setNomEquipe(''); setTargetClubId(''); setShowEquipeModal(false);
+    const nouvellesEquipes = [
+      ...clubActuel.equipes, 
+      { id: Date.now().toString(), nom: nomEquipe.trim() }
+    ];
+
+    const { error } = await supabase
+      .from('equipes_clubs')
+      .update({ equipes: nouvellesEquipes })
+      .eq('id', targetClubId);
+
+    if (!error) {
+      setClubs(clubs.map(c => c.id === targetClubId ? { ...c, equipes: nouvellesEquipes } : c));
+      setNomEquipe(''); setTargetClubId(''); setShowEquipeModal(false);
+    }
   };
 
+  if (loading) return <div style={{ padding: '30px' }}>Chargement des clubs...</div>;
+
   return (
-    <div style={{ padding: '30px', maxWidth: '1200px' }}>
+    <div style={{ padding: '30px', maxWidth: '1200px', fontFamily: 'sans-serif' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: '900', color: '#1a1a1a', margin: 0 }}>🏀 GESTION</h1>
@@ -89,7 +113,6 @@ export default function EquipesPage() {
         )}
       </header>
 
-      {/* AFFICHAGE DES CLUBS ET LEURS ÉQUIPES */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '25px' }}>
         {clubs.map((club) => (
           <div key={club.id} style={cardStyle}>
@@ -102,7 +125,7 @@ export default function EquipesPage() {
                  </div>
               </div>
               <div style={{ marginTop: '15px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {club.equipes.map(eq => (
+                {club.equipes && club.equipes.map(eq => (
                   <span key={eq.id} style={tagStyle}>🏀 {eq.nom}</span>
                 ))}
               </div>
@@ -111,7 +134,7 @@ export default function EquipesPage() {
         ))}
       </div>
 
-      {/* MODALE : CRÉER UN CLUB */}
+      {/* MODALE CLUB */}
       {showClubModal && (
         <div style={overlayStyle}>
           <div style={modalStyle}>
@@ -126,7 +149,7 @@ export default function EquipesPage() {
         </div>
       )}
 
-      {/* MODALE : CRÉER UNE ÉQUIPE */}
+      {/* MODALE ÉQUIPE */}
       {showEquipeModal && (
         <div style={overlayStyle}>
           <div style={modalStyle}>
@@ -148,13 +171,13 @@ export default function EquipesPage() {
 }
 
 // --- STYLES ---
-const btnClubStyle = { backgroundColor: '#1e293b', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' };
-const btnEquipeStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' };
+const btnClubStyle = { backgroundColor: '#1e293b', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '10px', fontWeight: 'bold' as const, cursor: 'pointer' };
+const btnEquipeStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '10px', fontWeight: 'bold' as const, cursor: 'pointer' };
 const overlayStyle: React.CSSProperties = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000 };
 const modalStyle: React.CSSProperties = { background: 'white', padding: '30px', borderRadius: '20px', width: '350px', display: 'flex', flexDirection: 'column', gap: '10px' };
 const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '1rem' };
 const btnConfirm = { flex: 1, padding: '12px', background: '#1a1a1a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' };
 const btnCancel = { flex: 1, padding: '12px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '8px', cursor: 'pointer' };
 const cardStyle = { backgroundColor: 'white', borderRadius: '18px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' };
-const logoStyle = { width: '45px', height: '45px', borderRadius: '10px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '1.2rem' };
+const logoStyle = { width: '45px', height: '45px', borderRadius: '10px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' as const, fontSize: '1.2rem' };
 const tagStyle = { backgroundColor: '#f1f5f9', padding: '4px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '700' };
