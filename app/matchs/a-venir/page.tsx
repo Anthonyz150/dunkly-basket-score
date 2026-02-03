@@ -22,9 +22,12 @@ export default function MatchsAVenirPage() {
   const [tmMT1, setTmMT1] = useState("2");
   const [tmMT2, setTmMT2] = useState("3");
 
+  // Nouvel état pour gérer plusieurs arbitres
+  const [selectedArbitres, setSelectedArbitres] = useState<string[]>([]);
+
   const [newMatch, setNewMatch] = useState({
     equipeA: "", clubA: "", equipeB: "", clubB: "",
-    date: "", competition: "", arbitre: "", lieu: "" 
+    date: "", competition: "", lieu: "" 
   });
 
   useEffect(() => { 
@@ -41,13 +44,21 @@ export default function MatchsAVenirPage() {
     if (listMatchs) setMatchs(listMatchs);
 
     const { data: listClubs } = await supabase.from('equipes_clubs').select('*');
-    // On récupère les arbitres depuis la table profiles (mis à jour via ton script SQL)
-    const { data: listArb } = await supabase.from('profiles').select('*').eq('role', 'arbitre');
+    // On va chercher dans ta table 'arbitres'
+    const { data: listArb } = await supabase.from('arbitres').select('*').order('nom', { ascending: true });
     const { data: listComp } = await supabase.from('competitions').select('*');
 
     if (listClubs) setClubs(listClubs);
     if (listArb) setArbitres(listArb);
     if (listComp) setCompetitions(listComp);
+  };
+
+  const toggleArbitre = (nomComplet: string) => {
+    if (selectedArbitres.includes(nomComplet)) {
+      setSelectedArbitres(selectedArbitres.filter(a => a !== nomComplet));
+    } else {
+      setSelectedArbitres([...selectedArbitres, nomComplet]);
+    }
   };
 
   const handleSoumettre = async (e: React.FormEvent) => {
@@ -60,7 +71,8 @@ export default function MatchsAVenirPage() {
       equipeB: newMatch.equipeB,
       date: newMatch.date,
       competition: newMatch.competition,
-      arbitre: newMatch.arbitre,
+      // On enregistre les arbitres séparés par une barre
+      arbitre: selectedArbitres.join(" / "),
       lieu: newMatch.lieu,
       status: 'a-venir', 
       scoreA: 0, 
@@ -82,36 +94,29 @@ export default function MatchsAVenirPage() {
     resetForm();
   };
 
-  const supprimerMatch = async (id: string) => {
-    if (confirm("Supprimer ce match ?")) {
-      await supabase.from('matchs').delete().eq('id', id);
-      chargerDonnees();
-    }
-  };
-
   const handleEditer = (m: any) => {
     setEditingId(m.id);
     setNewMatch({
       equipeA: m.equipeA, clubA: m.clubA, equipeB: m.equipeB, clubB: m.clubB,
-      date: m.date, competition: m.competition, arbitre: m.arbitre, lieu: m.lieu || ""
+      date: m.date, competition: m.competition, lieu: m.lieu || ""
     });
     
+    // On décompose la chaîne d'arbitres pour remplir les badges
+    if (m.arbitre) {
+      setSelectedArbitres(m.arbitre.split(" / "));
+    }
+
     const clubAObj = clubs.find(c => c.nom === m.clubA);
     const clubBObj = clubs.find(c => c.nom === m.clubB);
     if (clubAObj) setSelectedClubA(clubAObj.id);
     if (clubBObj) setSelectedClubB(clubBObj.id);
-
-    if (m.config) {
-      setDureePeriode((m.config.tempsInitial / 60).toString());
-      setTmMT1(m.config.tmMT1.toString());
-      setTmMT2(m.config.tmMT2.toString());
-    }
     setShowForm(true);
   };
 
   const resetForm = () => {
     setShowForm(false); setEditingId(null);
-    setNewMatch({ equipeA: "", clubA: "", equipeB: "", clubB: "", date: "", competition: "", arbitre: "", lieu: "" });
+    setNewMatch({ equipeA: "", clubA: "", equipeB: "", clubB: "", date: "", competition: "", lieu: "" });
+    setSelectedArbitres([]);
     setSelectedClubA(""); setSelectedClubB("");
   };
 
@@ -129,7 +134,6 @@ export default function MatchsAVenirPage() {
         <div style={formCardStyle}>
           <form onSubmit={handleSoumettre} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             
-            {/* DOMICILE */}
             <div style={colStyle}>
               <label style={miniLabel}>ÉQUIPE DOMICILE</label>
               <select required value={selectedClubA} onChange={e => setSelectedClubA(e.target.value)} style={inputStyle}>
@@ -142,7 +146,6 @@ export default function MatchsAVenirPage() {
               </select>
             </div>
 
-            {/* EXTÉRIEUR */}
             <div style={colStyle}>
               <label style={miniLabel}>ÉQUIPE EXTÉRIEUR</label>
               <select required value={selectedClubB} onChange={e => setSelectedClubB(e.target.value)} style={inputStyle}>
@@ -153,6 +156,37 @@ export default function MatchsAVenirPage() {
                 <option value="">Choisir Équipe...</option>
                 {(clubs.find(c => c.id === selectedClubB)?.equipes || []).map(eq => <option key={eq.id} value={eq.nom}>{eq.nom}</option>)}
               </select>
+            </div>
+
+            {/* SÉLECTION MULTIPLE DES ARBITRES */}
+            <div style={{...colStyle, gridColumn: '1 / span 2'}}>
+              <label style={miniLabel}>ARBITRES (SÉLECTIONNEZ UN OU PLUSIEURS)</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                {arbitres.length > 0 ? arbitres.map(a => {
+                  const nomComplet = `${a.prenom} ${a.nom}`;
+                  const isSelected = selectedArbitres.includes(nomComplet);
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => toggleArbitre(nomComplet)}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '20px',
+                        border: 'none',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        backgroundColor: isSelected ? '#F97316' : '#e2e8f0',
+                        color: isSelected ? 'white' : '#475569',
+                        transition: '0.2s'
+                      }}
+                    >
+                      {nomComplet} {isSelected ? '✕' : '+'}
+                    </button>
+                  );
+                }) : <span style={{fontSize: '0.8rem', color: '#94a3b8'}}>Aucun arbitre dans la base...</span>}
+              </div>
             </div>
 
             <div style={colStyle}>
@@ -178,14 +212,6 @@ export default function MatchsAVenirPage() {
             </div>
 
             <div style={colStyle}>
-              <label style={miniLabel}>ARBITRE</label>
-              <select required value={newMatch.arbitre} onChange={e => setNewMatch({...newMatch, arbitre: e.target.value})} style={inputStyle}>
-                <option value="">Sélectionner...</option>
-                {arbitres.map(a => <option key={a.id} value={`${a.prenom} ${a.nom}`}>{a.prenom} {a.nom}</option>)}
-              </select>
-            </div>
-
-            <div style={{...colStyle, gridColumn: '1/span 2'}}>
               <label style={miniLabel}>📍 LIEU / GYMNASE</label>
               <input type="text" placeholder="Ex: Gymnase Herzog" value={newMatch.lieu} onChange={e => setNewMatch({...newMatch, lieu: e.target.value})} style={inputStyle} />
             </div>
@@ -195,6 +221,7 @@ export default function MatchsAVenirPage() {
         </div>
       )}
 
+      {/* LISTE DES MATCHS (IDENTIQUE) */}
       <div style={{ display: 'grid', gap: '15px' }}>
         {matchs.map((m) => (
           <div key={m.id} style={matchCardStyle}>
@@ -212,10 +239,10 @@ export default function MatchsAVenirPage() {
             <div style={footerCard}>
               <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
                 <div>📅 {m.date?.replace('T', ' ')} | {m.competition}</div>
-                {m.lieu && <div style={{color:'#F97316', fontSize:'0.7rem', marginTop:4}}>📍 {m.lieu}</div>}
+                <div style={{marginTop: 4}}>🏁 <span style={{fontWeight: 'bold', color: '#1e293b'}}>{m.arbitre || "Non assigné"}</span></div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button onClick={() => supprimerMatch(m.id)} style={iconBtn}>🗑️</button>
+                <button onClick={() => { if(confirm("Supprimer ?")) supabase.from('matchs').delete().eq('id', m.id).then(() => chargerDonnees()) }} style={iconBtn}>🗑️</button>
                 <button onClick={() => handleEditer(m)} style={editBtnSmall}>✎</button>
                 <Link href={`/matchs/marque/${m.id}`} style={startBtnStyle}>MARQUER</Link>
               </div>
@@ -227,9 +254,10 @@ export default function MatchsAVenirPage() {
   );
 }
 
+// STYLES (Identiques au précédent pour la cohérence)
 const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', width: '100%', boxSizing: 'border-box' as const };
 const addBtnStyle = { backgroundColor: '#111827', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold' as const, cursor: 'pointer' };
-const submitBtn = { gridColumn: '1/span 2', backgroundColor: '#F97316', color: 'white', padding: '14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '900' as const, border: 'none' };
+const submitBtn = { gridColumn: '1/span 2', backgroundColor: '#F97316', color: 'white', padding: '14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '900' as const, border: 'none', marginTop: '10px' };
 const formCardStyle = { marginBottom: '30px', padding: '20px', borderRadius: '16px', backgroundColor: '#fff', border: '1px solid #eee' };
 const colStyle = { display: 'flex', flexDirection: 'column' as const, gap: '5px' };
 const miniLabel = { fontSize: '0.65rem', fontWeight: '900' as const, color: '#64748b', marginBottom: '2px' };

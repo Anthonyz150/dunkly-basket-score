@@ -13,7 +13,6 @@ export default function ArbitresPage() {
   useEffect(() => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) setUser(JSON.parse(storedUser));
-
     chargerArbitres();
   }, []);
 
@@ -29,7 +28,11 @@ export default function ArbitresPage() {
     setLoading(false);
   };
 
-  const isAdmin = user?.username === 'admin';
+  // Vérification Admin
+  const isAdmin = 
+    user?.role?.toLowerCase() === 'admin' || 
+    user?.username?.toLowerCase() === 'admin' || 
+    user?.email === 'anthony.didier.pro@gmail.com';
 
   const preparerEdition = (arb: any) => {
     if (!isAdmin) return;
@@ -48,25 +51,18 @@ export default function ArbitresPage() {
     };
 
     if (editingId) {
-      // UPDATE CLOUD
       const { error } = await supabase
         .from('arbitres')
         .update(payload)
         .eq('id', editingId);
 
-      if (!error) {
-        setArbitres(arbitres.map(arb => arb.id === editingId ? { ...arb, ...payload } : arb));
-      }
+      if (!error) chargerArbitres();
     } else {
-      // INSERT CLOUD
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('arbitres')
-        .insert([payload])
-        .select();
+        .insert([payload]);
 
-      if (!error && data) {
-        setArbitres([...arbitres, data[0]]);
-      }
+      if (!error) chargerArbitres();
     }
     
     fermerModale();
@@ -86,13 +82,11 @@ export default function ArbitresPage() {
         .delete()
         .eq('id', id);
 
-      if (!error) {
-        setArbitres(arbitres.filter(arb => arb.id !== id));
-      }
+      if (!error) chargerArbitres();
     }
   };
 
-  if (loading) return <div style={{ padding: '30px' }}>Chargement des officiels...</div>;
+  if (loading) return <div style={{ padding: '30px', fontWeight: 'bold' }}>Chargement des officiels...</div>;
 
   return (
     <div style={{ padding: '30px', maxWidth: '1200px', fontFamily: 'sans-serif' }}>
@@ -111,7 +105,6 @@ export default function ArbitresPage() {
         )}
       </header>
 
-      {/* GRILLE DES CARTES */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
         {arbitres.map((arb) => (
           <div key={arb.id} style={cardStyle}>
@@ -142,7 +135,6 @@ export default function ArbitresPage() {
         ))}
       </div>
 
-      {/* MODALE (Identique visuellement) */}
       {isModalOpen && isAdmin && (
         <div style={modalOverlayStyle}>
           <div style={modalContentStyle}>
@@ -182,7 +174,7 @@ export default function ArbitresPage() {
   );
 }
 
-// --- TES STYLES OBJETS (Conserve les mêmes) ---
+// --- STYLES CONSERVÉS ---
 const btnAjouterStyle = { backgroundColor: '#1a1a1a', color: 'white', border: 'none', padding: '14px 28px', borderRadius: '12px', cursor: 'pointer', fontWeight: '900' as const, fontSize: '0.85rem' };
 const modalOverlayStyle: React.CSSProperties = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(15, 23, 42, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, backdropFilter: 'blur(4px)' };
 const modalContentStyle: React.CSSProperties = { background: 'white', padding: '40px', borderRadius: '24px', width: '380px' };
