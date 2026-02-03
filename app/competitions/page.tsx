@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase'; // Import de la connexion
+import { supabase } from '@/lib/supabase';
 
 export default function CompetitionsPage() {
   const [competitions, setCompetitions] = useState<any[]>([]);
@@ -13,33 +13,38 @@ export default function CompetitionsPage() {
   useEffect(() => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) setUser(JSON.parse(storedUser));
-
     chargerCompetitions();
   }, []);
 
-  // --- RÉCUPÉRATION DEPUIS SUPABASE ---
   const chargerCompetitions = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('competitions')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('competitions')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (!error && data) setCompetitions(data);
-    setLoading(false);
+      if (error) throw error;
+      if (data) setCompetitions(data);
+    } catch (err: any) {
+      console.error("Erreur de chargement:", err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const isAdmin = user?.username === 'admin';
+  // Correction de la vérification Admin (plus flexible)
+  const isAdmin = user?.username?.toLowerCase() === 'admin' || 
+                  user?.email === 'anthony.didier.pro@gmail.com';
 
-  // --- ACTION : CRÉER ---
   const creerCompet = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!nom || !isAdmin) return;
     
+    // On laisse Supabase gérer 'created_at' pour éviter les erreurs de format date
     const nouvelle = {
       nom: nom.trim(),
-      type,
-      dateDebut: new Date().toLocaleDateString('fr-FR'),
+      type: type
     };
     
     const { data, error } = await supabase
@@ -51,59 +56,52 @@ export default function CompetitionsPage() {
       setCompetitions([data[0], ...competitions]);
       setNom('');
       setIsModalOpen(false);
+    } else if (error) {
+      alert("Erreur base de données : " + error.message);
     }
   };
 
-  // --- ACTION : SUPPRIMER ---
   const supprimerCompet = async (id: string) => {
     if (!isAdmin) return;
-    
     if (confirm("Voulez-vous vraiment supprimer cette compétition ?")) {
-      const { error } = await supabase
-        .from('competitions')
-        .delete()
-        .eq('id', id);
-
-      if (!error) {
-        setCompetitions(competitions.filter(c => c.id !== id));
-      }
+      const { error } = await supabase.from('competitions').delete().eq('id', id);
+      if (!error) setCompetitions(competitions.filter(c => c.id !== id));
     }
   };
 
   return (
-    <div style={{ padding: '30px', maxWidth: '1200px', fontFamily: 'sans-serif' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+    <div className="container">
+      <header className="page-header">
         <div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '900', color: '#1a1a1a', margin: 0 }}>🏆 COMPÉTITIONS</h1>
-          <p style={{ color: '#64748b', fontSize: '1.1rem', marginTop: '5px' }}>
+          <h1 className="title">🏆 COMPÉTITIONS</h1>
+          <p className="subtitle">
             {isAdmin ? "Configurez vos tournois et championnats." : "Liste des épreuves officielles."}
           </p>
         </div>
 
         {isAdmin && (
           <button onClick={() => setIsModalOpen(true)} style={btnNouveauStyle}>
-            + NOUVELLE COMPÉTITION
+            + NOUVELLE
           </button>
         )}
       </header>
 
-      {/* GRILLE */}
       {loading ? (
-        <p>Chargement...</p>
+        <div className="loader">🏀 Chargement...</div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '25px' }}>
+        <div className="grid">
           {competitions.length > 0 ? competitions.map((c) => (
             <div key={c.id} style={compCardStyle}>
               <div style={decorBar}></div>
-              <div style={{ padding: '25px', flex: 1, position: 'relative' }}>
+              <div style={{ padding: '20px', flex: 1, position: 'relative', overflow: 'hidden' }}>
                 {isAdmin && (
                   <button onClick={() => supprimerCompet(c.id)} style={deleteBtnStyle}>×</button>
                 )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <span style={typeBadgeStyle(c.type)}>{c.type}</span>
-                  <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '800', color: '#1e293b' }}>{c.nom}</h3>
-                  <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0, fontWeight: '600' }}>
-                    📅 Lancé le {c.dateDebut}
+                  <h3 className="comp-name">{c.nom}</h3>
+                  <p className="comp-date">
+                    📅 {c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') : 'Date inconnue'}
                   </p>
                 </div>
               </div>
@@ -111,31 +109,31 @@ export default function CompetitionsPage() {
           )) : (
             <div style={emptyStateStyle}>
               <span style={{ fontSize: '3rem' }}>🏆</span>
-              <p style={{ fontWeight: '600', marginTop: '10px' }}>Aucune compétition active.</p>
+              <p>Aucune compétition active.</p>
             </div>
           )}
         </div>
       )}
 
-      {/* MODALE (Identique à ton code, appelle creerCompet) */}
-      {isModalOpen && isAdmin && (
+      {/* MODALE */}
+      {isModalOpen && (
         <div style={modalOverlayStyle}>
-          <div style={modalContentStyle}>
-            <h2 style={{ marginTop: 0, fontWeight: '800', color: '#1e293b' }}>Créer un tournoi</h2>
-            <form onSubmit={creerCompet} style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
+          <div className="modal-content">
+            <h2 style={{ marginTop: 0 }}>Créer un tournoi</h2>
+            <form onSubmit={creerCompet} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div style={inputGroup}>
-                <label style={labelStyle}>Nom de la compétition</label>
-                <input placeholder="ex: Coupe de Printemps" value={nom} onChange={(e) => setNom(e.target.value)} style={inputStyle} required />
+                <label style={labelStyle}>Nom</label>
+                <input value={nom} onChange={(e) => setNom(e.target.value)} style={inputStyle} required />
               </div>
               <div style={inputGroup}>
-                <label style={labelStyle}>Format de jeu</label>
+                <label style={labelStyle}>Format</label>
                 <select value={type} onChange={(e) => setType(e.target.value)} style={inputStyle}>
                   <option value="Championnat">Championnat</option>
                   <option value="Tournoi">Tournoi</option>
                   <option value="Coupe">Coupe</option>
                 </select>
               </div>
-              <div style={{ display: 'flex', gap: '15px' }}>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <button type="submit" style={confirmBtnStyle}>Créer</button>
                 <button type="button" onClick={() => setIsModalOpen(false)} style={cancelBtnStyle}>Annuler</button>
               </div>
@@ -143,30 +141,37 @@ export default function CompetitionsPage() {
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        .container { padding: 20px; maxWidth: 1200px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .title { font-size: 2rem; font-weight: 900; margin: 0; }
+        .subtitle { color: #64748b; margin: 5px 0 0 0; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .comp-name { margin: 0; font-size: 1.2rem; font-weight: 800; color: #1e293b; word-break: break-word; }
+        .comp-date { font-size: 0.8rem; color: #94a3b8; margin: 0; }
+        .loader { text-align: center; padding: 50px; font-weight: bold; }
+        
+        @media (max-width: 600px) {
+          .page-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+          .title { font-size: 1.6rem; }
+          .modal-content { width: 90% !important; padding: 20px !important; }
+        }
+      `}</style>
     </div>
   );
 }
 
-// --- GARDER TES STYLES OBJETS ICI ---
-const btnNouveauStyle = { backgroundColor: '#1a1a1a', color: 'white', border: 'none', padding: '14px 28px', borderRadius: '12px', cursor: 'pointer', fontWeight: '900' as const, fontSize: '0.85rem' };
-const typeBadgeStyle = (type: string) => ({
-    display: 'inline-block',
-    width: 'fit-content',
-    padding: '4px 12px',
-    borderRadius: '8px',
-    fontSize: '0.75rem',
-    fontWeight: '800' as const,
-    backgroundColor: type === 'Championnat' ? '#eff6ff' : '#fff7ed',
-    color: type === 'Championnat' ? '#2563eb' : '#ea580c',
-});
-const modalOverlayStyle: React.CSSProperties = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(15, 23, 42, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000 };
-const modalContentStyle: React.CSSProperties = { background: 'white', padding: '40px', borderRadius: '24px', width: '420px' };
-const inputGroup = { display: 'flex', flexDirection: 'column' as const, gap: '8px' };
-const labelStyle = { fontSize: '0.8rem', fontWeight: '800', color: '#64748b' };
-const inputStyle = { padding: '14px', borderRadius: '12px', border: '2px solid #f1f5f9', outline: 'none' };
-const confirmBtnStyle = { flex: 2, backgroundColor: '#F97316', color: 'white', border: 'none', padding: '14px', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold' as const };
-const cancelBtnStyle = { flex: 1, backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', padding: '14px', borderRadius: '12px', cursor: 'pointer' };
-const compCardStyle: React.CSSProperties = { backgroundColor: '#fff', borderRadius: '20px', border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex' };
-const decorBar = { width: '8px', backgroundColor: '#1e293b' };
-const deleteBtnStyle: React.CSSProperties = { position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '1.5rem', fontWeight: 'bold' };
-const emptyStateStyle: React.CSSProperties = { gridColumn: '1/-1', textAlign: 'center', padding: '100px', color: '#94a3b8', backgroundColor: '#f8fafc', borderRadius: '24px', border: '2px dashed #e2e8f0' };
+// STYLES OBJETS
+const btnNouveauStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '10px', cursor: 'pointer', fontWeight: '900' as const, fontSize: '0.8rem' };
+const typeBadgeStyle = (type: string) => ({ display: 'inline-block', width: 'fit-content', padding: '3px 10px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '800' as const, backgroundColor: type === 'Championnat' ? '#eff6ff' : '#fff7ed', color: type === 'Championnat' ? '#2563eb' : '#ea580c' });
+const modalOverlayStyle: React.CSSProperties = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(15, 23, 42, 0.9)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000 };
+const inputGroup = { display: 'flex', flexDirection: 'column' as const, gap: '5px' };
+const labelStyle = { fontSize: '0.75rem', fontWeight: '800', color: '#64748b' };
+const inputStyle = { padding: '12px', borderRadius: '10px', border: '2px solid #f1f5f9', outline: 'none', fontSize: '1rem' };
+const confirmBtnStyle = { flex: 2, backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' as const };
+const cancelBtnStyle = { flex: 1, backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', padding: '12px', borderRadius: '10px', cursor: 'pointer' };
+const compCardStyle: React.CSSProperties = { backgroundColor: '#fff', borderRadius: '18px', border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', minHeight: '120px' };
+const decorBar = { width: '6px', backgroundColor: '#F97316' };
+const deleteBtnStyle: React.CSSProperties = { position: 'absolute', top: '10px', right: '10px', background: 'white', border: '1px solid #fee2e2', color: '#ef4444', cursor: 'pointer', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', zIndex: 10 };
+const emptyStateStyle: React.CSSProperties = { gridColumn: '1/-1', textAlign: 'center', padding: '60px', color: '#94a3b8', backgroundColor: '#f8fafc', borderRadius: '20px', border: '2px dashed #e2e8f0' };
