@@ -44,8 +44,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const isAdmin = 
     user?.role === 'admin' ||
     user?.username?.toLowerCase() === 'admin' || 
-    user?.username?.toLowerCase() === 'anthony.didier.prop' ||
-    user?.email === 'anthony.didier.prop@gmail.com';
+    user?.username?.toLowerCase() === 'anthony.didier.pro' ||
+    user?.email === 'anthony.didier.pro@gmail.com';
 
   if (loading && !isLoginPage) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0f172a' }}>🏀</div>;
 
