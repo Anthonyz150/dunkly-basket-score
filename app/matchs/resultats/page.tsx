@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getFromLocal, saveToLocal } from "@/lib/store";
+import { getFromLocal } from "@/lib/store";
 import Link from "next/link";
 
 export default function ResultatsPage() {
@@ -10,69 +10,87 @@ export default function ResultatsPage() {
 
   useEffect(() => {
     setIsMounted(true);
-    // On récupère les résultats stockés par l'E-Marque
-    const dataRaw = getFromLocal('resultats');
-    const data = Array.isArray(dataRaw) ? dataRaw : [];
     
-    // On trie pour avoir le match le plus récent en premier
-    const sortedData = data.sort((a: any, b: any) => 
-      new Date(b.dateFin || 0).getTime() - new Date(a.dateFin || 0).getTime()
+    // On récupère TOUS les matchs de la liste globale
+    const dataRaw = getFromLocal('matchs');
+    const tousLesMatchs = Array.isArray(dataRaw) ? dataRaw : [];
+    
+    // On trie par date (le plus futur en haut, ou le plus récent terminé en haut)
+    // Ici, on trie pour avoir les dates les plus récentes en premier
+    const sorted = tousLesMatchs.sort((a: any, b: any) => 
+      new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
     );
     
-    setMatchs(sortedData);
+    setMatchs(sorted);
   }, []);
 
-  const purgerResultats = () => {
-    if(confirm("Voulez-vous vraiment effacer l'historique des résultats ?")) {
-      saveToLocal('resultats', []);
-      setMatchs([]);
+  if (!isMounted) return null;
+
+  // Fonction pour générer le badge de statut
+  const renderStatus = (status: string) => {
+    switch (status) {
+      case 'termine':
+        return <span style={{ ...statusBadge, backgroundColor: '#dcfce7', color: '#16a34a' }}>✅ TERMINÉ</span>;
+      case 'en-cours':
+        return <span style={{ ...statusBadge, backgroundColor: '#fef9c3', color: '#ca8a04' }}>⏱️ EN COURS</span>;
+      default:
+        return <span style={{ ...statusBadge, backgroundColor: '#f1f5f9', color: '#64748b' }}>📅 À VENIR</span>;
     }
   };
-
-  if (!isMounted) return null;
 
   return (
     <div style={containerStyle}>
       <div style={headerStyle}>
         <div>
-          <h1 style={{ margin: 0, fontWeight: '900', fontSize: '2rem' }}>✅ RÉSULTATS</h1>
-          <p style={{ color: '#64748b', marginTop: '5px' }}>Historique des matchs terminés</p>
+          <h1 style={{ margin: 0, fontWeight: '900', fontSize: '2.2rem' }}>🏀 TOUS LES MATCHS</h1>
+          <p style={{ color: '#64748b', marginTop: '5px' }}>Suivi complet de la compétition</p>
         </div>
-        <div style={{ display: 'flex', gap: '15px' }}>
-          <Link href="/matchs/a-venir" style={linkBtnStyle}>← Retour</Link>
-          {matchs.length > 0 && (
-            <button onClick={purgerResultats} style={purgeBtnStyle}>Effacer tout</button>
-          )}
-        </div>
+        <Link href="/matchs/a-venir" style={linkBtnStyle}>← Gestion des matchs</Link>
       </div>
 
       <div style={gridStyle}>
         {matchs.length > 0 ? (
           matchs.map((m, index) => (
-            <div key={index} style={cardStyle}>
+            <div key={m.id || index} style={cardStyle}>
               <div style={infoSideStyle}>
-                <span style={dateBadgeStyle}>
-                  {m.dateFin ? new Date(m.dateFin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : "Date inconnue"}
-                </span>
-                <span style={competitionStyle}>{m.competition || "Championnat"}</span>
-                <div style={teamsRowStyle}>
-                  <span style={teamNameStyle}>{m.equipeA}</span>
-                  <span style={{ color: '#cbd5e1', fontWeight: 'normal' }}>vs</span>
-                  <span style={teamNameStyle}>{m.equipeB}</span>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '5px' }}>
+                  {renderStatus(m.status)}
+                  <span style={dateBadgeStyle}>
+                    {m.date ? m.date.replace('T', ' à ') : "Date non fixée"}
+                  </span>
                 </div>
-              </div>
-              
-              <div style={scoreBoxStyle}>
-                <span style={m.scoreA >= m.scoreB ? winScore : loseScore}>{m.scoreA}</span>
-                <span style={{ color: '#F97316' }}>-</span>
-                <span style={m.scoreB >= m.scoreA ? winScore : loseScore}>{m.scoreB}</span>
+                
+                <div style={teamsRowStyle}>
+                  <div style={teamBlock}>
+                    <span style={m.status === 'termine' && m.scoreA > m.scoreB ? winName : teamNameStyle}>
+                      {m.equipeA}
+                    </span>
+                    <span style={clubStyle}>{m.clubA}</span>
+                  </div>
+
+                  <div style={scoreBoxStyle}>
+                    <span style={scoreValue}>{m.scoreA ?? 0}</span>
+                    <span style={{ color: '#F97316', opacity: 0.5 }}>:</span>
+                    <span style={scoreValue}>{m.scoreB ?? 0}</span>
+                  </div>
+
+                  <div style={teamBlock}>
+                    <span style={m.status === 'termine' && m.scoreB > m.scoreA ? winName : teamNameStyle}>
+                      {m.equipeB}
+                    </span>
+                    <span style={clubStyle}>{m.clubB}</span>
+                  </div>
+                </div>
+                
+                <div style={footerDetail}>
+                  📍 {m.competition} {m.arbitre && ` | ⚖️ ${m.arbitre}`}
+                </div>
               </div>
             </div>
           ))
         ) : (
           <div style={emptyCardStyle}>
-            <span style={{ fontSize: '3rem' }}>📂</span>
-            <p>Aucun match enregistré pour le moment.</p>
+            <p>Aucun match programmé pour le moment.</p>
           </div>
         )}
       </div>
@@ -80,19 +98,25 @@ export default function ResultatsPage() {
   );
 }
 
-// STYLES 
-const containerStyle = { padding: '40px 20px', maxWidth: '900px', margin: '0 auto', fontFamily: 'sans-serif' };
+// STYLES
+const containerStyle = { padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'sans-serif' };
 const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' };
 const gridStyle = { display: 'flex', flexDirection: 'column' as const, gap: '20px' };
-const cardStyle = { backgroundColor: '#fff', borderRadius: '20px', padding: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' };
-const infoSideStyle = { display: 'flex', flexDirection: 'column' as const, gap: '8px' };
-const teamsRowStyle = { display: 'flex', gap: '12px', alignItems: 'center', marginTop: '5px' };
-const teamNameStyle = { fontWeight: '800', fontSize: '1.2rem', color: '#1e293b' };
-const dateBadgeStyle = { fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase' as const };
-const competitionStyle = { fontSize: '0.85rem', color: '#F97316', fontWeight: 'bold' };
-const scoreBoxStyle = { background: '#1e293b', padding: '15px 25px', borderRadius: '15px', display: 'flex', gap: '10px', alignItems: 'center', fontFamily: 'monospace', fontSize: '2rem', fontWeight: '900' };
-const winScore = { color: '#fff' };
-const loseScore = { color: '#64748b' };
-const emptyCardStyle = { textAlign: 'center' as const, padding: '100px', backgroundColor: '#f8fafc', borderRadius: '30px', color: '#94a3b8', border: '2px dashed #e2e8f0' };
-const linkBtnStyle = { textDecoration: 'none', color: '#1e293b', fontWeight: 'bold' };
-const purgeBtnStyle = { backgroundColor: '#fee2e2', color: '#ef4444', border: 'none', padding: '8px 15px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' };
+const cardStyle = { backgroundColor: '#fff', borderRadius: '20px', padding: '25px', border: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' };
+const infoSideStyle = { display: 'flex', flexDirection: 'column' as const };
+const teamsRowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '15px 0' };
+
+const teamBlock = { display: 'flex', flexDirection: 'column' as const, flex: 1, textAlign: 'center' as const };
+const teamNameStyle = { fontWeight: '800', fontSize: '1.3rem', color: '#1e293b' };
+const winName = { ...teamNameStyle, color: '#F97316' }; // Met en orange le vainqueur
+const clubStyle = { fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' as const, fontWeight: 'bold' };
+
+const scoreBoxStyle = { display: 'flex', alignItems: 'center', gap: '15px', padding: '0 30px' };
+const scoreValue = { fontSize: '2.5rem', fontWeight: '900', color: '#1e293b', fontFamily: 'monospace' };
+
+const dateBadgeStyle = { fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b' };
+const statusBadge = { padding: '4px 10px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '900' };
+const footerDetail = { fontSize: '0.8rem', color: '#94a3b8', borderTop: '1px solid #f1f5f9', paddingTop: '10px', marginTop: '10px' };
+
+const emptyCardStyle = { textAlign: 'center' as const, padding: '60px', color: '#94a3b8' };
+const linkBtnStyle = { textDecoration: 'none', color: '#F97316', fontWeight: 'bold' };
