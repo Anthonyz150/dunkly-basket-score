@@ -1,25 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { getFromLocal } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-// --- 1. TYPES ---
-interface User {
-  username: string;
-}
-
-interface Stats {
-  compets: number;
-  equipes: number;
-  matchs: number;
-}
-
-// --- 2. COMPOSANTS INTERNES ---
-
-function StatCard({ label, value, icon, color }: { label: string; value: number; icon: string; color: string }) {
+// --- 1. COMPOSANTS DE STYLE INTERNES ---
+function StatCard({ label, value, icon, color }: { label: string; value: number | string; icon: string; color: string }) {
   return (
     <div style={{ 
       backgroundColor: 'white', padding: '25px', borderRadius: '24px', 
@@ -47,68 +34,65 @@ function ActionRow({ href, icon, text, sub, primary = false }: { href: string; i
         <div style={{ fontWeight: '700', color: primary ? '#F97316' : '#1E293B', fontSize: '0.95rem' }}>{text}</div>
         <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{sub}</div>
       </div>
-      <div style={{ color: primary ? '#F97316' : '#CBD5E1' }}>→</div>
+      <div style={{ color: primary ? '#F97316' : '#CBD5E1', fontWeight: 'bold' }}>→</div>
     </Link>
   );
 }
 
-// --- 3. COMPOSANT PRINCIPAL ---
-
+// --- 2. COMPOSANT PRINCIPAL ---
 export default function Dashboard() {
-  const [stats, setStats] = useState<Stats>({ compets: 0, equipes: 0, matchs: 0 });
-  const [user, setUser] = useState<User | null>(null);
+  const [stats, setStats] = useState({ compets: 0, equipes: 0, matchs: 0 });
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        const userData = { username: session.user.email?.split('@')[0] || 'Anthony' };
-        setUser(userData);
-        
-        // Sync avec le Layout
-        localStorage.setItem('currentUser', JSON.stringify(userData));
-        
-        // Stats et Users
-        const c = (getFromLocal('competitions') || []) as any[];
-        const e = (getFromLocal('equipes') || []) as any[];
-        const m = (getFromLocal('matchs') || []) as any[];
-        setStats({ compets: c.length, equipes: e.length, matchs: m.length });
-        setAllUsers((getFromLocal('users') || []) as User[]);
-        
-        setLoading(false);
-      } else {
-        const timer = setTimeout(() => {
-          if (!session) {
-            localStorage.removeItem('currentUser');
-            router.replace('/login');
-          }
-        }, 1500);
-        return () => clearTimeout(timer);
+    const initDashboard = async () => {
+      // 1. Récupérer l'utilisateur
+      const stored = localStorage.getItem('currentUser');
+      if (!stored) {
+        router.replace('/login');
+        return;
       }
-    });
+      const userData = JSON.parse(stored);
+      setUser(userData);
 
-    return () => subscription.unsubscribe();
+      // 2. Récupérer les vrais comptes depuis Supabase
+      try {
+        const [competsRes, equipesRes, matchsRes] = await Promise.all([
+          supabase.from('competitions').select('*', { count: 'exact', head: true }),
+          supabase.from('equipes').select('*', { count: 'exact', head: true }),
+          supabase.from('matchs').select('*', { count: 'exact', head: true })
+        ]);
+
+        setStats({
+          compets: competsRes.count || 0,
+          equipes: equipesRes.count || 0,
+          matchs: matchsRes.count || 0
+        });
+      } catch (error) {
+        console.error("Erreur lors du chargement des stats:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initDashboard();
   }, [router]);
 
-  const isAdmin = user?.username === 'admin' || user?.username === 'anthony.didier.pro';
+  const isAdmin = 
+    user?.role === 'admin' || 
+    user?.username?.toLowerCase() === 'admin' || 
+    user?.username?.toLowerCase() === 'anthony.didier.prop';
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div className="ball" style={{ fontSize: '4rem', marginBottom: '10px' }}>🏀</div>
-          <p style={{ fontWeight: 'bold', color: '#64748B', fontFamily: 'sans-serif' }}>Chargement de Dunkly...</p>
-        </div>
-        <style jsx>{`
-          .ball { animation: bounce 0.6s infinite alternate; }
-          @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-30px); } }
-        `}</style>
+  if (loading) return (
+    <div style={{ height: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '3rem', animation: 'bounce 0.6s infinite alternate' }}>🏀</div>
+        <p style={{ color: '#64748B', fontWeight: 'bold' }}>Chargement du terrain...</p>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '90vh' }}>
@@ -120,18 +104,18 @@ export default function Dashboard() {
             Accueil <span style={{ color: '#F97316' }}>.</span>
           </h1>
           <p style={{ color: '#64748B', marginTop: '5px' }}>
-            Ravi de vous revoir, <strong>{user?.username}</strong>.
+            Ravi de vous revoir, <strong>{user?.prenom || user?.username}</strong>.
           </p>
         </div>
 
         {isAdmin && (
-          <button onClick={() => setIsModalOpen(true)} style={btnAdminStyle}>
-            👥 VOIR LES MEMBRES
-          </button>
+          <Link href="/membres" style={btnAdminStyle}>
+            👥 GÉRER LES MEMBRES
+          </Link>
         )}
       </div>
 
-      {/* STATS */}
+      {/* STATS RÉELLES */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '25px', marginBottom: '40px' }}>
         <StatCard label="Championnats" value={stats.compets} icon="🏆" color="#F97316" />
         <StatCard label="Clubs & Équipes" value={stats.equipes} icon="🛡️" color="#3B82F6" />
@@ -142,8 +126,8 @@ export default function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
         <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', border: '1px solid #F1F5F9' }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '25px', color: '#1E293B' }}>⚡ Actions Prioritaires</h3>
-          <ActionRow href="/matchs" icon="🏀" text="Saisir un score" sub="Mise à jour live" primary />
-          <ActionRow href="/equipes" icon="👥" text="Ajouter équipe" sub="Gestion des clubs" />
+          <ActionRow href="/matchs/resultats" icon="🏀" text="Saisir un score" sub="Mise à jour live" primary />
+          <ActionRow href="/competitions" icon="🏆" text="Gérer tournois" sub="Configurations" />
         </div>
 
         <div style={{ backgroundColor: '#1E293B', padding: '30px', borderRadius: '24px', color: 'white', position: 'relative', overflow: 'hidden' }}>
@@ -158,45 +142,15 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* MODALE MEMBRES (REMISE ICI) */}
-      {isModalOpen && isAdmin && (
-        <div style={modalOverlay} onClick={() => setIsModalOpen(false)}>
-          <div style={modalContent} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-              <h2 style={{ margin: 0, fontWeight: '900' }}>🛡️ Gestion des Accès</h2>
-              <button onClick={() => setIsModalOpen(false)} style={closeBtn}>×</button>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
-              {allUsers.map((u, index) => (
-                <div key={index} style={userRow}>
-                  <div style={avatarStyle(u.username === 'admin' || u.username === 'anthony.didier.prop')}>
-                    {u.username.charAt(0).toUpperCase()}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '700' }}>{u.username}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748B' }}>
-                      {(u.username === 'admin' || u.username === 'anthony.didier.prop') ? 'ADMINISTRATEUR' : 'UTILISATEUR'}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       <footer style={{ marginTop: 'auto', padding: '40px 0 20px', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', color: '#94A3B8', fontSize: '0.85rem' }}>
         <div>© 2026 <strong>DUNKLY</strong></div>
-        <div>Version 1.0.4</div>
+        <div>Version 1.0.8</div>
       </footer>
     </div>
   );
 }
 
-// --- 4. STYLES ---
-const btnAdminStyle = { backgroundColor: '#1a1a1a', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: '800' as const, cursor: 'pointer', fontSize: '0.8rem' };
-const modalOverlay: React.CSSProperties = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999 };
-const modalContent: React.CSSProperties = { backgroundColor: 'white', padding: '35px', borderRadius: '28px', width: '90%', maxWidth: '450px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' };
-const userRow = { display: 'flex', alignItems: 'center', gap: '15px', padding: '15px', backgroundColor: '#F8FAFC', borderRadius: '16px', border: '1px solid #F1F5F9' };
-const avatarStyle = (isAdmin: boolean) => ({ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: isAdmin ? '#F97316' : '#1E293B', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900' as const });
-const closeBtn = { background: '#F1F5F9', border: 'none', width: '35px', height: '35px', borderRadius: '50%', cursor: 'pointer' };
+const btnAdminStyle = { 
+  backgroundColor: '#1E293B', color: 'white', textDecoration: 'none', 
+  padding: '12px 24px', borderRadius: '14px', fontWeight: '800' as const, fontSize: '0.85rem' 
+};

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import "./globals.css";
 
@@ -10,11 +10,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
 
   const loadUser = () => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        console.error("Erreur de parsing", e);
+      }
+    } else {
+      setUser(null);
     }
   };
 
@@ -23,19 +30,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     setLoading(false);
     setIsMenuOpen(false);
 
+    // Redirection si déconnecté (sauf sur login)
+    if (!localStorage.getItem('currentUser') && pathname !== '/login') {
+      router.push('/login');
+    }
+
     window.addEventListener('storage', loadUser);
     return () => window.removeEventListener('storage', loadUser);
-  }, [pathname]);
+  }, [pathname, router]);
 
   const isLoginPage = pathname === '/login';
   
-  // LOGIQUE ADMIN : à adapter selon tes pseudos/emails admin
   const isAdmin = 
+    user?.role === 'admin' ||
     user?.username?.toLowerCase() === 'admin' || 
     user?.username?.toLowerCase() === 'anthony.didier.prop' ||
     user?.email === 'anthony.didier.prop@gmail.com';
 
-  if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>🏀</div>;
+  if (loading && !isLoginPage) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0f172a' }}>🏀</div>;
 
   return (
     <html lang="fr">
@@ -62,10 +74,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div style={navGroup}>
                   <p style={groupLabel}>MATCHS</p>
                   <Link href="/matchs/resultats" className={`nav-link ${pathname === '/matchs/resultats' ? 'active' : ''}`}>✅ Résultats</Link>
-                  <Link href="/matchs/a-venir" className={`nav-link ${pathname === '/matchs/a-venir' ? 'active' : ''}`}>📅 Matchs à venir</Link>
+                  <Link href="/matchs/a-venir" className={`nav-link ${pathname === '/matchs/a-venir' ? 'active' : ''}`}>📅 À venir</Link>
                 </div>
 
-                {/* ESPACE ADMIN : Apparaît seulement pour l'admin */}
                 {isAdmin && (
                   <div style={navGroup}>
                     <p style={{ ...groupLabel, color: '#F97316' }}>ADMINISTRATION</p>
@@ -89,7 +100,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </nav>
 
-            <main className="main-content" style={{ padding: '20px' }}>
+            <main className="main-content" style={{ padding: '20px', minHeight: '100vh' }}>
               {children}
             </main>
           </>
@@ -101,4 +112,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 const navGroup = { marginTop: '25px', marginBottom: '10px' };
 const groupLabel = { fontSize: '0.7rem', color: '#555', marginLeft: '20px', fontWeight: 'bold' as const };
-const logoutBtn = { width: '100%', color: '#ff4444', border: '1px solid #ff4444', background: 'transparent', padding: '8px', borderRadius: '6px', cursor: 'pointer' };
+const logoutBtn = { width: '100%', color: '#ff4444', border: '1px solid #ff4444', background: 'rgba(255, 68, 68, 0.1)', padding: '8px', borderRadius: '6px', cursor: 'pointer' };
