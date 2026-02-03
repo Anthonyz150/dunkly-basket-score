@@ -93,7 +93,7 @@ export default function Dashboard() {
     return () => subscription.unsubscribe();
   }, [router]);
 
-  const isAdmin = user?.username === 'admin' || user?.username === 'anthony.didier.prop';
+  const isAdmin = user?.username === 'admin' || user?.username === 'anthony.didier.pro';
 
   if (loading) {
     return (
