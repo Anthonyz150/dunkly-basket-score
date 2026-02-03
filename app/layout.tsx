@@ -1,132 +1,52 @@
-"use client";
+'use client';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
-import { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
-import "./globals.css";
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function CompetitionsPage() {
+  const [competitions, setCompetitions] = useState<any[]>([]);
+  const [nom, setNom] = useState('');
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const pathname = usePathname();
-  const router = useRouter();
-
-  const loadUser = () => {
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Erreur de parsing", e);
-      }
-    } else {
-      setUser(null);
-    }
-  };
 
   useEffect(() => {
-    loadUser();
-    setLoading(false);
-    setIsMenuOpen(false);
+    const stored = localStorage.getItem('currentUser');
+    if (stored) setUser(JSON.parse(stored));
+    fetchComps();
+  }, []);
 
-    if (!localStorage.getItem('currentUser') && pathname !== '/login') {
-      router.push('/login');
-    }
+  const fetchComps = async () => {
+    const { data } = await supabase.from('competitions').select('*').order('created_at', { ascending: false });
+    if (data) setCompetitions(data);
+  };
 
-    window.addEventListener('storage', loadUser);
-    return () => window.removeEventListener('storage', loadUser);
-  }, [pathname, router]);
+  const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
 
-  const isLoginPage = pathname === '/login';
-  
-  const isAdmin = 
-    user?.role === 'admin' ||
-    user?.username?.toLowerCase() === 'admin' || 
-    user?.username?.toLowerCase() === 'anthony.didier.pro' ||
-    user?.email === 'anthony.didier.pro@gmail.com';
-
-  if (loading && !isLoginPage) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0f172a' }}>🏀</div>;
+  const ajouter = async () => {
+    if (!nom || !isAdmin) return;
+    const { error } = await supabase.from('competitions').insert([{ nom: nom.trim(), type: 'Championnat' }]);
+    if (!error) { setNom(''); fetchComps(); }
+    else alert(error.message);
+  };
 
   return (
-    <html lang="fr">
-      <body className={isLoginPage ? 'login-body' : 'app-body'} style={{ backgroundColor: isLoginPage ? '#111' : '#f4f4f4', margin: 0 }}>
-        {isLoginPage ? (
-          children
-        ) : (
-          <>
-            <button className="burger-toggle" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? '✕' : '☰'}
-            </button>
-
-            {isMenuOpen && <div className="overlay" onClick={() => setIsMenuOpen(false)}></div>}
-
-            <nav className={`sidebar ${isMenuOpen ? 'mobile-open' : ''}`}>
-              <div style={{ padding: '30px 20px', textAlign: 'center' }}>
-                <h2 style={{ color: '#F97316', margin: 0, fontWeight: '900' }}>🏀 DUNKLY</h2>
-              </div>
-              
-              <div className="nav-container">
-                <Link href="/" className={`nav-link ${pathname === '/' ? 'active' : ''}`}>🏠 Accueil</Link>
-                <Link href="/competitions" className={`nav-link ${pathname === '/competitions' ? 'active' : ''}`}>🏆 Compétitions</Link>
-                
-                <div style={navGroup}>
-                  <p style={groupLabel}>MATCHS</p>
-                  <Link href="/matchs/resultats" className={`nav-link ${pathname === '/matchs/resultats' ? 'active' : ''}`}>✅ Résultats</Link>
-                  <Link href="/matchs/a-venir" className={`nav-link ${pathname === '/matchs/a-venir' ? 'active' : ''}`}>📅 À venir</Link>
-                </div>
-
-                {isAdmin && (
-                  <div style={navGroup}>
-                    <p style={{ ...groupLabel, color: '#F97316' }}>ADMINISTRATION</p>
-                    <Link href="/membres" className={`nav-link ${pathname === '/membres' ? 'active' : ''}`}>👥 Gestion Membres</Link>
-                  </div>
-                )}
-
-                <div style={navGroup}>
-                  <p style={groupLabel}>PARAMÈTRES</p>
-                  <Link href="/profil" className={`nav-link ${pathname === '/profil' ? 'active' : ''}`}>👤 Mon Profil</Link>
-                </div>
-              </div>
-
-              {/* SECTION PROFIL MISE À JOUR */}
-              <div className="profile-box">
-                <div style={{ marginBottom: '12px' }}>
-                  <p style={{ margin: 0, fontSize: '0.65rem', color: '#94A3B8', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Connecté en tant que
-                  </p>
-                  <strong style={{ color: 'white', display: 'block', fontSize: '1.05rem', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                     {user?.username || 'Utilisateur'}
-                  </strong>
-                </div>
-                
-                <button onClick={() => { localStorage.clear(); window.location.href='/login'; }} style={logoutBtn}>
-                  Déconnexion
-                </button>
-              </div>
-            </nav>
-
-            <main className="main-content" style={{ padding: '20px', minHeight: '100vh' }}>
-              {children}
-            </main>
-          </>
-        )}
-      </body>
-    </html>
+    <div>
+      <h1>🏆 COMPÉTITIONS</h1>
+      {isAdmin && (
+        <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
+          <input value={nom} onChange={e => setNom(e.target.value)} placeholder="Nom du tournoi" style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
+          <button onClick={ajouter} style={{ background: '#F97316', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer' }}>Ajouter</button>
+        </div>
+      )}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
+        {competitions.map(c => (
+          <div key={c.id} style={{ background: 'white', padding: '20px', borderRadius: '15px', borderLeft: '5px solid #F97316', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ margin: 0 }}>{c.nom}</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.8rem' }}>📅 {new Date(c.created_at).toLocaleDateString('fr-FR')}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
 const navGroup = { marginTop: '25px', marginBottom: '10px' };
-const groupLabel = { fontSize: '0.7rem', color: '#555', marginLeft: '20px', fontWeight: 'bold' as const };
-const logoutBtn = { 
-  width: '100%', 
-  color: '#ff4444', 
-  border: '1px solid #ff4444', 
-  background: 'rgba(255, 68, 68, 0.1)', 
-  padding: '10px', 
-  borderRadius: '10px', 
-  cursor: 'pointer',
-  fontSize: '0.8rem',
-  fontWeight: '800',
-  transition: '0.2s'
-};
+const groupLabel = { fontSize: '0.7rem', color: '#4b5563', marginLeft: '20px', fontWeight: 'bold' as const, marginBottom: '8px' };
