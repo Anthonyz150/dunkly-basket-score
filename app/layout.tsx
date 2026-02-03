@@ -23,19 +23,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     setLoading(false);
     setIsMenuOpen(false);
 
-    // Écouter les changements de profil pour mettre à jour le nom en temps réel
     window.addEventListener('storage', loadUser);
     return () => window.removeEventListener('storage', loadUser);
   }, [pathname]);
 
   const isLoginPage = pathname === '/login';
-  const bgColor = isLoginPage ? '#111111' : '#f4f4f4';
+  
+  // LOGIQUE ADMIN : à adapter selon tes pseudos/emails admin
+  const isAdmin = 
+    user?.username?.toLowerCase() === 'admin' || 
+    user?.username?.toLowerCase() === 'anthony.didier.prop' ||
+    user?.email === 'anthony.didier.prop@gmail.com';
 
   if (loading) return <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>🏀</div>;
 
   return (
-    <html lang="fr" style={{ backgroundColor: bgColor }}>
-      <body className={isLoginPage ? 'login-body' : 'app-body'} style={{ backgroundColor: bgColor, margin: 0 }}>
+    <html lang="fr">
+      <body className={isLoginPage ? 'login-body' : 'app-body'} style={{ backgroundColor: isLoginPage ? '#111' : '#f4f4f4', margin: 0 }}>
         {isLoginPage ? (
           children
         ) : (
@@ -54,31 +58,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="nav-container">
                 <Link href="/" className={`nav-link ${pathname === '/' ? 'active' : ''}`}>🏠 Accueil</Link>
                 <Link href="/competitions" className={`nav-link ${pathname === '/competitions' ? 'active' : ''}`}>🏆 Compétitions</Link>
-                <Link href="/equipes" className={`nav-link ${pathname === '/equipes' ? 'active' : ''}`}>👥 Équipes</Link>
-
-                <div style={{ marginTop: '25px', marginBottom: '10px' }}>
-                  <p style={{ fontSize: '0.7rem', color: '#555', marginLeft: '20px', fontWeight: 'bold' }}>MATCHS</p>
+                
+                <div style={navGroup}>
+                  <p style={groupLabel}>MATCHS</p>
                   <Link href="/matchs/resultats" className={`nav-link ${pathname === '/matchs/resultats' ? 'active' : ''}`}>✅ Résultats</Link>
                   <Link href="/matchs/a-venir" className={`nav-link ${pathname === '/matchs/a-venir' ? 'active' : ''}`}>📅 Matchs à venir</Link>
                 </div>
 
-                <div style={{ marginTop: '25px', marginBottom: '10px' }}>
-                  <p style={{ fontSize: '0.7rem', color: '#555', marginLeft: '20px', fontWeight: 'bold' }}>PARAMÈTRES</p>
+                {/* ESPACE ADMIN : Apparaît seulement pour l'admin */}
+                {isAdmin && (
+                  <div style={navGroup}>
+                    <p style={{ ...groupLabel, color: '#F97316' }}>ADMINISTRATION</p>
+                    <Link href="/membres" className={`nav-link ${pathname === '/membres' ? 'active' : ''}`}>👥 Gestion Membres</Link>
+                  </div>
+                )}
+
+                <div style={navGroup}>
+                  <p style={groupLabel}>PARAMÈTRES</p>
                   <Link href="/profil" className={`nav-link ${pathname === '/profil' ? 'active' : ''}`}>👤 Mon Profil</Link>
                 </div>
               </div>
 
               <div className="profile-box">
                 <strong style={{ color: 'white', display: 'block', marginBottom: '10px' }}>
-                   {user?.prenom ? `${user.prenom} ${user.nom}` : (user?.username || 'Admin')}
+                   {user?.prenom ? `${user.prenom} ${user.nom}` : (user?.username || 'Utilisateur')}
                 </strong>
-                <button onClick={() => { localStorage.removeItem('currentUser'); window.location.href='/login'; }} style={logoutBtn}>
+                <button onClick={() => { localStorage.clear(); window.location.href='/login'; }} style={logoutBtn}>
                   Déconnexion
                 </button>
               </div>
             </nav>
 
-            <main className="main-content" style={{ backgroundColor: '#f4f4f4', minHeight: '100vh', padding: '20px' }}>
+            <main className="main-content" style={{ padding: '20px' }}>
               {children}
             </main>
           </>
@@ -88,4 +99,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   );
 }
 
+const navGroup = { marginTop: '25px', marginBottom: '10px' };
+const groupLabel = { fontSize: '0.7rem', color: '#555', marginLeft: '20px', fontWeight: 'bold' as const };
 const logoutBtn = { width: '100%', color: '#ff4444', border: '1px solid #ff4444', background: 'transparent', padding: '8px', borderRadius: '6px', cursor: 'pointer' };
