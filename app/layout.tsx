@@ -38,16 +38,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   const isLoginPage = pathname === '/login';
   
+  // Vérification ADMIN renforcée
   const isAdmin = 
-    user?.role === 'admin' ||
+    user?.role?.toLowerCase() === 'admin' ||
     user?.username?.toLowerCase() === 'admin' || 
     user?.email === 'anthony.didier.pro@gmail.com';
 
-  // Affichage pendant le chargement pour éviter le flash blanc
   if (loading && !isLoginPage) {
     return (
       <html lang="fr">
-        <body style={{ background: '#0f172a' }}></body>
+        <body style={{ background: '#111827' }}></body>
       </html>
     );
   }
@@ -59,15 +59,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           children
         ) : (
           <div className="layout-container">
-            {/* BOUTON BURGER (VISIBLE UNIQUEMENT SUR MOBILE) */}
+            {/* BOUTON BURGER MOBILE */}
             <button className="burger-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
               {isMenuOpen ? '✕' : '☰'}
             </button>
 
-            {/* OVERLAY POUR FERMER LE MENU SUR MOBILE */}
+            {/* OVERLAY FERMETURE MOBILE */}
             {isMenuOpen && <div className="menu-overlay" onClick={() => setIsMenuOpen(false)}></div>}
 
-            {/* SIDEBAR NOIRE ORIGINALE */}
+            {/* SIDEBAR NOIRE ORIGINALE RÉPARÉE */}
             <nav className={`sidebar ${isMenuOpen ? 'mobile-open' : ''}`}>
               <div className="sidebar-brand">
                 <h2 style={{ color: '#F97316', margin: 0, fontWeight: '900' }}>🏀 DUNKLY</h2>
@@ -77,6 +77,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link href="/" className={`nav-item ${pathname === '/' ? 'active' : ''}`}>🏠 Accueil</Link>
                 <Link href="/competitions" className={`nav-item ${pathname === '/competitions' ? 'active' : ''}`}>🏆 Compétitions</Link>
                 
+                {/* SECTION ÉQUIPES (REVENUE !) */}
+                <div className="nav-section">
+                  <p className="section-title">CLUBS</p>
+                  <Link href="/equipes" className={`nav-item ${pathname === '/equipes' ? 'active' : ''}`}>🛡️ Équipes</Link>
+                </div>
+
                 <div className="nav-section">
                   <p className="section-title">MATCHS</p>
                   <Link href="/matchs/resultats" className={`nav-item ${pathname === '/matchs/resultats' ? 'active' : ''}`}>✅ Résultats</Link>
@@ -96,11 +102,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </div>
 
-              {/* FOOTER PROFIL CONNECTÉ */}
+              {/* FOOTER PROFIL CONNECTÉ (FIXÉ POUR ARBITRES) */}
               <div className="profile-footer">
                 <div className="user-details">
                   <p className="conn-label">CONNECTÉ EN TANT QUE</p>
                   <strong className="user-display">
+                     {/* Affiche le pseudo, ou le début de l'email, ou Arbitre par défaut */}
                      {user?.username || user?.email?.split('@')[0] || 'Arbitre'}
                   </strong>
                 </div>
@@ -136,19 +143,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
           .sidebar-brand { padding: 30px 20px; text-align: center; }
           .nav-list { flex: 1; padding: 0 15px; overflow-y: auto; }
-          .nav-item { display: block; padding: 12px 15px; color: #94a3b8; text-decoration: none; border-radius: 10px; margin-bottom: 5px; font-weight: 600; transition: 0.2s; }
+          .nav-item { display: block; padding: 12px 15px; color: #94a3b8; text-decoration: none; border-radius: 10px; margin-bottom: 5px; font-weight: 600; transition: 0.2s; font-size: 0.9rem; }
           .nav-item:hover { background: #1f2937; color: white; }
-          .nav-item.active { background: #F97316; color: white; }
+          .nav-item.active { background: #F97316 !important; color: white !important; }
           
           .nav-section { margin-top: 25px; }
-          .section-title { font-size: 0.7rem; color: #4b5563; padding-left: 15px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; }
+          .section-title { font-size: 0.65rem; color: #4b5563; padding-left: 15px; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
           .section-title.admin { color: #F97316; }
 
           .profile-footer { padding: 20px; border-top: 1px solid #1f2937; background: #0f172a; }
           .conn-label { margin: 0; font-size: 0.65rem; color: #64748b; font-weight: 800; }
           .user-display { color: white; font-size: 1.1rem; display: block; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           
-          .btn-logout { width: 100%; margin-top: 15px; padding: 10px; border-radius: 10px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 800; cursor: pointer; transition: 0.2s; }
+          .btn-logout { width: 100%; margin-top: 15px; padding: 10px; border-radius: 10px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
           .btn-logout:hover { background: #ef4444; color: white; }
 
           .burger-btn { display: none; position: fixed; top: 15px; right: 15px; z-index: 2000; background: #F97316; color: white; border: none; border-radius: 8px; padding: 10px 15px; font-size: 1.2rem; cursor: pointer; }
