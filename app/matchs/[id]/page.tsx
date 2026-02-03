@@ -15,24 +15,27 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
   const [isRunning, setIsRunning] = useState(false);
   const [quartTemps, setQuartTemps] = useState(1);
   const [showPeriodModal, setShowPeriodModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false); // Pop-up Historique
 
-  // ÉTATS TEMPS MORTS
+  const [statsJoueurs, setStatsJoueurs] = useState<Record<string, { points: number, fautes: number }>>({});
   const [tmA, setTmA] = useState<boolean[]>([false, false]);
   const [tmB, setTmB] = useState<boolean[]>([false, false]);
-
-  // ÉTATS FAUTES, DRAPEAUX ET POSSESSION
   const [fautesA, setFautesA] = useState(0);
   const [fautesB, setFautesB] = useState(0);
   const [possession, setPossession] = useState<"A" | "B">("A");
-
-  // ÉTAT CHRONO TEMPS MORT
   const [tmChrono, setTmChrono] = useState<number | null>(null);
   const [isTmActive, setIsTmActive] = useState(false);
+
+  const [historique, setHistorique] = useState<any[]>([]);
+  const [showFoulModal, setShowFoulModal] = useState(false);
+  const [foulStep, setFoulStep] = useState(1);
+  const [selectedEquipe, setSelectedEquipe] = useState<"A" | "B" | null>(null);
+  const [selectedJoueurId, setSelectedJoueurId] = useState<string | null>(null);
 
   const adjustTimerRef = useRef<NodeJS.Timeout | null>(null);
   const longPressDelayRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Chargement du match
+  // --- INITIALISATION ---
   useEffect(() => {
     const data = getFromLocal("matchs");
     const matchs = Array.isArray(data) ? data : [];
@@ -40,28 +43,95 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
     if (found) {
       setMatch(found);
       if (found.config?.tempsInitial) setChrono(found.config.tempsInitial);
+      const initialStats: any = {};
+      [...(found.joueursA || []), ...(found.joueursB || [])].forEach((j: any) => {
+        initialStats[j.id] = { points: 0, fautes: 0 };
+      });
+      setStatsJoueurs(initialStats);
     }
   }, [matchId]);
 
-  // Chrono principal
+  // --- LOGIQUE CHRONO MATCH ---
   useEffect(() => {
-    if (!isRunning || chrono <= 0) {
-      if (chrono === 0) setIsRunning(false);
-      return;
-    }
+    if (!isRunning || chrono <= 0) { if (chrono === 0) setIsRunning(false); return; }
     const interval = setInterval(() => setChrono(prev => Math.max(0, prev - 1)), 1000);
     return () => clearInterval(interval);
   }, [isRunning, chrono]);
 
-  // Chrono Temps Mort
+  // --- LOGIQUE CHRONO TEMPS MORT ---
   useEffect(() => {
-    if (!isTmActive || tmChrono === null || tmChrono <= 0) {
-      if (tmChrono === 0) setIsTmActive(false);
-      return;
-    }
+    if (!isTmActive || tmChrono === null || tmChrono <= 0) { if (tmChrono === 0) setIsTmActive(false); return; }
     const interval = setInterval(() => setTmChrono(prev => (prev !== null ? prev - 1 : null)), 1000);
     return () => clearInterval(interval);
   }, [isTmActive, tmChrono]);
+
+  // --- ACTIONS ---
+  const actionJoueur = (equipe: "A" | "B", joueurId: string, type: 'points' | 'fautes', valeur: number, label?: string) => {
+    if (valeur > 0) {
+      const joueur = [...match.joueursA, ...match.joueursB].find(j => j.id === joueurId);
+      const nouvelleAction = {
+        id: Date.now(),
+        joueurId,
+        joueurNom: joueur?.nom,
+        equipe,
+        type,
+        valeur,
+        label: label || (type === 'points' ? `+${valeur} pts` : "Faute"),
+        temps: formatTime(chrono),
+        periode: quartTemps
+      };
+      setHistorique(prev => [nouvelleAction, ...prev]);
+    }
+
+    setStatsJoueurs(prev => {
+      const current = prev[joueurId] || { points: 0, fautes: 0 };
+      return { ...prev, [joueurId]: { ...current, [type]: Math.max(0, current[type] + valeur) } };
+    });
+
+    if (type === 'points') modifierScore(equipe, valeur);
+
+    if (type === 'fautes') {
+      if (valeur > 0) {
+        if (equipe === "A") setFautesA(prev => Math.min(5, prev + 1));
+        else setFautesB(prev => Math.min(5, prev + 1));
+      } else {
+        if (equipe === "A") setFautesA(prev => Math.max(0, prev - 1));
+        else setFautesB(prev => Math.max(0, prev - 1));
+      }
+    }
+  };
+
+  const modifierScore = (equipe: "A" | "B", pts: number) => {
+    if (!match) return;
+    const key = equipe === "A" ? "scoreA" : "scoreB";
+    setMatch((prev: any) => ({ ...prev, [key]: Math.max(0, prev[key] + pts) }));
+  };
+
+  const supprimerAction = (action: any) => {
+    actionJoueur(action.equipe, action.joueurId, action.type, -action.valeur);
+    setHistorique(prev => prev.filter(a => a.id !== action.id));
+  };
+
+  const validerFautePopup = (typeLabel: string) => {
+    if (selectedEquipe && selectedJoueurId) {
+      actionJoueur(selectedEquipe, selectedJoueurId, 'fautes', 1, `Faute ${typeLabel}`);
+      setShowFoulModal(false);
+      setFoulStep(1);
+      setSelectedEquipe(null);
+      setSelectedJoueurId(null);
+    }
+  };
+
+  const toggleTM = (equipe: "A" | "B", index: number) => {
+    setIsRunning(false); 
+    if (equipe === "A") {
+      const newTm = [...tmA]; newTm[index] = !newTm[index]; setTmA(newTm);
+      if (newTm[index]) { setTmChrono(60); setIsTmActive(true); }
+    } else {
+      const newTm = [...tmB]; newTm[index] = !newTm[index]; setTmB(newTm);
+      if (newTm[index]) { setTmChrono(60); setIsTmActive(true); }
+    }
+  };
 
   const formatTime = (time: number) => {
     const min = Math.floor(time / 60);
@@ -69,33 +139,14 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
     return `${min}:${sec < 10 ? "0" : ""}${sec}`;
   };
 
-  const toggleTM = (equipe: "A" | "B", index: number) => {
-    setIsRunning(false); 
-    if (equipe === "A") {
-      const newTm = [...tmA];
-      newTm[index] = !newTm[index];
-      setTmA(newTm);
-      if (newTm[index]) { setTmChrono(60); setIsTmActive(true); }
-    } else {
-      const newTm = [...tmB];
-      newTm[index] = !newTm[index];
-      setTmB(newTm);
-      if (newTm[index]) { setTmChrono(60); setIsTmActive(true); }
-    }
-  };
-
-  const appliquerAjustement = (valeur: number) => {
-    const tempsMax = match?.config?.tempsInitial || 600;
-    setChrono(prev => {
-      const n = prev + valeur;
-      return n < 0 ? 0 : n > tempsMax ? tempsMax : n;
-    });
-  };
-
   const startAdjusting = (dir: "UP" | "DOWN") => {
-    appliquerAjustement(dir === "UP" ? 1 : -1);
+    const apply = (v: number) => setChrono(p => {
+        const n = p + v; 
+        return n < 0 ? 0 : n > (match?.config?.tempsInitial || 600) ? (match?.config?.tempsInitial || 600) : n;
+    });
+    apply(dir === "UP" ? 1 : -1);
     longPressDelayRef.current = setTimeout(() => {
-      adjustTimerRef.current = setInterval(() => appliquerAjustement(dir === "UP" ? 5 : -5), 200);
+      adjustTimerRef.current = setInterval(() => apply(dir === "UP" ? 5 : -5), 200);
     }, 400);
   };
 
@@ -104,218 +155,213 @@ export default function EMarquePage({ params }: { params: Promise<{ id: string }
     if (longPressDelayRef.current) clearTimeout(longPressDelayRef.current);
   };
 
-  // --- LOGIQUE REDIRECTION ET SAUVEGARDE (CORRIGÉE POUR LE BUILD) ---
+  const passerPeriodeSuivante = () => {
+    const nextP = quartTemps + 1;
+    setQuartTemps(nextP);
+    setChrono(match?.config?.tempsInitial || 600);
+    setFautesA(0); setFautesB(0);
+    setIsRunning(false); setShowPeriodModal(false);
+  };
+
   const finaliserLeMatch = () => {
     if (!match) return;
-    
     if (confirm("Clôturer le match et enregistrer le résultat ?")) {
-      try {
-        // Fix Type Error: Cast as any[]
-        const data = (getFromLocal("matchs") || []) as any[];
-        
-        const updatedMatchs = data.map((m: any) => 
-          m.id === matchId ? { 
-            ...m, 
-            scoreA: match.scoreA, 
-            scoreB: match.scoreB, 
-            status: 'termine', 
-            dateFin: new Date().toISOString() 
-          } : m
-        );
-
-        // 1. Mise à jour matchs globaux
-        saveToLocal("matchs", updatedMatchs);
-
-        // 2. Sauvegarde spécifique pour la page Résultats
-        const resultatsExistants = (getFromLocal("resultats") || []) as any[];
-        const nouveauResultat = {
-          ...match,
-          scoreA: match.scoreA,
-          scoreB: match.scoreB,
-          dateFin: new Date().toISOString(),
-          status: 'termine'
-        };
-        saveToLocal("resultats", [nouveauResultat, ...resultatsExistants]);
-
-        // 3. Redirection
-        router.push("/matchs/resultats");
-        
-        // Sécurité redirection
-        setTimeout(() => {
-          if (window.location.pathname !== "/matchs/resultats") {
-            window.location.href = "/matchs/resultats";
-          }
-        }, 300);
-
-      } catch (e) {
-        console.error("Erreur sauvegarde:", e);
-      }
+      const data = (getFromLocal("matchs") || []) as any[];
+      const updatedMatch = { ...match, statsFinales: statsJoueurs, status: 'termine', dateFin: new Date().toISOString() };
+      saveToLocal("matchs", data.map((m: any) => m.id === matchId ? updatedMatch : m));
+      router.push("/matchs/resultats");
     }
-  };
-
-  const passerPeriodeSuivante = () => {
-    if (quartTemps < 4) {
-      setQuartTemps(prev => prev + 1);
-      setChrono(match?.config?.tempsInitial || 600);
-      setFautesA(0);
-      setFautesB(0);
-      setIsRunning(false);
-      setShowPeriodModal(false);
-    }
-  };
-
-  const modifierScore = (equipe: "A" | "B", pts: number) => {
-    if (!match) return;
-    const key = equipe === "A" ? "scoreA" : "scoreB";
-    setMatch({ ...match, [key]: Math.max(0, match[key] + pts) });
   };
 
   if (!match) return <div style={{ padding: '20px' }}>Chargement...</div>;
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1400px', margin: '0 auto', fontFamily: 'sans-serif' }}>
+    <div style={layoutWrapper}>
       
       {/* OVERLAY TEMPS MORT */}
-      {isTmActive && tmChrono !== null && (
+      {isTmActive && (
         <div style={tmOverlayStyle}>
           <div style={tmModalContent}>
-            <h2 style={{ fontSize: '2rem', color: '#1e293b' }}>TEMPS MORT</h2>
-            <div style={{ fontSize: '10rem', fontWeight: '900', color: tmChrono <= 5 ? '#ef4444' : '#F97316', fontFamily: 'monospace' }}>
-              {tmChrono}s
-            </div>
-            <button onClick={() => setIsTmActive(false)} style={closeTmBtn}>RETOUR AU MATCH</button>
-          </div>
-        </div>
-      )}
-
-      {/* MODALE PÉRIODE */}
-      {showPeriodModal && (
-        <div style={overlayStyle}>
-          <div style={modalStyle}>
-            <h2 style={{ color: '#1e293b' }}>Passer à la Période {quartTemps + 1} ?</h2>
-            <p style={{ color: '#ef4444', fontWeight: 'bold', margin: '20px 0' }}>⚠️ Action irréversible. Les fautes d'équipe seront remises à zéro.</p>
-            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
-              <button onClick={passerPeriodeSuivante} style={confirmBtn}>VALIDER</button>
-              <button onClick={() => setShowPeriodModal(false)} style={cancelBtn}>ANNULER</button>
-            </div>
+            <h2 style={{ fontSize: '2rem' }}>TEMPS MORT</h2>
+            <div style={{ fontSize: '12rem', fontWeight: '900', color: (tmChrono || 0) <= 5 ? '#ef4444' : '#F97316' }}>{tmChrono}s</div>
+            <button onClick={() => setIsTmActive(false)} style={closeTmBtn}>REPRENDRE LE JEU</button>
           </div>
         </div>
       )}
 
       {/* HEADER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-        <div>
-          <h1 style={{ fontWeight: '900', fontSize: '1.8rem', margin: 0 }}>E-MARQUE</h1>
-          <p style={{ color: '#F97316', fontWeight: 'bold' }}>{match.clubA} vs {match.clubB}</p>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center' }}>
+        <button onClick={() => setPossession(prev => prev === "A" ? "B" : "A")} style={possessionBtn}>
+          POSSESSION {possession === "A" ? "◀ " + (match.clubA) : (match.clubB) + " ▶"}
+        </button>
         
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: '0.7rem', fontWeight: 'bold', color: '#64748b', marginBottom: '5px' }}>POSSESSION</p>
-          <button onClick={() => setPossession(prev => prev === "A" ? "B" : "A")} style={possessionBtn}>
-            {possession === "A" ? "◀" : "▶"}
-          </button>
+        <div style={{ display: 'flex', gap: '15px' }}>
+          <button onClick={() => { setIsRunning(false); setShowFoulModal(true); }} style={foulTriggerBtn}>SIFFLER FAUTE 🚩</button>
+          <button onClick={() => setShowHistoryModal(true)} style={historyTriggerBtn}>HISTORIQUE 🕒</button>
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
-            {!isRunning && (
-                quartTemps < 4 ? <button onClick={() => setShowPeriodModal(true)} style={nextPeriodBtn}>PÉRIODE SUIVANTE ➔</button> 
-                : <button onClick={finaliserLeMatch} style={finishMatchBtn}>TERMINER LE MATCH 🏁</button>
-            )}
-            <Link href="/matchs/a-venir" style={quitBtn}>✕ QUITTER</Link>
+            {!isRunning && (quartTemps < 4 ? <button onClick={() => setShowPeriodModal(true)} style={nextPeriodBtn}>FIN DE PÉRIODE</button> : <button onClick={finaliserLeMatch} style={finishMatchBtn}>TERMINER LE MATCH 🏁</button>)}
+            <Link href="/matchs/a-venir" style={quitBtn}>QUITTER</Link>
         </div>
       </div>
 
+      {/* SCOREBOARD */}
       <div style={mainCard}>
-        <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-          <span style={{ fontWeight: '900', fontSize: '1.6rem', color: '#1e293b' }}>PÉRIODE {quartTemps}</span>
-        </div>
-
         <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-          {/* ÉQUIPE A */}
-          <div style={{ textAlign: 'center', flex: 1 }}>
-            <h2 style={equipeNameStyle}>{match.equipeA}</h2>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <h2 style={equipeNameStyle}>{match.clubA}</h2>
             <div style={scoreValueStyle}>{match.scoreA}</div>
-            <div style={{ marginBottom: '20px' }}>
-              <p style={{ fontSize: '0.8rem', fontWeight: '900', color: '#64748b' }}>FAUTES D'ÉQUIPE</p>
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-                <button onClick={() => setFautesA(prev => Math.max(0, prev - 1))} style={fautesSmallBtn}>-</button>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  <span style={fautesDisplay(fautesA)}>{fautesA}</span>
-                  {fautesA >= 4 && <span style={flagStyleA}>🚩</span>}
-                </div>
-                <button onClick={() => setFautesA(prev => Math.min(5, prev + 1))} style={fautesSmallBtn}>+</button>
-              </div>
+            <div style={fautesBox}>
+              <span style={fautesDisplay(fautesA)}>{fautesA >= 4 && "🚩"} FAUTES : {fautesA}</span>
             </div>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-              {tmA.map((pris, i) => <button key={i} onClick={() => toggleTM("A", i)} style={tmSquareStyle(pris)}>TM {i+1}</button>)}
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              {tmA.map((pris, i) => <button key={i} onClick={() => toggleTM("A", i)} style={tmSquareStyle(pris)}>TM</button>)}
             </div>
           </div>
 
-          {/* CHRONO CENTRAL */}
           <div style={{ flex: 1.5, textAlign: 'center' }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#64748b' }}>PÉRIODE {quartTemps}</div>
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px' }}>
               <button onMouseDown={() => startAdjusting("DOWN")} onMouseUp={stopAdjusting} style={arrowBtn}>▼</button>
-              <div style={{ fontSize: '7rem', fontWeight: '900', fontFamily: 'monospace', color: '#ef4444', minWidth: '320px' }}>
-                {formatTime(chrono)}
-              </div>
+              <div style={chronoDisplay}>{formatTime(chrono)}</div>
               <button onMouseDown={() => startAdjusting("UP")} onMouseUp={stopAdjusting} style={arrowBtn}>▲</button>
             </div>
-            <button onClick={() => setIsRunning(!isRunning)} style={startBtn(isRunning)}>
-              {isRunning ? "⏸ PAUSE" : "▶ DÉMARRER"}
-            </button>
+            <button onClick={() => setIsRunning(!isRunning)} style={startBtn(isRunning)}>{isRunning ? "⏸ PAUSE" : "▶ DÉMARRER"}</button>
           </div>
 
-          {/* ÉQUIPE B */}
-          <div style={{ textAlign: 'center', flex: 1 }}>
-            <h2 style={equipeNameStyle}>{match.equipeB}</h2>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <h2 style={equipeNameStyle}>{match.clubB}</h2>
             <div style={scoreValueStyle}>{match.scoreB}</div>
-            <div style={{ marginBottom: '20px' }}>
-              <p style={{ fontSize: '0.8rem', fontWeight: '900', color: '#64748b' }}>FAUTES D'ÉQUIPE</p>
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-                <button onClick={() => setFautesB(prev => Math.max(0, prev - 1))} style={fautesSmallBtn}>-</button>
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                  {fautesB >= 4 && <span style={flagStyleB}>🚩</span>}
-                  <span style={fautesDisplay(fautesB)}>{fautesB}</span>
-                </div>
-                <button onClick={() => setFautesB(prev => Math.min(5, prev + 1))} style={fautesSmallBtn}>+</button>
-              </div>
+            <div style={fautesBox}>
+              <span style={fautesDisplay(fautesB)}>{fautesB >= 4 && "🚩"} FAUTES : {fautesB}</span>
             </div>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-              {tmB.map((pris, i) => <button key={i} onClick={() => toggleTM("B", i)} style={tmSquareStyle(pris)}>TM {i+1}</button>)}
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              {tmB.map((pris, i) => <button key={i} onClick={() => toggleTM("B", i)} style={tmSquareStyle(pris)}>TM</button>)}
             </div>
           </div>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px' }}>
-        <div style={scoreBtnGroup}><button onClick={() => modifierScore("A", 1)} style={ptBtn}>+1</button><button onClick={() => modifierScore("A", 2)} style={ptBtn}>+2</button><button onClick={() => modifierScore("A", 3)} style={ptBtn}>+3</button></div>
-        <div style={scoreBtnGroup}><button onClick={() => modifierScore("B", 1)} style={ptBtn}>+1</button><button onClick={() => modifierScore("B", 2)} style={ptBtn}>+2</button><button onClick={() => modifierScore("B", 3)} style={ptBtn}>+3</button></div>
+      {/* JOUEURS */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '25px', marginTop: '25px' }}>
+        {[ {team: "A", players: match.joueursA}, {team: "B", players: match.joueursB} ].map((side, idx) => (
+          <div key={idx} style={playerCard}>
+            <div style={{ maxHeight: '450px', overflowY: 'auto' }}>
+              {side.players?.filter((j: any) => !j.estCoach).map((j: any) => (
+                <div key={j.id} style={playerRow}>
+                  <div style={{ flex: 1 }}>
+                    <span style={playerNum}>#{j.numero}</span>
+                    <span style={playerName}>{j.nom}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                    <div style={actionBlock}>
+                       <button onClick={() => actionJoueur(side.team as "A"|"B", j.id, 'fautes', -1)} style={minusBtn}>-</button>
+                       <span style={{ fontWeight: '900', minWidth: '25px', textAlign: 'center' }}>{statsJoueurs[j.id]?.fautes || 0}F</span>
+                    </div>
+                    <div style={actionBlock}>
+                      <button onClick={() => actionJoueur(side.team as "A"|"B", j.id, 'points', -1)} style={minusBtn}>-</button>
+                      <button onClick={() => actionJoueur(side.team as "A"|"B", j.id, 'points', 1)} style={pBtn}>+1</button>
+                      <button onClick={() => actionJoueur(side.team as "A"|"B", j.id, 'points', 2)} style={pBtn}>+2</button>
+                      <button onClick={() => actionJoueur(side.team as "A"|"B", j.id, 'points', 3)} style={pBtn}>+3</button>
+                      <span style={totalPtsLabel}>{statsJoueurs[j.id]?.points || 0} pts</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
+
+      {/* --- POPUP HISTORIQUE --- */}
+      {showHistoryModal && (
+        <div style={overlayStyle}>
+          <div style={historyModalStyle}>
+            <button onClick={() => setShowHistoryModal(false)} style={closeCrossStyle}>✕</button>
+            <h2 style={{ marginBottom: '20px', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>Historique du match</h2>
+            <div style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+              {historique.map((act) => (
+                <div key={act.id} style={historyItemStyle(act.equipe)}>
+                  <div style={{ flex: 1, textAlign: 'left' }}>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{act.temps} - P{act.periode}</div>
+                    <div style={{ fontWeight: 'bold' }}>{act.joueurNom} - {act.label}</div>
+                  </div>
+                  <button onClick={() => supprimerAction(act)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>🗑️</button>
+                </div>
+              ))}
+              {historique.length === 0 && <p style={{ color: '#94a3b8' }}>Aucune action</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODALE FAUTE DÉTAILLÉE */}
+      {showFoulModal && (
+        <div style={overlayStyle}>
+          <div style={modalStyle}>
+            <h3>Saisie de faute</h3>
+            {foulStep === 1 && (
+              <div style={{display:'flex', gap:'10px', marginTop:'20px'}}>
+                <button onClick={()=>{setSelectedEquipe("A"); setFoulStep(2)}} style={confirmBtn}>{match.clubA}</button>
+                <button onClick={()=>{setSelectedEquipe("B"); setFoulStep(2)}} style={confirmBtn}>{match.clubB}</button>
+              </div>
+            )}
+            {foulStep === 2 && (
+              <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:'8px', marginTop:'20px'}}>
+                {(selectedEquipe === "A" ? match.joueursA : match.joueursB).filter((j:any)=>!j.estCoach).map((j:any)=>(
+                  <button key={j.id} onClick={()=>{setSelectedJoueurId(j.id); setFoulStep(3)}} style={pBtn}>#{j.numero}</button>
+                ))}
+              </div>
+            )}
+            {foulStep === 3 && (
+              <div style={{display:'flex', flexDirection:'column', gap:'10px', marginTop:'20px'}}>
+                <button onClick={()=>validerFautePopup("P")} style={confirmBtn}>PERSONNELLE (P)</button>
+                <button onClick={()=>validerFautePopup("U")} style={{...confirmBtn, backgroundColor:'#F97316'}}>ANTI-SPORTIVE (U)</button>
+                <button onClick={()=>validerFautePopup("T")} style={{...confirmBtn, backgroundColor:'#ef4444'}}>TECHNIQUE (T)</button>
+              </div>
+            )}
+            <button onClick={() => {setShowFoulModal(false); setFoulStep(1)}} style={{...cancelBtn, marginTop:'20px'}}>FERMER</button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
 
-// STYLES
-const flagStyleA = { position: 'absolute' as const, right: '-30px', fontSize: '1.5rem' };
-const flagStyleB = { position: 'absolute' as const, left: '-30px', fontSize: '1.5rem' };
-const mainCard = { backgroundColor: '#fff', borderRadius: '24px', padding: '30px', border: '1px solid #e2e8f0' } as const;
-const scoreValueStyle = { fontSize: '7.5rem', fontWeight: '900', lineHeight: 1, margin: '5px 0' } as const;
-const equipeNameStyle = { fontSize: '1.4rem', fontWeight: '900', color: '#1e293b' } as const;
-const ptBtn = { flex: 1, padding: '15px', fontSize: '1.5rem', fontWeight: '900', borderRadius: '12px', border: 'none', backgroundColor: '#1a1a1a', color: '#fff', cursor: 'pointer' } as const;
-const scoreBtnGroup = { backgroundColor: '#fff', borderRadius: '20px', padding: '10px', display: 'flex', gap: '10px', border: '1px solid #e2e8f0' } as const;
-const arrowBtn = { width: '50px', height: '50px', borderRadius: '50%', border: '2px solid #cbd5e1', backgroundColor: '#f8fafc', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' } as const;
-const possessionBtn = { backgroundColor: '#1e293b', color: 'white', border: 'none', padding: '10px 30px', borderRadius: '8px', fontSize: '1.5rem', cursor: 'pointer' } as const;
-const fautesDisplay = (count: number) => ({ fontSize: '2.5rem', fontWeight: '900', color: count >= 4 ? '#ef4444' : '#1e293b', minWidth: '40px', display: 'inline-block' } as const);
-const fautesSmallBtn = { width: '35px', height: '35px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff', fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer' } as const;
-const tmSquareStyle = (pris: boolean) => ({ width: '55px', height: '40px', borderRadius: '8px', border: 'none', backgroundColor: pris ? '#ef4444' : '#e2e8f0', color: pris ? 'white' : '#64748b', fontWeight: '900', cursor: 'pointer' } as const);
-const startBtn = (isRunning: boolean) => ({ backgroundColor: isRunning ? '#ef4444' : '#22c55e', color: '#fff', border: 'none', padding: '12px 50px', borderRadius: '12px', fontWeight: '900', cursor: 'pointer', fontSize: '1.2rem', marginTop: '20px' } as const);
-const quitBtn = { textDecoration: 'none', padding: '10px 20px', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '10px', color: '#64748b', fontWeight: 'bold' } as const;
-const nextPeriodBtn = { backgroundColor: '#1e293b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' } as const;
-const finishMatchBtn = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: '900', cursor: 'pointer' } as const;
-const tmOverlayStyle = { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255, 255, 255, 0.98)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000 };
-const tmModalContent = { textAlign: 'center' as const, padding: '50px' };
-const closeTmBtn = { marginTop: '30px', padding: '15px 30px', backgroundColor: '#1e293b', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '900', cursor: 'pointer' } as const;
-const overlayStyle = { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000 };
-const modalStyle = { backgroundColor: 'white', padding: '40px', borderRadius: '24px', textAlign: 'center' as const, maxWidth: '500px' };
-const confirmBtn = { backgroundColor: '#22c55e', color: 'white', border: 'none', padding: '15px 25px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' } as const;
-const cancelBtn = { backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', padding: '15px 25px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' } as const;
+// --- TOUS LES STYLES RESTAURÉS ET POPUP ---
+const layoutWrapper = { padding: '20px', maxWidth: '1400px', margin: '0 auto', backgroundColor: '#f8fafc', minHeight: '100vh' };
+const historyModalStyle = { backgroundColor: 'white', padding: '40px', borderRadius: '30px', position: 'relative' as const, width: '500px', maxWidth: '90vw', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)', textAlign: 'center' as const };
+const closeCrossStyle = { position: 'absolute' as const, top: '20px', right: '20px', border: 'none', background: '#f1f5f9', borderRadius: '50%', width: '35px', height: '35px', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 'bold' };
+const historyItemStyle = (eq: string) => ({ display: 'flex', alignItems: 'center', padding: '12px', borderBottom: '1px solid #f1f5f9', borderLeft: `5px solid ${eq === "A" ? "#1e293b" : "#F97316"}`, marginBottom: '8px', backgroundColor: '#f8fafc', borderRadius: '8px' });
+const historyTriggerBtn = { backgroundColor: '#64748b', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: '900', cursor: 'pointer' };
+const mainCard = { backgroundColor: 'white', borderRadius: '30px', padding: '30px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' };
+const chronoDisplay = { fontSize: '7rem', fontWeight: '900', fontFamily: 'monospace' };
+const scoreValueStyle = { fontSize: '6rem', fontWeight: '900' };
+const equipeNameStyle = { fontSize: '1.5rem', fontWeight: '900', color: '#64748b' };
+const fautesDisplay = (f: number) => ({ fontSize: '1.3rem', fontWeight: '900', color: f >= 4 ? '#ef4444' : '#1e293b' });
+const fautesBox = { marginBottom: '10px', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '12px' };
+const playerCard = { backgroundColor: 'white', borderRadius: '24px', padding: '20px' };
+const playerRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #f8fafc' };
+const playerNum = { backgroundColor: '#1e293b', color: 'white', padding: '4px 8px', borderRadius: '6px', fontWeight: '900', marginRight: '10px' };
+const playerName = { fontWeight: '700' };
+const actionBlock = { display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#f1f5f9', padding: '5px 10px', borderRadius: '8px' };
+const minusBtn = { border: '1px solid #cbd5e1', backgroundColor: '#fff', borderRadius: '4px', cursor: 'pointer', width: '24px' };
+const pBtn = { border: 'none', backgroundColor: '#1e293b', color: 'white', borderRadius: '4px', cursor: 'pointer', padding: '5px 10px', fontWeight: 'bold' };
+const totalPtsLabel = { fontWeight: '900', color: '#F97316', minWidth: '50px', textAlign: 'right' as const };
+const possessionBtn = { backgroundColor: '#1e293b', color: 'white', border: 'none', padding: '15px 30px', borderRadius: '15px', fontWeight: '900', cursor: 'pointer' };
+const foulTriggerBtn = { backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '12px 25px', borderRadius: '12px', fontWeight: '900', cursor: 'pointer' };
+const startBtn = (run: boolean) => ({ backgroundColor: run ? '#ef4444' : '#22c55e', color: 'white', border: 'none', padding: '12px 40px', borderRadius: '12px', fontWeight: '900', marginTop: '10px', cursor: 'pointer' });
+const arrowBtn = { width: '40px', height: '40px', borderRadius: '50%', border: '1px solid #e2e8f0', cursor: 'pointer' };
+const tmSquareStyle = (p: boolean) => ({ width: '50px', height: '35px', borderRadius: '8px', border: 'none', backgroundColor: p ? '#ef4444' : '#cbd5e1', color: 'white', fontWeight: '900', cursor: 'pointer' });
+const quitBtn = { textDecoration: 'none', padding: '12px 20px', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', color: '#64748b', fontWeight: 'bold' };
+const nextPeriodBtn = { backgroundColor: '#1e293b', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' };
+const finishMatchBtn = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '12px', fontWeight: '900', cursor: 'pointer' };
+const tmOverlayStyle = { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.98)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 5000 };
+const tmModalContent = { textAlign: 'center' as const };
+const closeTmBtn = { marginTop: '40px', padding: '20px 40px', backgroundColor: '#1e293b', color: 'white', border: 'none', borderRadius: '15px', fontWeight: '900', cursor: 'pointer' };
+const overlayStyle = { position: 'fixed' as const, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 6000 };
+const modalStyle = { backgroundColor: 'white', padding: '40px', borderRadius: '30px', textAlign: 'center' as const };
+const confirmBtn = { backgroundColor: '#22c55e', color: 'white', border: 'none', padding: '15px 30px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' };
+const cancelBtn = { backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', padding: '15px 30px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' };
