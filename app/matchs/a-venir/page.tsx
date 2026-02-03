@@ -6,13 +6,13 @@ import Link from "next/link";
 interface EquipeIntern { id: string; nom: string; }
 interface Club { id: string; nom: string; equipes: EquipeIntern[]; }
 interface Joueur { id: string; numero: string; nom: string; estCoach: boolean; }
-interface Competition { id: string; nom: string; } // Interface pour les compétitions
+interface Competition { id: string; nom: string; }
 
 export default function MatchsAVenirPage() {
   const [matchs, setMatchs] = useState<any[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [arbitres, setArbitres] = useState<any[]>([]);
-  const [competitions, setCompetitions] = useState<Competition[]>([]); // État pour les compétitions
+  const [competitions, setCompetitions] = useState<Competition[]>([]);
   
   const [showForm, setShowForm] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -40,13 +40,9 @@ export default function MatchsAVenirPage() {
   const chargerDonnees = () => {
     const allMatchs = (getFromLocal('matchs') || []) as any[];
     setMatchs(allMatchs.filter((m: any) => m.status === 'a-venir'));
-    
     setClubs((getFromLocal('equipes_clubs') || []) as Club[]);
     setArbitres((getFromLocal('arbitres') || []) as any[]);
-    
-    // CHARGEMENT DES COMPÉTITIONS DEPUIS LE STORE
-    const allComps = (getFromLocal('competitions') || []) as Competition[];
-    setCompetitions(allComps);
+    setCompetitions((getFromLocal('competitions') || []) as Competition[]);
   };
 
   const trierEffectif = (liste: Joueur[]) => {
@@ -85,9 +81,35 @@ export default function MatchsAVenirPage() {
     setShowPlayerModal({ show: false, cote: 'A', editIndex: null });
   };
 
-  const etape1Valide = () => {
-    const check = (list: Joueur[]) => list.filter(j => !j.estCoach).length >= 5 && list.some(j => j.estCoach);
-    return check(joueursA) && check(joueursB) && newMatch.equipeA && newMatch.equipeB;
+  const handleEditer = (m: any) => {
+    setEditingId(m.id);
+    setNewMatch({
+      equipeA: m.equipeA,
+      clubA: m.clubA,
+      equipeB: m.equipeB,
+      clubB: m.clubB,
+      date: m.date,
+      competition: m.competition,
+      arbitre: m.arbitre
+    });
+    
+    const clubAObj = clubs.find(c => c.nom === m.clubA);
+    const clubBObj = clubs.find(c => c.nom === m.clubB);
+    if (clubAObj) setSelectedClubA(clubAObj.id);
+    if (clubBObj) setSelectedClubB(clubBObj.id);
+
+    setJoueursA(m.joueursA || []);
+    setJoueursB(m.joueursB || []);
+    
+    if (m.config) {
+      setDureePeriode((m.config.tempsInitial / 60).toString());
+      setTmMT1(m.config.tmMT1.toString());
+      setTmMT2(m.config.tmMT2.toString());
+    }
+
+    setShowForm(true);
+    setCurrentStep(1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSoumettre = (e: React.FormEvent) => {
@@ -135,13 +157,18 @@ export default function MatchsAVenirPage() {
     setSelectedClubA(""); setSelectedClubB("");
   };
 
+  const etape1Valide = () => {
+    const check = (list: Joueur[]) => list.filter(j => !j.estCoach).length >= 5 && list.some(j => j.estCoach);
+    return check(joueursA) && check(joueursB) && newMatch.equipeA && newMatch.equipeB;
+  };
+
   return (
     <div style={{ padding: '30px', maxWidth: '1000px', margin: '0 auto' }}>
       
       {/* MODAL JOUEUR */}
       {showPlayerModal.show && (
-        <div style={{position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.5)', display:'flex', justifyContent:'center', alignItems:'center', zIndex:2000}}>
-          <div style={{background:'white', padding:'30px', borderRadius:'15px', width:'320px'}}>
+        <div style={overlayStyle}>
+          <div style={modalContentStyle}>
             <h3 style={{marginTop:0}}>Effectif</h3>
             <label style={{display:'flex', gap:'10px', alignItems:'center', marginBottom:'15px', fontSize:'0.9rem'}}>
               <input type="checkbox" checked={tempJoueur.estCoach} onChange={e => setTempJoueur({...tempJoueur, estCoach: e.target.checked, numero: e.target.checked ? "COACH" : ""})} /> Est le Coach ?
@@ -163,7 +190,7 @@ export default function MatchsAVenirPage() {
 
       {showForm && (
         <div style={formCardStyle}>
-          <div style={{display:'flex', justifyContent:'space-between', marginBottom:'20px', fontSize:'0.75rem', fontWeight:'900', color:'#64748b'}}>
+          <div style={stepHeaderStyle}>
             <span style={{color: currentStep === 1 ? '#F97316' : '#ccc'}}>1. ÉQUIPES & JOUEURS</span>
             <span style={{color: currentStep === 2 ? '#F97316' : '#ccc'}}>2. CONFIGURATION</span>
           </div>
@@ -227,22 +254,12 @@ export default function MatchsAVenirPage() {
                 <div style={colStyle}><label style={miniLabel}>DATE & HEURE</label>
                   <input type="datetime-local" required value={newMatch.date} onChange={e => setNewMatch({...newMatch, date: e.target.value})} style={inputStyle} />
                 </div>
-                
-                {/* MODIFICATION ICI : SELECT POUR LA COMPÉTITION */}
                 <div style={colStyle}><label style={miniLabel}>COMPÉTITION</label>
-                  <select 
-                    required 
-                    value={newMatch.competition} 
-                    onChange={e => setNewMatch({...newMatch, competition: e.target.value})} 
-                    style={inputStyle}
-                  >
+                  <select required value={newMatch.competition} onChange={e => setNewMatch({...newMatch, competition: e.target.value})} style={inputStyle}>
                     <option value="">Sélectionner...</option>
-                    {competitions.map(comp => (
-                      <option key={comp.id} value={comp.nom}>{comp.nom}</option>
-                    ))}
+                    {competitions.map(comp => <option key={comp.id} value={comp.nom}>{comp.nom}</option>)}
                   </select>
                 </div>
-
                 <div style={{...colStyle, gridColumn:'1/span 2'}}><label style={miniLabel}>ARBITRE PRINCIPAL</label>
                   <select required value={newMatch.arbitre} onChange={e => setNewMatch({...newMatch, arbitre: e.target.value})} style={inputStyle}>
                     <option value="">Sélectionner...</option>
@@ -277,8 +294,9 @@ export default function MatchsAVenirPage() {
                 📅 {m.date ? m.date.replace('T', ' ') : 'Date non définie'} | {m.competition}
               </div>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <button onClick={() => supprimerMatch(m.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.2rem' }}>🗑️</button>
-                <Link href={`/matchs/${m.id}`} style={startBtnStyle}>DÉMARRER</Link>
+                <button onClick={() => supprimerMatch(m.id)} style={iconBtn}>🗑️</button>
+                <button onClick={() => handleEditer(m)} style={editBtnSmall}>ÉDITER ✎</button>
+                <Link href={`/matchs/marque/${m.id}`} style={startBtnStyle}>DÉMARRER</Link>
               </div>
             </div>
           </div>
@@ -291,7 +309,7 @@ export default function MatchsAVenirPage() {
   );
 }
 
-// STYLES (Conservés à l'identique)
+// STYLES
 const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', backgroundColor: 'white', width: '100%', boxSizing: 'border-box' as const };
 const addBtnStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '8px', fontWeight: 'bold' as const, cursor: 'pointer' };
 const submitBtn = { width: '100%', backgroundColor: '#1a1a1a', color: 'white', padding: '14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '900' as const, border: 'none' };
@@ -307,3 +325,8 @@ const matchCardStyle = { padding: '20px', border: '1px solid #f1f1f1', borderRad
 const clubSmall = { display: 'block', fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' as const, fontWeight: 'bold' as const };
 const footerCard = { marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
 const startBtnStyle = { backgroundColor: '#F97316', color: 'white', textDecoration: 'none', padding: '8px 15px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' };
+const overlayStyle = {position:'fixed' as const, top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.5)', display:'flex', justifyContent:'center', alignItems:'center', zIndex:2000};
+const modalContentStyle = {background:'white', padding:'30px', borderRadius:'15px', width:'320px'};
+const stepHeaderStyle = {display:'flex', justifyContent:'space-between', marginBottom:'20px', fontSize:'0.75rem', fontWeight:'900', color:'#64748b'};
+const iconBtn = { border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.2rem' };
+const editBtnSmall = { border: 'none', background: '#f1f5f9', color: '#64748b', cursor: 'pointer', padding: '8px 12px', borderRadius: '6px', fontWeight: 'bold' as const, fontSize: '0.75rem' };
