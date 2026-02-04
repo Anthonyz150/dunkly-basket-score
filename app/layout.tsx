@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-// Import corrigé pour pointer vers la racine du projet (basketball/)
-import "@/app/globals.css"; 
+
+// On utilise l'alias @ pour pointer vers la racine du projet
+// Si cela échoue, remplace par : import "../globals.css";
+import "@/globals.css"; 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
@@ -27,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     loadUser();
     setLoading(false);
-    setIsMenuOpen(false); // Ferme le menu mobile lors d'un changement de page
+    setIsMenuOpen(false);
 
     if (!localStorage.getItem('currentUser') && pathname !== '/login') {
       router.push('/login');
@@ -59,12 +61,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           children
         ) : (
           <div className="layout-container">
-            {/* BOUTON BURGER (Mobile) */}
+            {/* VERSION MOBILE */}
             <button className="burger-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
               {isMenuOpen ? '✕' : '☰'}
             </button>
 
-            {/* OVERLAY (Mobile) */}
             {isMenuOpen && <div className="menu-overlay" onClick={() => setIsMenuOpen(false)}></div>}
 
             <nav className={`sidebar ${isMenuOpen ? 'mobile-open' : ''}`}>
@@ -103,7 +104,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
               <div className="profile-footer">
                 <div className="user-details">
-                  <p className="conn-label">CONNECTÉ EN TANT QUE</p>
+                  <p className="conn-label">CONNECTÉ</p>
                   <strong className="user-display">
                      {user?.username || user?.email?.split('@')[0] || 'Arbitre'}
                   </strong>
@@ -148,7 +149,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .btn-logout { width: 100%; margin-top: 15px; padding: 10px; border-radius: 10px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
           .btn-logout:hover { background: #ef4444; color: white; }
           
-          /* STYLES MOBILES */
           .burger-btn { display: none; position: fixed; top: 15px; right: 15px; z-index: 2000; background: #F97316; color: white; border: none; border-radius: 8px; padding: 10px 15px; font-size: 1.2rem; cursor: pointer; }
           .menu-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; }
           
