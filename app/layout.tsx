@@ -88,8 +88,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <div className="nav-section">
                     <p className="section-title admin">ADMINISTRATION</p>
                     <Link href="/membres" className={`nav-item ${pathname === '/membres' ? 'active' : ''}`}>👥 Gestion Membres</Link>
-                    
-                    {/* AJOUT DE L'ONGLET ARBITRES ICI */}
                     <Link href="/arbitres" className={`nav-item ${pathname === '/arbitres' ? 'active' : ''}`}>🏁 Arbitres</Link>
                   </div>
                 )}
@@ -120,6 +118,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <main className="main-content">
               {children}
             </main>
+
+            {/* TAB BAR MOBILE */}
+            <nav className="mobile-tab-bar">
+                <Link href="/" className={`tab-item ${pathname === '/' ? 'active' : ''}`}>🏠 <span>Home</span></Link>
+                <Link href="/competitions" className={`tab-item ${pathname === '/competitions' ? 'active' : ''}`}>🏆 <span>Compètes</span></Link>
+                <Link href="/matchs/resultats" className={`tab-item ${pathname === '/matchs/resultats' ? 'active' : ''}`}>✅ <span>Scores</span></Link>
+                <Link href="/profil" className={`tab-item ${pathname === '/profil' ? 'active' : ''}`}>👤 <span>Profil</span></Link>
+            </nav>
           </div>
         )}
 
@@ -147,20 +153,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .user-display { color: white; font-size: 1.1rem; display: block; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           .btn-logout { width: 100%; margin-top: 15px; padding: 10px; border-radius: 10px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
           .btn-logout:hover { background: #ef4444; color: white; }
-          .burger-btn { display: none; position: fixed; top: 15px; right: 15px; z-index: 2000; background: #F97316; color: white; border: none; border-radius: 8px; padding: 10px 15px; font-size: 1.2rem; cursor: pointer; }
+          .burger-btn { display: none; position: fixed; top: 15px; left: 15px; z-index: 2000; background: #111827; color: white; border: 1px solid #374151; border-radius: 8px; padding: 8px 12px; font-size: 1.2rem; cursor: pointer; }
           .menu-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; }
+          
+          .mobile-tab-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: #111827; border-top: 1px solid #1f2937; z-index: 1000; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); }
+          .tab-item { color: #94a3b8; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 1.2rem; gap: 4px; }
+          .tab-item span { font-size: 0.6rem; font-weight: bold; text-transform: uppercase; }
+          .tab-item.active { color: #F97316; }
+
           @media (max-width: 900px) {
             .sidebar { transform: translateX(-100%); width: 260px; }
             .sidebar.mobile-open { transform: translateX(0); }
-            .main-content { margin-left: 0; width: 100%; padding-top: 70px; }
+            .main-content { margin-left: 0; width: 100%; padding-top: 60px; padding-bottom: 80px; }
             .burger-btn { display: block; }
             .menu-overlay { display: block; }
+            .mobile-tab-bar { display: flex; }
           }
         `}</style>
       </body>
     </html>
   );
 }
-
-const navGroup = { marginTop: '25px', marginBottom: '10px' };
-const groupLabel = { fontSize: '0.7rem', color: '#4b5563', marginLeft: '20px', fontWeight: 'bold' as const, marginBottom: '8px' };
