@@ -80,7 +80,6 @@ export default function Dashboard() {
         if (lastRes.data) setDernierResultat(lastRes.data);
 
       } catch (error) {
-        setLoading(false);
         console.error("Erreur chargement dashboard:", error);
       } finally {
         setLoading(false);
@@ -99,7 +98,7 @@ export default function Dashboard() {
   };
 
   const isAdmin = user?.role === 'admin' || user?.username?.toLowerCase() === 'admin' || user?.username?.toLowerCase() === 'anthony.didier.prop' || user?.user_metadata?.role === 'admin';
-
+/*
   if (loading) return (
     <div style={{ height: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <div style={{ textAlign: 'center' }}>
@@ -108,7 +107,7 @@ export default function Dashboard() {
       </div>
     </div>
   );
-
+*/
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '90vh', fontFamily: 'sans-serif' }}>
       
