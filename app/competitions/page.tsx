@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import Link from 'next/link'; // Import pour le clic
 
 export default function CompetitionsPage() {
   const [competitions, setCompetitions] = useState<any[]>([]);
@@ -33,7 +34,6 @@ export default function CompetitionsPage() {
     }
   };
 
-  // Correction de la vérification Admin (plus flexible)
   const isAdmin = user?.username?.toLowerCase() === 'admin' || 
                   user?.email === 'anthony.didier.pro@gmail.com';
 
@@ -41,11 +41,7 @@ export default function CompetitionsPage() {
     if (e) e.preventDefault();
     if (!nom || !isAdmin) return;
     
-    // On laisse Supabase gérer 'created_at' pour éviter les erreurs de format date
-    const nouvelle = {
-      nom: nom.trim(),
-      type: type
-    };
+    const nouvelle = { nom: nom.trim(), type: type };
     
     const { data, error } = await supabase
       .from('competitions')
@@ -61,7 +57,8 @@ export default function CompetitionsPage() {
     }
   };
 
-  const supprimerCompet = async (id: string) => {
+  const supprimerCompet = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault(); // Empêche d'ouvrir la page de la compet lors du clic sur supprimer
     if (!isAdmin) return;
     if (confirm("Voulez-vous vraiment supprimer cette compétition ?")) {
       const { error } = await supabase.from('competitions').delete().eq('id', id);
@@ -91,21 +88,23 @@ export default function CompetitionsPage() {
       ) : (
         <div className="grid">
           {competitions.length > 0 ? competitions.map((c) => (
-            <div key={c.id} style={compCardStyle}>
-              <div style={decorBar}></div>
-              <div style={{ padding: '20px', flex: 1, position: 'relative', overflow: 'hidden' }}>
-                {isAdmin && (
-                  <button onClick={() => supprimerCompet(c.id)} style={deleteBtnStyle}>×</button>
-                )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <span style={typeBadgeStyle(c.type)}>{c.type}</span>
-                  <h3 className="comp-name">{c.nom}</h3>
-                  <p className="comp-date">
-                    📅 {c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') : 'Date inconnue'}
-                  </p>
+            <Link href={`/competitions/${c.id}`} key={c.id} style={{ textDecoration: 'none' }}>
+              <div style={compCardStyle}>
+                <div style={decorBar}></div>
+                <div style={{ padding: '20px', flex: 1, position: 'relative', overflow: 'hidden' }}>
+                  {isAdmin && (
+                    <button onClick={(e) => supprimerCompet(e, c.id)} style={deleteBtnStyle}>×</button>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <span style={typeBadgeStyle(c.type)}>{c.type}</span>
+                    <h3 className="comp-name">{c.nom}</h3>
+                    <p className="comp-date">
+                      📅 {c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') : 'Date inconnue'}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </Link>
           )) : (
             <div style={emptyStateStyle}>
               <span style={{ fontSize: '3rem' }}>🏆</span>
@@ -118,7 +117,7 @@ export default function CompetitionsPage() {
       {/* MODALE */}
       {isModalOpen && (
         <div style={modalOverlayStyle}>
-          <div className="modal-content">
+          <div className="modal-content" style={{ background: 'white', padding: '30px', borderRadius: '20px', width: '400px' }}>
             <h2 style={{ marginTop: 0 }}>Créer un tournoi</h2>
             <form onSubmit={creerCompet} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div style={inputGroup}>
@@ -143,7 +142,7 @@ export default function CompetitionsPage() {
       )}
 
       <style jsx>{`
-        .container { padding: 20px; maxWidth: 1200px; margin: 0 auto; }
+        .container { padding: 20px; maxWidth: 1200px; margin: 0 auto; font-family: sans-serif; }
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
         .title { font-size: 2rem; font-weight: 900; margin: 0; }
         .subtitle { color: #64748b; margin: 5px 0 0 0; }
@@ -154,15 +153,13 @@ export default function CompetitionsPage() {
         
         @media (max-width: 600px) {
           .page-header { flex-direction: column; align-items: flex-start; gap: 15px; }
-          .title { font-size: 1.6rem; }
-          .modal-content { width: 90% !important; padding: 20px !important; }
         }
       `}</style>
     </div>
   );
 }
 
-// STYLES OBJETS
+// STYLES RESTANTS
 const btnNouveauStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '10px', cursor: 'pointer', fontWeight: '900' as const, fontSize: '0.8rem' };
 const typeBadgeStyle = (type: string) => ({ display: 'inline-block', width: 'fit-content', padding: '3px 10px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '800' as const, backgroundColor: type === 'Championnat' ? '#eff6ff' : '#fff7ed', color: type === 'Championnat' ? '#2563eb' : '#ea580c' });
 const modalOverlayStyle: React.CSSProperties = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(15, 23, 42, 0.9)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000 };
@@ -171,7 +168,7 @@ const labelStyle = { fontSize: '0.75rem', fontWeight: '800', color: '#64748b' };
 const inputStyle = { padding: '12px', borderRadius: '10px', border: '2px solid #f1f5f9', outline: 'none', fontSize: '1rem' };
 const confirmBtnStyle = { flex: 2, backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' as const };
 const cancelBtnStyle = { flex: 1, backgroundColor: '#f1f5f9', color: '#64748b', border: 'none', padding: '12px', borderRadius: '10px', cursor: 'pointer' };
-const compCardStyle: React.CSSProperties = { backgroundColor: '#fff', borderRadius: '18px', border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', minHeight: '120px' };
+const compCardStyle: React.CSSProperties = { backgroundColor: '#fff', borderRadius: '18px', border: '1px solid #e2e8f0', overflow: 'hidden', display: 'flex', minHeight: '120px', transition: 'transform 0.1s ease', cursor: 'pointer' };
 const decorBar = { width: '6px', backgroundColor: '#F97316' };
 const deleteBtnStyle: React.CSSProperties = { position: 'absolute', top: '10px', right: '10px', background: 'white', border: '1px solid #fee2e2', color: '#ef4444', cursor: 'pointer', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', zIndex: 10 };
 const emptyStateStyle: React.CSSProperties = { gridColumn: '1/-1', textAlign: 'center', padding: '60px', color: '#94a3b8', backgroundColor: '#f8fafc', borderRadius: '20px', border: '2px dashed #e2e8f0' };
