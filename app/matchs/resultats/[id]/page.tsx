@@ -46,7 +46,7 @@ export default function DetailMatchPage({ params }: { params: Promise<{ id: stri
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: 'Europe/Paris'
+      timeZone: 'Europe/London'
     }).format(new Date(dateString));
   };
 
