@@ -38,72 +38,159 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={containerStyle}>
-      <h1 style={titleStyle}>DUNKLY</h1>
-      {error && <p style={{ color: 'red', fontWeight: 'bold' }}>{error}</p>}
-      
-      <form onSubmit={handleLogin} style={formStyle}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={inputStyle}
-        />
-        <input
-          type="password"
-          placeholder="Mot de passe"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={inputStyle}
-        />
-        <button type="submit" disabled={loading} style={btnStyle}>
-          {loading ? 'Connexion...' : 'Se connecter'}
-        </button>
-      </form>
-      
-      <p style={{ marginTop: '20px' }}>
-        Pas de compte ? <Link href="/register" style={{ color: '#F97316' }}>S'inscrire</Link>
-      </p>
+    <div style={pageWrapperStyle}>
+      <div style={cardStyle}>
+        {/* Section Logo & Titre */}
+        <div style={headerStyle}>
+          <div style={logoIconStyle}>🏀</div>
+          <h1 style={titleStyle}>DUNKLY</h1>
+          <p style={subtitleStyle}>Se connecter</p>
+        </div>
+        
+        {error && <p style={errorStyle}>{error}</p>}
+        
+        <form onSubmit={handleLogin} style={formStyle}>
+          <div style={inputGroupStyle}>
+            <label style={labelStyle}>Email</label>
+            <input
+              type="email"
+              placeholder="votre@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={inputStyle}
+            />
+          </div>
+          
+          <div style={inputGroupStyle}>
+            <label style={labelStyle}>Mot de passe</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={inputStyle}
+            />
+          </div>
+
+          <button type="submit" disabled={loading} style={btnStyle}>
+            {loading ? 'CONNEXION...' : 'SE CONNECTER'}
+          </button>
+        </form>
+        
+        <p style={footerTextStyle}>
+          Pas de compte ? <Link href="/register" style={linkStyle}>Inscription</Link>
+        </p>
+      </div>
     </div>
   );
 }
 
-const containerStyle = {
+// --- STYLES DUNKLY (Basés sur l'image 2) ---
+
+const pageWrapperStyle = {
   display: 'flex',
-  flexDirection: 'column' as const,
   alignItems: 'center',
   justifyContent: 'center',
   height: '100vh',
-  fontFamily: 'sans-serif',
-  backgroundColor: '#fff'
+  backgroundColor: '#0f172a', // Fond bleu très sombre
+  margin: 0,
 };
 
-const titleStyle = { fontSize: '3rem', fontWeight: 'bold', marginBottom: '20px' };
+const cardStyle = {
+  backgroundColor: '#1e293b', // Couleur de la carte
+  padding: '40px',
+  borderRadius: '24px',
+  width: '100%',
+  maxWidth: '400px',
+  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+  textAlign: 'center' as const,
+};
 
-const formStyle = {
+const headerStyle = { marginBottom: '30px' };
+
+const logoIconStyle = {
+  fontSize: '32px',
+  backgroundColor: '#f97316',
+  width: '50px',
+  height: '50px',
+  borderRadius: '50%',
   display: 'flex',
-  flexDirection: 'column' as const,
-  gap: '10px',
-  width: '300px'
+  alignItems: 'center',
+  justifyContent: 'center',
+  margin: '0 auto 10px',
 };
 
-const inputStyle = {
-  padding: '10px',
-  borderRadius: '5px',
-  border: '1px solid #ccc',
-  fontSize: '1rem'
+const titleStyle = { 
+  fontSize: '2.5rem', 
+  fontWeight: '900', 
+  color: '#fff', 
+  margin: 0, 
+  letterSpacing: '2px',
+  fontFamily: 'Arial Black, sans-serif'
 };
 
-const btnStyle = {
-  padding: '10px',
-  borderRadius: '5px',
-  border: 'none',
-  backgroundColor: '#111827',
-  color: '#fff',
+const subtitleStyle = { 
+  color: '#94a3b8', 
+  fontSize: '14px', 
+  marginTop: '5px' 
+};
+
+const formStyle = { 
+  display: 'flex', 
+  flexDirection: 'column' as const, 
+  gap: '20px' 
+};
+
+const inputGroupStyle = { textAlign: 'left' as const };
+
+const labelStyle = { 
+  display: 'block', 
+  color: '#94a3b8', 
+  fontSize: '12px', 
+  marginBottom: '8px', 
+  fontWeight: 'bold' as const 
+};
+
+const inputStyle = { 
+  width: '100%', 
+  padding: '12px', 
+  borderRadius: '8px', 
+  border: '1px solid #334155', 
+  backgroundColor: '#0f172a', 
+  color: '#fff', 
   fontSize: '1rem',
-  cursor: 'pointer',
-  fontWeight: 'bold' as const
+  boxSizing: 'border-box' as const
+};
+
+const btnStyle = { 
+  padding: '14px', 
+  borderRadius: '10px', 
+  border: 'none', 
+  backgroundColor: '#f97316', 
+  color: '#fff', 
+  fontSize: '0.9rem', 
+  cursor: 'pointer', 
+  fontWeight: '900' as const,
+  marginTop: '10px'
+};
+
+const errorStyle = { 
+  color: '#ef4444', 
+  fontSize: '13px', 
+  marginBottom: '15px',
+  fontWeight: 'bold' as const 
+};
+
+const footerTextStyle = { 
+  marginTop: '25px', 
+  color: '#94a3b8', 
+  fontSize: '13px' 
+};
+
+const linkStyle = { 
+  color: '#fff', 
+  textDecoration: 'none', 
+  fontWeight: 'bold' as const 
 };
