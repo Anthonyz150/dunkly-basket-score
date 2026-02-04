@@ -38,9 +38,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={pageWrapperStyle}>
+    <div style={fullPageWrapper}>
       <div style={cardStyle}>
-        {/* Section Logo & Titre */}
         <div style={headerStyle}>
           <div style={logoIconStyle}>🏀</div>
           <h1 style={titleStyle}>DUNKLY</h1>
@@ -87,43 +86,48 @@ export default function LoginPage() {
   );
 }
 
-// --- STYLES DUNKLY (Basés sur l'image 2) ---
+// --- STYLES COMPLETS (PRÉCIS IMAGE 2) ---
 
-const pageWrapperStyle = {
+const fullPageWrapper: React.CSSProperties = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100vw',
+  height: '100vh',
+  // Ce background crée la bande centrale sombre de ton image
+  background: 'linear-gradient(to right, #0a0a0a 0%, #0a0a0a 40%, #0f172a 40%, #0f172a 60%, #0a0a0a 60%, #0a0a0a 100%)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  height: '100vh',
-  backgroundColor: '#0f172a', // Fond bleu très sombre
   margin: 0,
+  padding: 0,
 };
 
-const cardStyle = {
-  backgroundColor: '#1e293b', // Couleur de la carte
-  padding: '40px',
+const cardStyle: React.CSSProperties = {
+  backgroundColor: '#1c2331',
+  padding: '50px 40px',
   borderRadius: '24px',
-  width: '100%',
-  maxWidth: '400px',
-  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
-  textAlign: 'center' as const,
+  width: '400px',
+  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)',
+  textAlign: 'center',
 };
 
 const headerStyle = { marginBottom: '30px' };
 
-const logoIconStyle = {
-  fontSize: '32px',
+const logoIconStyle: React.CSSProperties = {
+  fontSize: '28px',
   backgroundColor: '#f97316',
-  width: '50px',
-  height: '50px',
+  width: '54px',
+  height: '54px',
   borderRadius: '50%',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  margin: '0 auto 10px',
+  margin: '0 auto 12px',
 };
 
-const titleStyle = { 
-  fontSize: '2.5rem', 
+const titleStyle: React.CSSProperties = { 
+  fontSize: '3rem', 
   fontWeight: '900', 
   color: '#fff', 
   margin: 0, 
@@ -131,17 +135,9 @@ const titleStyle = {
   fontFamily: 'Arial Black, sans-serif'
 };
 
-const subtitleStyle = { 
-  color: '#94a3b8', 
-  fontSize: '14px', 
-  marginTop: '5px' 
-};
+const subtitleStyle = { color: '#94a3b8', fontSize: '14px', marginTop: '5px' };
 
-const formStyle = { 
-  display: 'flex', 
-  flexDirection: 'column' as const, 
-  gap: '20px' 
-};
+const formStyle = { display: 'flex', flexDirection: 'column' as const, gap: '20px' };
 
 const inputGroupStyle = { textAlign: 'left' as const };
 
@@ -150,47 +146,34 @@ const labelStyle = {
   color: '#94a3b8', 
   fontSize: '12px', 
   marginBottom: '8px', 
-  fontWeight: 'bold' as const 
+  fontWeight: 'bold' 
 };
 
-const inputStyle = { 
+const inputStyle: React.CSSProperties = { 
   width: '100%', 
-  padding: '12px', 
+  padding: '13px', 
   borderRadius: '8px', 
   border: '1px solid #334155', 
-  backgroundColor: '#0f172a', 
+  backgroundColor: '#0d1117', 
   color: '#fff', 
   fontSize: '1rem',
-  boxSizing: 'border-box' as const
+  boxSizing: 'border-box'
 };
 
-const btnStyle = { 
-  padding: '14px', 
+const btnStyle: React.CSSProperties = { 
+  padding: '15px', 
   borderRadius: '10px', 
   border: 'none', 
   backgroundColor: '#f97316', 
   color: '#fff', 
-  fontSize: '0.9rem', 
+  fontSize: '1rem', 
   cursor: 'pointer', 
-  fontWeight: '900' as const,
+  fontWeight: '900',
   marginTop: '10px'
 };
 
-const errorStyle = { 
-  color: '#ef4444', 
-  fontSize: '13px', 
-  marginBottom: '15px',
-  fontWeight: 'bold' as const 
-};
+const errorStyle = { color: '#ef4444', fontSize: '13px', marginBottom: '15px' };
 
-const footerTextStyle = { 
-  marginTop: '25px', 
-  color: '#94a3b8', 
-  fontSize: '13px' 
-};
+const footerTextStyle = { marginTop: '25px', color: '#94a3b8', fontSize: '13px' };
 
-const linkStyle = { 
-  color: '#fff', 
-  textDecoration: 'none', 
-  fontWeight: 'bold' as const 
-};
+const linkStyle = { color: '#fff', textDecoration: 'none', fontWeight: 'bold' };
