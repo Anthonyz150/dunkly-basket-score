@@ -119,12 +119,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {children}
             </main>
 
-            <nav className="mobile-tab-bar">
-                <Link href="/" className={`tab-item ${pathname === '/' ? 'active' : ''}`}>🏠 <span>Home</span></Link>
-                <Link href="/competitions" className={`tab-item ${pathname === '/competitions' ? 'active' : ''}`}>🏆 <span>Compètes</span></Link>
-                <Link href="/matchs/resultats" className={`tab-item ${pathname === '/matchs/resultats' ? 'active' : ''}`}>✅ <span>Scores</span></Link>
-                <Link href="/profil" className={`tab-item ${pathname === '/profil' ? 'active' : ''}`}>👤 <span>Profil</span></Link>
-            </nav>
+            {/* TAB BAR MOBILE (Masquée si le menu burger est ouvert) */}
+            {!isMenuOpen && (
+              <nav className="mobile-tab-bar">
+                  <Link href="/" className={`tab-item ${pathname === '/' ? 'active' : ''}`}>🏠 <span>Home</span></Link>
+                  <Link href="/competitions" className={`tab-item ${pathname === '/competitions' ? 'active' : ''}`}>🏆 <span>Compètes</span></Link>
+                  <Link href="/matchs/resultats" className={`tab-item ${pathname === '/matchs/resultats' ? 'active' : ''}`}>✅ <span>Scores</span></Link>
+                  <Link href="/profil" className={`tab-item ${pathname === '/profil' ? 'active' : ''}`}>👤 <span>Profil</span></Link>
+              </nav>
+            )}
           </div>
         )}
 
@@ -153,7 +156,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .btn-logout { width: 100%; margin-top: 15px; padding: 10px; border-radius: 10px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
           .btn-logout:hover { background: #ef4444; color: white; }
           .burger-btn { display: none; position: fixed; top: 15px; left: 15px; z-index: 2000; background: #111827; color: white; border: 1px solid #374151; border-radius: 8px; padding: 8px 12px; font-size: 1.2rem; cursor: pointer; }
-          .menu-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; }
           
           .mobile-tab-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 65px; background: #111827; border-top: 1px solid #1f2937; z-index: 1000; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); }
           .tab-item { color: #94a3b8; text-decoration: none; display: flex; flex-direction: column; align-items: center; font-size: 1.2rem; gap: 4px; }
@@ -165,7 +167,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             .sidebar.mobile-open { transform: translateX(0); }
             .main-content { margin-left: 0; width: 100%; padding-top: 60px; padding-bottom: 80px; }
             .burger-btn { display: block; }
-            .menu-overlay { display: none; }
             .mobile-tab-bar { display: flex; }
           }
         `}</style>
