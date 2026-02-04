@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     });
 
     const mailOptions = {
-      from: '"Dunkly App" <votre-email@gmail.com>',
+      from: '"Dunkly App" <dunkly.app@gmail.com>',
       to: email,
       subject: 'Bienvenue chez Dunkly App ! 🏀',
       html: `
