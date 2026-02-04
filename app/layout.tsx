@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-// On remonte d'un niveau pour sortir de /app et atteindre /basketball
-import "../globals.css"; 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
