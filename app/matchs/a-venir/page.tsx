@@ -137,7 +137,7 @@ export default function MatchsAVenirPage() {
       month: 'short',
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: 'Europe/Paris'
+      timeZone: 'Europe/London'
     }).format(new Date(dateString)).replace(':', 'h');
   };
 
