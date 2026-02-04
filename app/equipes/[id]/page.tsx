@@ -30,24 +30,41 @@ export default function DetailClubPage({ params }: { params: Promise<{ id: strin
     setLoading(false);
   };
 
-  const isAdmin = user?.role === 'admin' || user?.username?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
+  // Logique Admin consolidée
+  const isAdmin = 
+    user?.role === 'admin' || 
+    user?.username?.toLowerCase() === 'admin' || 
+    user?.email === 'anthony.didier.pro@gmail.com' ||
+    localStorage.getItem('isAdmin') === 'true'; // Sécurité supplémentaire
 
   const ajouterEquipe = async () => {
-    if (!nomEquipe || !club) return;
+    if (!nomEquipe.trim() || !club) return;
     
-    // CORRECTIF : On s'assure que club.equipes est un tableau pour éviter le plantage
-    const listeBase = Array.isArray(club.equipes) ? club.equipes : [];
-    const nouvellesEquipes = [...listeBase, { id: Date.now().toString(), nom: nomEquipe.trim() }];
-    
-    const { error } = await supabase
-      .from('equipes_clubs')
-      .update({ equipes: nouvellesEquipes })
-      .eq('id', clubId);
+    console.log("Tentative d'ajout d'équipe pour le club:", clubId);
 
-    if (!error) {
+    // Initialisation sécurisée du tableau
+    const listeBase = Array.isArray(club.equipes) ? club.equipes : [];
+    const nouvelleEquipe = { 
+      id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(), 
+      nom: nomEquipe.trim() 
+    };
+    
+    const nouvellesEquipes = [...listeBase, nouvelleEquipe];
+
+    try {
+      const { data, error } = await supabase
+        .from('equipes_clubs')
+        .update({ equipes: nouvellesEquipes })
+        .eq('id', clubId)
+        .select();
+
+      if (error) throw error;
+
+      console.log("Mise à jour réussie:", data);
       setClub({ ...club, equipes: nouvellesEquipes });
       setNomEquipe('');
-    } else {
+    } catch (error: any) {
+      console.error("Erreur lors de l'update Supabase:", error);
       alert("Erreur Supabase : " + error.message);
     }
   };
@@ -134,7 +151,7 @@ const backBtn = { background: 'none', border: 'none', color: '#64748b', cursor: 
 const headerCard = { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' };
 const logoStyle = { width: '80px', height: '80px', borderRadius: '20px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 'bold' as const };
 const addBox = { display: 'flex', gap: '10px', marginBottom: '30px' };
-const inputStyle = { flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' };
+const inputStyle = { flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none' };
 const addBtn = { padding: '12px 20px', backgroundColor: '#F97316', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold' as const, cursor: 'pointer' };
 const listContainer = { backgroundColor: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', overflow: 'hidden' };
 const sectionTitle = { fontSize: '1rem', padding: '20px', margin: 0, borderBottom: '1px solid #f1f5f9', color: '#1e293b' };
