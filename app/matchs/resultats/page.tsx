@@ -59,7 +59,7 @@ export default function ResultatsPage() {
               fontWeight: 'bold', 
               fontSize: '0.85rem' 
             }}>
-              + Ajouter un match
+              Match à venir
             </Link>
           )}
           <input 
