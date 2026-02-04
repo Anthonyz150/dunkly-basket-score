@@ -80,7 +80,7 @@ export default function Dashboard() {
         if (lastRes.data) setDernierResultat(lastRes.data);
 
       } catch (error) {
-        alert(error);
+        setLoading(false);
         console.error("Erreur chargement dashboard:", error);
       } finally {
         setLoading(false);
