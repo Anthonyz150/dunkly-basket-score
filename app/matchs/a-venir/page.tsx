@@ -129,6 +129,18 @@ export default function MatchsAVenirPage() {
     setSelectedClubA(""); setSelectedClubB("");
   };
 
+  // FONCTION DE FORMATAGE FRANÇAIS + PARIS
+  const formatteDateParis = (dateString: string) => {
+    if (!dateString) return "";
+    return new Intl.DateTimeFormat('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Paris'
+    }).format(new Date(dateString)).replace(':', 'h');
+  };
+
   return (
     <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'sans-serif' }}>
       
@@ -238,21 +250,21 @@ export default function MatchsAVenirPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               
               <div style={{ flex: 1, textAlign: 'right' }}>
-                <div style={{ fontWeight: '800', fontSize: '1.1rem', color: '#1e293b' }}>{m.clubA}</div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'bold' }}>{m.equipeA}</div>
+                <div style={{ fontWeight: '800', fontSize: '1.2rem', color: '#1e293b', textTransform: 'uppercase' }}>{m.clubA}</div>
+                <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 'bold' }}>{m.equipeA}</div>
               </div>
 
-              <div style={{ padding: '0 20px', fontWeight: '900', color: '#F97316', fontSize: '1.2rem' }}>VS</div>
+              <div style={{ padding: '0 20px', fontWeight: '900', color: '#F97316', fontSize: '1.3rem' }}>VS</div>
 
               <div style={{ flex: 1, textAlign: 'left' }}>
-                <div style={{ fontWeight: '800', fontSize: '1.1rem', color: '#1e293b' }}>{m.clubB}</div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 'bold' }}>{m.equipeB}</div>
+                <div style={{ fontWeight: '800', fontSize: '1.2rem', color: '#1e293b', textTransform: 'uppercase' }}>{m.clubB}</div>
+                <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 'bold' }}>{m.equipeB}</div>
               </div>
 
             </div>
             <div style={footerCard}>
-              <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                <div>📅 {new Date(m.date).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })} | {m.competition}</div>
+              <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                <div>📅 {formatteDateParis(m.date)} | {m.competition}</div>
                 <div style={{marginTop: 4}}>🏁 <span style={{fontWeight: 'bold', color: '#1e293b'}}>{m.arbitre || "Non assigné"}</span></div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -263,7 +275,7 @@ export default function MatchsAVenirPage() {
                     <Link href={`/matchs/${m.id}`} style={startBtnStyle}>GÉRER (LIVE)</Link>
                   </>
                 )}
-                {/* CORRECTION DU LIEN CI-DESSOUS */}
+                {/* LIEN DE REDIRECTION CORRIGÉ ICI */}
                 <Link href={`/matchs/resultats/${m.id}`} style={detailsBtnStyle}>VOIR DÉTAILS</Link>
               </div>
             </div>
@@ -280,9 +292,9 @@ const submitBtn = { gridColumn: '1/span 2', backgroundColor: '#F97316', color: '
 const formCardStyle = { marginBottom: '30px', padding: '20px', borderRadius: '16px', backgroundColor: '#fff', border: '1px solid #eee' };
 const colStyle = { display: 'flex', flexDirection: 'column' as const, gap: '5px' };
 const miniLabel = { fontSize: '0.65rem', fontWeight: '900' as const, color: '#64748b', marginBottom: '2px' };
-const matchCardStyle = { padding: '20px', border: '1px solid #f1f1f1', borderRadius: '12px', background: 'white' };
+const matchCardStyle = { padding: '20px', border: '1px solid #f1f1f1', borderRadius: '12px', background: 'white', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' };
 const footerCard = { marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const startBtnStyle = { backgroundColor: '#1E293B', color: 'white', textDecoration: 'none', padding: '8px 15px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' };
-const detailsBtnStyle = { backgroundColor: '#F97316', color: 'white', textDecoration: 'none', padding: '8px 15px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold' };
+const startBtnStyle = { backgroundColor: '#1E293B', color: 'white', textDecoration: 'none', padding: '10px 18px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' };
+const detailsBtnStyle = { backgroundColor: '#F97316', color: 'white', textDecoration: 'none', padding: '10px 18px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold' };
 const iconBtn = { border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.2rem' };
 const editBtnSmall = { border: 'none', background: '#f1f5f9', color: '#64748b', cursor: 'pointer', padding: '8px 12px', borderRadius: '6px', fontWeight: 'bold' as const, fontSize: '0.75rem' };
