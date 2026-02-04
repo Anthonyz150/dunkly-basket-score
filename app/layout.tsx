@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-// Changement ici : on remonte d'un dossier pour trouver le CSS
-import "../globals.css"; 
+// On utilise l'alias @ pour être sûr que Turbopack trouve le fichier
+import "@/app/globals.css"; 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
@@ -99,6 +99,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </div>
 
+              {/* Bloc déconnexion */}
               <div className="profile-footer">
                 <div className="user-details">
                   <p className="conn-label">CONNECTÉ EN TANT QUE</p>
