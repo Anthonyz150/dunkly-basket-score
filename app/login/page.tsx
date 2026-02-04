@@ -22,21 +22,42 @@ export default function AuthPage() {
 
     try {
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+
+        // --- AJOUT : Synchronisation avec ton Dashboard ---
+        if (data?.user) {
+          localStorage.setItem('currentUser', JSON.stringify({
+            id: data.user.id,
+            email: data.user.email,
+            username: data.user.email?.split('@')[0], // Fallback pseudo
+            role: data.user.user_metadata?.role || 'user'
+          }));
+        }
+
       } else {
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              role: 'user', // Rôle par défaut à l'inscription
+            }
+          }
         });
         if (error) throw error;
+        alert("Inscription réussie ! Vérifiez vos emails ou connectez-vous.");
+        setMode("login");
+        setLoading(false);
+        return;
       }
 
-      router.replace("/");
-      router.refresh();
+      // Utilisation de window.location pour forcer un rafraîchissement propre du middleware
+      window.location.href = "/"; 
+      
     } catch (err: any) {
       setError(err.message || "Une erreur est survenue.");
     } finally {
@@ -101,7 +122,7 @@ export default function AuthPage() {
             </span>
           </div>
 
-          <button disabled={loading} style={button}>
+          <button disabled={loading} style={button} type="submit">
             {loading
               ? "Chargement..."
               : mode === "login"
@@ -126,116 +147,18 @@ export default function AuthPage() {
   );
 }
 
-/* =======================
-   STYLES (TYPÉS PROPREMENT)
-   ======================= */
-
-const wrapper: CSSProperties = {
-  position: "fixed",
-  inset: 0,
-  background: "radial-gradient(circle at center, #0f172a, #000)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-};
-
-const card: CSSProperties = {
-  background: "#020617",
-  padding: "48px",
-  width: "380px",
-  borderRadius: "24px",
-  boxShadow: "0 40px 80px rgba(0,0,0,0.9)",
-  textAlign: "center",
-};
-
-const logo: CSSProperties = {
-  background: "#f97316",
-  width: "56px",
-  height: "56px",
-  borderRadius: "50%",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  margin: "0 auto 12px",
-  fontSize: "26px",
-};
-
-const title: CSSProperties = {
-  color: "#fff",
-  fontSize: "2.5rem",
-  fontWeight: 900,
-  marginBottom: "20px",
-};
-
-const tabs: CSSProperties = {
-  display: "flex",
-  gap: "10px",
-  marginBottom: "25px",
-};
-
-const tab: CSSProperties = {
-  flex: 1,
-  padding: "10px",
-  background: "transparent",
-  border: "1px solid #1e293b",
-  color: "#94a3b8",
-  borderRadius: "10px",
-  cursor: "pointer",
-};
-
-const tabActive: CSSProperties = {
-  ...tab,
-  background: "#f97316",
-  color: "#fff",
-  border: "none",
-};
-
-const form: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "16px",
-};
-
-const input: CSSProperties = {
-  padding: "14px",
-  borderRadius: "12px",
-  border: "1px solid #1e293b",
-  background: "#020617",
-  color: "#fff",
-  outline: "none",
-};
-
-const button: CSSProperties = {
-  marginTop: "10px",
-  padding: "14px",
-  borderRadius: "14px",
-  background: "#f97316",
-  border: "none",
-  fontWeight: 900,
-  cursor: "pointer",
-};
-
-const eye: CSSProperties = {
-  position: "absolute",
-  right: "12px",
-  top: "50%",
-  transform: "translateY(-50%)",
-  cursor: "pointer",
-};
-
-const errorStyle: CSSProperties = {
-  color: "#ff5555",
-  fontSize: "13px",
-  marginBottom: "10px",
-};
-
-const footer: CSSProperties = {
-  marginTop: "20px",
-  color: "#94a3b8",
-};
-
-const link: CSSProperties = {
-  color: "#fff",
-  fontWeight: 700,
-  cursor: "pointer",
-};
+/* Les styles restent identiques à ton fichier original */
+const wrapper: CSSProperties = { position: "fixed", inset: 0, background: "radial-gradient(circle at center, #0f172a, #000)", display: "flex", justifyContent: "center", alignItems: "center" };
+const card: CSSProperties = { background: "#020617", padding: "48px", width: "380px", borderRadius: "24px", boxShadow: "0 40px 80px rgba(0,0,0,0.9)", textAlign: "center" };
+const logo: CSSProperties = { background: "#f97316", width: "56px", height: "56px", borderRadius: "50%", display: "flex", justifyContent: "center", alignItems: "center", margin: "0 auto 12px", fontSize: "26px" };
+const title: CSSProperties = { color: "#fff", fontSize: "2.5rem", fontWeight: 900, marginBottom: "20px" };
+const tabs: CSSProperties = { display: "flex", gap: "10px", marginBottom: "25px" };
+const tab: CSSProperties = { flex: 1, padding: "10px", background: "transparent", border: "1px solid #1e293b", color: "#94a3b8", borderRadius: "10px", cursor: "pointer" };
+const tabActive: CSSProperties = { ...tab, background: "#f97316", color: "#fff", border: "none" };
+const form: CSSProperties = { display: "flex", flexDirection: "column", gap: "16px" };
+const input: CSSProperties = { padding: "14px", borderRadius: "12px", border: "1px solid #1e293b", background: "#020617", color: "#fff", outline: "none" };
+const button: CSSProperties = { marginTop: "10px", padding: "14px", borderRadius: "14px", background: "#f97316", border: "none", color: "#fff", fontWeight: 900, cursor: "pointer" };
+const eye: CSSProperties = { position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer" };
+const errorStyle: CSSProperties = { color: "#ff5555", fontSize: "13px", marginBottom: "10px" };
+const footer: CSSProperties = { marginTop: "20px", color: "#94a3b8" };
+const link: CSSProperties = { color: "#fff", fontWeight: 700, cursor: "pointer" };

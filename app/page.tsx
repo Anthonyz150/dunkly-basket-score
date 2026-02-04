@@ -13,7 +13,6 @@ function StatCard({ label, value, icon, color }: { label: string; value: number 
       boxShadow: '0 4px 15px rgba(0,0,0,0.02)', border: '1px solid #F1F5F9',
       position: 'relative', overflow: 'hidden'
     }}>
-      {/* LA LIGNE DE COULEUR RÉACTIVÉE ICI */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '4px', backgroundColor: color }}></div>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
@@ -36,9 +35,22 @@ export default function Dashboard() {
 
   useEffect(() => {
     const initDashboard = async () => {
-      const stored = localStorage.getItem('currentUser');
-      if (!stored) { router.replace('/login'); return; }
-      setUser(JSON.parse(stored));
+      // --- CORRECTION MAJEURE ICI ---
+      // On demande la session à Supabase au lieu de regarder le localStorage
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) { 
+        router.replace('/login'); 
+        return; 
+      }
+      
+      // On récupère les infos de l'utilisateur depuis la session Supabase
+      // Si tu as besoin de metadonnées spécifiques (prenom, role), on les cherche ici
+      setUser({
+        ...session.user,
+        // On fusionne avec le localStorage au cas où tu y stockes des infos custom (ex: prenom)
+        ...JSON.parse(localStorage.getItem('currentUser') || '{}')
+      });
 
       try {
         const [competsRes, equipesRes, matchsRes, nextRes, lastRes] = await Promise.all([
@@ -76,7 +88,8 @@ export default function Dashboard() {
     });
   };
 
-  const isAdmin = user?.role === 'admin' || user?.username?.toLowerCase() === 'admin' || user?.username?.toLowerCase() === 'anthony.didier.prop';
+  // Logique Admin préservée
+  const isAdmin = user?.role === 'admin' || user?.username?.toLowerCase() === 'admin' || user?.username?.toLowerCase() === 'anthony.didier.prop' || user?.user_metadata?.role === 'admin';
 
   if (loading) return (
     <div style={{ height: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -97,7 +110,7 @@ export default function Dashboard() {
             Accueil <span style={{ color: '#F97316' }}>.</span>
           </h1>
           <p style={{ color: '#64748B', marginTop: '5px' }}>
-            Ravi de vous revoir, <strong>{user?.prenom || user?.username}</strong>.
+            Ravi de vous revoir, <strong>{user?.prenom || user?.username || user?.email}</strong>.
           </p>
         </div>
 
@@ -108,7 +121,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* STATS AVEC LIGNES DE COULEUR RÉTABLIES */}
+      {/* STATS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '25px', marginBottom: '40px' }}>
         <StatCard label="Championnats" value={stats.compets} icon="🏆" color="#F97316" />
         <StatCard label="Clubs & Équipes" value={stats.equipes} icon="🛡️" color="#3B82F6" />
