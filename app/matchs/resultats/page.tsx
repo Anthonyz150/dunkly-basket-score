@@ -77,7 +77,7 @@ export default function ResultatsPage() {
           <h1 className="title-mobile" style={{ margin: 0, fontWeight: '900', fontSize: '2.2rem' }}>🏀 TOUS LES MATCHS</h1>
           <p style={{ color: '#64748b', marginTop: '5px' }}>Suivi complet de la compétition</p>
         </div>
-        <Link href="/matchs/a-venir" style={linkBtnStyle}>← Gestion des matchs</Link>
+        <Link href="/matchs/a-venir" style={linkBtnStyle}>← Matchs à venir</Link>
       </div>
 
       <div style={gridStyle}>
