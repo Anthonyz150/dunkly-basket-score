@@ -81,6 +81,7 @@ export default function Dashboard() {
 
       } catch (error) {
         console.error("Erreur chargement dashboard:", error);
+        setLoading(false);
       } finally {
         setLoading(false);
       }
