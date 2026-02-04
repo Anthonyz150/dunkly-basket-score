@@ -72,9 +72,9 @@ export default function ResultatsPage() {
 
   return (
     <div style={containerStyle}>
-      <div style={headerStyle}>
+      <div className="header-mobile" style={headerStyle}>
         <div>
-          <h1 style={{ margin: 0, fontWeight: '900', fontSize: '2.2rem' }}>🏀 TOUS LES MATCHS</h1>
+          <h1 className="title-mobile" style={{ margin: 0, fontWeight: '900', fontSize: '2.2rem' }}>🏀 TOUS LES MATCHS</h1>
           <p style={{ color: '#64748b', marginTop: '5px' }}>Suivi complet de la compétition</p>
         </div>
         <Link href="/matchs/a-venir" style={linkBtnStyle}>← Gestion des matchs</Link>
@@ -91,7 +91,7 @@ export default function ResultatsPage() {
                 <div style={cardStyle} className="match-card">
                   <div style={infoSideStyle}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <div className="badges-mobile" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         {renderStatus(m.status)}
                         <span style={dateBadgeStyle}>
                           {m.date ? m.date.replace('T', ' à ') : "Date non fixée"}
@@ -108,36 +108,36 @@ export default function ResultatsPage() {
                             🗑️
                           </button>
                         )}
-                        <span style={{ fontSize: '0.7rem', color: '#F97316', fontWeight: 'bold' }}>VOIR STATS →</span>
+                        <span className="cta-mobile" style={{ fontSize: '0.7rem', color: '#F97316', fontWeight: 'bold' }}>VOIR STATS →</span>
                       </div>
                     </div>
                     
-                    <div style={teamsRowStyle}>
+                    <div className="teams-row-mobile" style={teamsRowStyle}>
                       {/* DOMICILE */}
                       <div style={teamBlock}>
-                        <div style={m.status === 'termine' && m.scoreA > m.scoreB ? winClubName : clubTitleStyle}>
+                        <div className="club-name-mobile" style={m.status === 'termine' && m.scoreA > m.scoreB ? winClubName : clubTitleStyle}>
                           {m.clubA}
                         </div>
                         <div style={teamSmallStyle}>{m.equipeA}</div>
                       </div>
 
                       {/* SCORE */}
-                      <div style={scoreBoxStyle}>
-                        <span style={scoreValue}>{m.scoreA ?? 0}</span>
+                      <div className="score-box-mobile" style={scoreBoxStyle}>
+                        <span className="score-val-mobile" style={scoreValue}>{m.scoreA ?? 0}</span>
                         <span style={{ color: '#F97316', opacity: 0.5 }}>:</span>
-                        <span style={scoreValue}>{m.scoreB ?? 0}</span>
+                        <span className="score-val-mobile" style={scoreValue}>{m.scoreB ?? 0}</span>
                       </div>
 
                       {/* EXTÉRIEUR */}
                       <div style={teamBlock}>
-                        <div style={m.status === 'termine' && m.scoreB > m.scoreA ? winClubName : clubTitleStyle}>
+                        <div className="club-name-mobile" style={m.status === 'termine' && m.scoreB > m.scoreA ? winClubName : clubTitleStyle}>
                           {m.clubB}
                         </div>
                         <div style={teamSmallStyle}>{m.equipeB}</div>
                       </div>
                     </div>
                     
-                    <div style={footerDetail}>
+                    <div className="footer-detail-mobile" style={footerDetail}>
                       📍 {m.competition} {m.arbitre && ` | ⚖️ ${m.arbitre}`} {m.lieu && ` | 🏢 ${m.lieu}`}
                     </div>
                   </div>
@@ -161,12 +161,24 @@ export default function ResultatsPage() {
           border-color: #F97316;
           box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1);
         }
+
+        @media (max-width: 768px) {
+          .header-mobile { flex-direction: column; align-items: flex-start !important; gap: 15px; }
+          .title-mobile { font-size: 1.5rem !important; }
+          .teams-row-mobile { gap: 5px !important; }
+          .club-name-mobile { font-size: 0.85rem !important; }
+          .score-box-mobile { padding: 0 10px !important; gap: 5px !important; }
+          .score-val-mobile { font-size: 1.6rem !important; }
+          .footer-detail-mobile { font-size: 0.7rem !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .cta-mobile { display: none !important; }
+          .badges-mobile { gap: 5px !important; flex-wrap: wrap; }
+        }
       `}</style>
     </div>
   );
 }
 
-// STYLES
+// STYLES (TES STYLES ORIGINAUX)
 const deleteBtnStyle = { background: '#fee2e2', border: 'none', padding: '5px 8px', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', transition: 'background 0.2s', zIndex: 10 };
 const containerStyle = { padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'sans-serif' };
 const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' };
@@ -175,12 +187,9 @@ const cardStyle = { backgroundColor: '#fff', borderRadius: '20px', padding: '25p
 const infoSideStyle = { display: 'flex', flexDirection: 'column' as const };
 const teamsRowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '15px 0' };
 const teamBlock = { display: 'flex', flexDirection: 'column' as const, flex: 1, textAlign: 'center' as const };
-
-// Modifié pour mettre le club en avant
 const clubTitleStyle = { fontWeight: '800', fontSize: '1.2rem', color: '#1e293b', textTransform: 'uppercase' as const };
 const winClubName = { ...clubTitleStyle, color: '#F97316' };
 const teamSmallStyle = { fontSize: '0.8rem', color: '#64748b', fontWeight: '600' };
-
 const scoreBoxStyle = { display: 'flex', alignItems: 'center', gap: '15px', padding: '0 30px' };
 const scoreValue = { fontSize: '2.5rem', fontWeight: '900', color: '#1e293b', fontFamily: 'monospace' };
 const dateBadgeStyle = { fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b' };
