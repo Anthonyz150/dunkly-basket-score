@@ -10,11 +10,12 @@ export default function ResultatsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [user, setUser] = useState<any>(null);
 
-  // État pour le formulaire d'ajout
+  // ÉTAT POUR L'AJOUT (ADMIN UNIQUEMENT)
   const [showAddForm, setShowAddForm] = useState(false);
   const [newMatch, setNewMatch] = useState({
     clubA: '', clubB: '', equipeA: '', equipeB: '', 
-    competition: '', date: '', lieu: '', status: 'a-venir'
+    competition: '', date: '', lieu: '', status: 'a-venir',
+    scoreA: 0, scoreB: 0
   });
 
   useEffect(() => {
@@ -44,82 +45,89 @@ export default function ResultatsPage() {
     else {
       setShowAddForm(false);
       chargerTousLesMatchs();
-      setNewMatch({ clubA: '', clubB: '', equipeA: '', equipeB: '', competition: '', date: '', lieu: '', status: 'a-venir' });
+      setNewMatch({ clubA: '', clubB: '', equipeA: '', equipeB: '', competition: '', date: '', lieu: '', status: 'a-venir', scoreA: 0, scoreB: 0 });
     }
   };
 
   const filteredMatchs = useMemo(() => {
     return matchs.filter(m => 
       m.clubA?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      m.clubB?.toLowerCase().includes(searchTerm.toLowerCase())
+      m.clubB?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.competition?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [matchs, searchTerm]);
+
+  if (loading) return <div className="loading-state">Chargement des scores...</div>;
 
   return (
     <div className="page-container">
       <header className="dashboard-header">
         <div className="header-left">
           <h1>Résultats <span className="orange-dot">.</span></h1>
-          <p className="subtitle">Gestion et suivi des rencontres</p>
+          <p className="subtitle">Consultez les derniers scores de la saison.</p>
         </div>
-        <div className="header-right">
+        <div className="header-right" style={{ display: 'flex', gap: '10px' }}>
           {isAdmin && (
-            <button className="admin-toggle-btn" onClick={() => setShowAddForm(!showAddForm)}>
-              {showAddForm ? "Fermer" : "+ Nouveau Match"}
+            <button 
+              onClick={() => setShowAddForm(!showAddForm)}
+              style={{ background: '#0f172a', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              {showAddForm ? "Fermer" : "Ajouter un match"}
             </button>
           )}
           <input 
             type="text" 
-            placeholder="Rechercher..." 
+            placeholder="Rechercher un club ou une compétition..." 
             className="search-input"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </header>
 
-      {/* SECTION RÉSERVÉE AUX ADMINS */}
+      {/* FORMULAIRE ADMIN (VISIBLE SEULEMENT SI isAdmin ET showAddForm) */}
       {isAdmin && showAddForm && (
-        <section className="admin-panel">
-          <div className="admin-card">
-            <div className="admin-card-header">
-              <h3>Planifier un match</h3>
-              <p>Remplissez les informations pour le calendrier</p>
-            </div>
-            <form onSubmit={ajouterMatch} className="admin-form">
-              <div className="form-grid">
-                <input type="text" placeholder="Club Domicile" required value={newMatch.clubA} onChange={e => setNewMatch({...newMatch, clubA: e.target.value})} />
-                <input type="text" placeholder="Club Extérieur" required value={newMatch.clubB} onChange={e => setNewMatch({...newMatch, clubB: e.target.value})} />
-                <input type="text" placeholder="Catégorie (ex: U15-1)" value={newMatch.equipeA} onChange={e => setNewMatch({...newMatch, equipeA: e.target.value})} />
-                <input type="text" placeholder="Catégorie (ex: U15-2)" value={newMatch.equipeB} onChange={e => setNewMatch({...newMatch, equipeB: e.target.value})} />
-                <input type="text" placeholder="Compétition" value={newMatch.competition} onChange={e => setNewMatch({...newMatch, competition: e.target.value})} />
-                <input type="datetime-local" required value={newMatch.date} onChange={e => setNewMatch({...newMatch, date: e.target.value})} />
-                <input type="text" placeholder="Lieu" className="full-width" value={newMatch.lieu} onChange={e => setNewMatch({...newMatch, lieu: e.target.value})} />
-              </div>
-              <button type="submit" className="submit-btn">Enregistrer le match</button>
-            </form>
-          </div>
-        </section>
+        <div style={{ background: 'white', padding: '20px', borderRadius: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
+          <form onSubmit={ajouterMatch} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <input style={inputStyle} type="text" placeholder="Club Domicile" required onChange={e => setNewMatch({...newMatch, clubA: e.target.value})} />
+            <input style={inputStyle} type="text" placeholder="Club Extérieur" required onChange={e => setNewMatch({...newMatch, clubB: e.target.value})} />
+            <input style={inputStyle} type="text" placeholder="Catégorie Domicile" onChange={e => setNewMatch({...newMatch, equipeA: e.target.value})} />
+            <input style={inputStyle} type="text" placeholder="Catégorie Extérieur" onChange={e => setNewMatch({...newMatch, equipeB: e.target.value})} />
+            <input style={inputStyle} type="text" placeholder="Compétition" onChange={e => setNewMatch({...newMatch, competition: e.target.value})} />
+            <input style={inputStyle} type="datetime-local" required onChange={e => setNewMatch({...newMatch, date: e.target.value})} />
+            <input style={{...inputStyle, gridColumn: 'span 2'}} type="text" placeholder="Lieu" onChange={e => setNewMatch({...newMatch, lieu: e.target.value})} />
+            <button type="submit" style={{ gridColumn: 'span 2', background: '#f97316', color: 'white', border: 'none', padding: '12px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Enregistrer le match</button>
+          </form>
+        </div>
       )}
 
-      {/* LISTE DES MATCHS (Même style qu'avant) */}
       <div className="matchs-grid">
         {filteredMatchs.map((m) => (
           <Link href={`/matchs/resultats/${m.id}`} key={m.id} className="match-card-link">
             <div className="match-card">
-              <div className={`side-accent ${m.status === 'en-cours' ? 'live' : 'finished'}`}></div>
-              <div className="card-main">
-                <div className="card-info-top">
-                  <span className="badge-comp">🏆 {m.competition}</span>
-                  <span className="match-date">{m.date?.replace('T', ' à ')}</span>
+              <div className={`status-border ${m.status === 'en-cours' ? 'bg-live' : 'bg-finished'}`}></div>
+              <div className="card-content">
+                <div className="card-top">
+                  <span className="competition">🏆 {m.competition}</span>
+                  <span className="date">{m.date ? m.date.split('T')[0].split('-').reverse().join('/') : 'NC'}</span>
                 </div>
-                <div className="scoreboard-container">
-                  <div className="team-block home"><span className="team-name">{m.clubA}</span></div>
-                  <div className="score-pill">
-                    <span className="score-val">{m.scoreA ?? 0}</span>
-                    <span className="score-divider">:</span>
-                    <span className="score-val">{m.scoreB ?? 0}</span>
+                <div className="main-score-row">
+                  <div className="team-info home">
+                    <span className="team-name">{m.clubA}</span>
+                    <span className="team-cat">{m.equipeA}</span>
                   </div>
-                  <div className="team-block away"><span className="team-name">{m.clubB}</span></div>
+                  <div className="score-badge">
+                    <span className="score-num">{m.scoreA ?? 0}</span>
+                    <span className="score-sep">-</span>
+                    <span className="score-num">{m.scoreB ?? 0}</span>
+                  </div>
+                  <div className="team-info away">
+                    <span className="team-name">{m.clubB}</span>
+                    <span className="team-cat">{m.equipeB}</span>
+                  </div>
+                </div>
+                <div className="card-bottom">
+                  <div className="location">📍 {m.lieu || 'Lieu non défini'}</div>
+                  {m.status === 'en-cours' && <span className="live-tag">DIRECT</span>}
                 </div>
               </div>
             </div>
@@ -128,59 +136,38 @@ export default function ResultatsPage() {
       </div>
 
       <style jsx>{`
-        .page-container { padding: 10px; animation: fadeIn 0.4s ease; }
+        .page-container { animation: fadeIn 0.4s ease; padding-bottom: 40px; }
         .dashboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; }
+        .dashboard-header h1 { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin: 0; }
         .orange-dot { color: #f97316; }
-        
-        .header-right { display: flex; gap: 15px; }
-        .admin-toggle-btn { background: #0f172a; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; transition: 0.2s; }
-        .admin-toggle-btn:hover { background: #f97316; }
-
-        /* ADMIN PANEL */
-        .admin-panel { margin-bottom: 40px; animation: slideDown 0.3s ease-out; }
-        .admin-card { background: white; border-radius: 16px; padding: 25px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); }
-        .admin-card-header { margin-bottom: 20px; }
-        .admin-card-header h3 { margin: 0; color: #0f172a; font-size: 1.2rem; }
-        .admin-card-header p { margin: 5px 0 0; color: #64748b; font-size: 0.85rem; }
-
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .full-width { grid-column: span 2; }
-        .admin-form input { padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; outline: none; font-size: 0.9rem; }
-        .admin-form input:focus { border-color: #f97316; }
-        .submit-btn { background: #f97316; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 800; cursor: pointer; width: 100%; transition: 0.2s; }
-        .submit-btn:hover { background: #0f172a; }
-
+        .subtitle { color: #64748b; font-size: 0.9rem; margin: 5px 0 0; }
+        .search-input { padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; width: 300px; outline: none; font-size: 0.85rem; }
         .matchs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; }
-        .match-card { background: white; border-radius: 16px; display: flex; height: 160px; border: 1px solid #f1f5f9; transition: 0.2s; }
-        .side-accent { width: 6px; }
-        .side-accent.finished { background: #0f172a; }
-        .side-accent.live { background: #22c55e; }
-        .card-main { flex: 1; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
-        .score-pill { background: #0f172a; color: white; padding: 5px 15px; border-radius: 10px; display: flex; gap: 8px; align-items: center; }
-        .score-val { font-size: 1.4rem; font-weight: 900; }
-
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .match-card-link { text-decoration: none; color: inherit; }
+        .match-card { background: white; border-radius: 16px; display: flex; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #f1f5f9; transition: transform 0.2s; height: 100%; }
+        .match-card:hover { transform: translateY(-3px); }
+        .status-border { width: 6px; flex-shrink: 0; }
+        .bg-finished { background: #f97316; }
+        .bg-live { background: #22c55e; }
+        .card-content { flex: 1; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+        .card-top { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .competition { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
+        .date { font-size: 0.75rem; color: #94a3b8; font-weight: 600; }
+        .main-score-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin: 10px 0; }
+        .team-info { display: flex; flex-direction: column; width: 35%; }
+        .home { text-align: right; }
+        .team-name { font-size: 1rem; font-weight: 800; color: #1e293b; text-transform: uppercase; }
+        .team-cat { font-size: 0.7rem; color: #94a3b8; font-weight: 600; }
+        .score-badge { background: #f8fafc; padding: 8px 16px; border-radius: 12px; display: flex; align-items: center; gap: 8px; border: 1px solid #e2e8f0; }
+        .score-num { font-size: 1.4rem; font-weight: 900; color: #1e293b; }
+        .score-sep { color: #cbd5e1; font-weight: bold; }
+        .card-bottom { margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #64748b; font-weight: 600; }
+        .live-tag { color: #22c55e; font-weight: 800; animation: pulse 2s infinite; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
       `}</style>
     </div>
   );
 }
-// STYLES CSS-IN-JS
-const containerStyle = { padding: '20px', maxWidth: '1000px', margin: '0 auto' };
-const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' };
-const gridStyle = { display: 'flex', flexDirection: 'column' as const, gap: '15px' };
-const cardStyle = { backgroundColor: '#fff', borderRadius: '16px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', cursor: 'pointer' };
-const infoSideStyle = { display: 'flex', flexDirection: 'column' as const };
-const teamsRowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '15px 0' };
-const teamBlock = { display: 'flex', flexDirection: 'column' as const, flex: 1, textAlign: 'center' as const };
-const clubTitleStyle = { fontWeight: '800', fontSize: '1.1rem', color: '#1e293b', textTransform: 'uppercase' as const };
-const winClubName = { ...clubTitleStyle, color: '#F97316' };
-const teamSmallStyle = { fontSize: '0.75rem', color: '#64748b', fontWeight: '600' };
-const scoreBoxStyle = { display: 'flex', alignItems: 'center', gap: '15px', padding: '0 20px' };
-const scoreValue = { fontSize: '2.2rem', fontWeight: '900', color: '#1e293b', fontFamily: 'monospace' };
-const dateBadgeStyle = { fontSize: '0.8rem', fontWeight: 'bold', color: '#64748b' };
-const statusBadge = { padding: '4px 10px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: '900' };
-const footerDetail = { fontSize: '0.75rem', color: '#94a3b8', borderTop: '1px solid #f1f5f9', paddingTop: '10px', marginTop: '10px' };
-const deleteBtnStyle = { background: '#fee2e2', border: 'none', padding: '5px 8px', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', zIndex: 10 };
-const linkBtnStyle = { textDecoration: 'none', color: '#F97316', fontWeight: 'bold', fontSize: '0.9rem' };
-const emptyCardStyle = { textAlign: 'center' as const, padding: '60px', color: '#94a3b8', background: 'white', borderRadius: '16px', border: '1px dashed #cbd5e1' };
+
+const inputStyle = { padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', outline: 'none' };
