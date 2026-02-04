@@ -4,24 +4,24 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-// 1. On importe OneSignal
 import OneSignal from 'react-onesignal';
 
-// --- 1. COMPOSANTS DE STYLE INTERNES ---
+// --- 1. COMPOSANTS DE STYLE INTERNES (CORRIGÉS POUR MOBILE) ---
 function StatCard({ label, value, icon, color }: { label: string; value: number | string; icon: string; color: string }) {
   return (
     <div style={{ 
-      backgroundColor: 'white', padding: '25px', borderRadius: '24px', 
+      backgroundColor: 'white', padding: '20px', borderRadius: '24px', 
       boxShadow: '0 4px 15px rgba(0,0,0,0.02)', border: '1px solid #F1F5F9',
-      position: 'relative', overflow: 'hidden'
+      position: 'relative', overflow: 'hidden',
+      display: 'flex', flexDirection: 'column', justifyContent: 'center'
     }}>
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '4px', backgroundColor: color }}></div>
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-        <div style={{ backgroundColor: `${color}15`, padding: '12px', borderRadius: '16px', fontSize: '1.5rem' }}>{icon}</div>
-        <div style={{ fontSize: '2.5rem', fontWeight: '900', color: '#1E293B', lineHeight: '1' }}>{value}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <div style={{ backgroundColor: `${color}15`, padding: '10px', borderRadius: '12px', fontSize: '1.2rem' }}>{icon}</div>
+        <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#1E293B', lineHeight: '1' }}>{value}</div>
       </div>
-      <div style={{ fontWeight: '700', color: '#475569', fontSize: '1rem' }}>{label}</div>
+      <div style={{ fontWeight: '700', color: '#475569', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</div>
     </div>
   );
 }
@@ -49,13 +49,11 @@ export default function Dashboard() {
         ...JSON.parse(localStorage.getItem('currentUser') || '{}')
       });
 
-      // --- AJOUT : INITIALISATION ONESIGNAL ---
       try {
         await OneSignal.init({
-          appId: "a60eae06-8739-4515-8827-858c2ec0c07b", // <--- METS TON ID ICI
+          appId: "a60eae06-8739-4515-8827-858c2ec0c07b",
           allowLocalhostAsSecureOrigin: true,
         });
-        // Demande la permission de notifier (affiche la cloche ou le pop-up)
         OneSignal.Notifications.requestPermission();
       } catch (err) {
         console.error("OneSignal Error:", err);
@@ -89,10 +87,9 @@ export default function Dashboard() {
     initDashboard();
   }, [router]);
 
-  // FORMATAGE DATE PARIS
   const formatteDateParis = (dateString: string) => {
     return new Date(dateString).toLocaleString('fr-FR', { 
-      weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
+      day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
       timeZone: 'Europe/Paris' 
     });
   };
@@ -103,100 +100,97 @@ export default function Dashboard() {
     <div style={{ height: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '3rem' }}>🏀</div>
-        <p style={{ color: '#64748B', fontWeight: 'bold', fontFamily: 'sans-serif' }}>Préparation du parquet...</p>
+        <p style={{ color: '#64748B', fontWeight: 'bold' }}>Chargement...</p>
       </div>
     </div>
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '90vh', fontFamily: 'sans-serif' }}>
+    <div style={{ padding: '15px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif' }}>
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-        <div>
-          <h1 style={{ fontSize: '2.2rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
-            Accueil <span style={{ color: '#F97316' }}>.</span>
-          </h1>
-          <p style={{ color: '#64748B', marginTop: '5px' }}>
-            Ravi de vous revoir, <strong>{user?.prenom || user?.username || user?.email}</strong>.
-          </p>
+      {/* HEADER ADAPTÉ */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '30px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+                <h1 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                    DUNKLY<span style={{ color: '#F97316' }}>.</span>
+                </h1>
+                <p style={{ color: '#64748B', fontSize: '0.9rem' }}>Salut, {user?.prenom || user?.username}</p>
+            </div>
+            {isAdmin && (
+                <Link href="/membres" style={btnAdminStyle}>👥</Link>
+            )}
         </div>
-
-        {isAdmin && (
-          <Link href="/membres" style={btnAdminStyle}>
-            👥 GÉRER LES MEMBRES
-          </Link>
-        )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '25px', marginBottom: '40px' }}>
-        <StatCard label="Championnats" value={stats.compets} icon="🏆" color="#F97316" />
-        <StatCard label="Clubs & Équipes" value={stats.equipes} icon="🛡️" color="#3B82F6" />
-        <StatCard label="Matchs Total" value={stats.matchs} icon="⏱️" color="#10B981" />
+      {/* GRILLE DE STATS (S'ADAPTE SUR MOBILE) */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', 
+        gap: '12px', 
+        marginBottom: '30px' 
+      }}>
+        <StatCard label="Ligues" value={stats.compets} icon="🏆" color="#F97316" />
+        <StatCard label="Clubs" value={stats.equipes} icon="🛡️" color="#3B82F6" />
+        <StatCard label="Matchs" value={stats.matchs} icon="⏱️" color="#10B981" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
+      {/* CARTES MATCHS (STACK SUR MOBILE) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         
-        <div style={{ backgroundColor: '#1E293B', padding: '30px', borderRadius: '24px', color: 'white', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <h3 style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1px' }}>📅 Prochain RDV</h3>
-            {prochainMatch ? (
-              <div>
-                <div style={{ fontSize: '0.8rem', color: '#F97316', fontWeight: 'bold', marginBottom: '5px' }}>{prochainMatch.competition}</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '20px', marginBottom: '20px' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '1.6rem', fontWeight: '900', textTransform: 'uppercase' }}>{prochainMatch.clubA}</div>
-                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 'bold' }}>{prochainMatch.equipeA}</div>
-                  </div>
-                  <div style={{ color: '#F97316', fontWeight: '900', fontSize: '1rem' }}>VS</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '1.6rem', fontWeight: '900', textTransform: 'uppercase' }}>{prochainMatch.clubB}</div>
-                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 'bold' }}>{prochainMatch.equipeB}</div>
-                  </div>
+        {/* PROCHAIN MATCH */}
+        <div style={{ backgroundColor: '#1E293B', padding: '20px', borderRadius: '24px', color: 'white' }}>
+          <h3 style={titleSectionStyle}>📅 Prochain RDV</h3>
+          {prochainMatch ? (
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#F97316', fontWeight: 'bold', marginBottom: '10px' }}>{prochainMatch.competition}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '1rem', fontWeight: '900' }}>{prochainMatch.clubA}</div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', color: '#94A3B8', fontSize: '0.9rem' }}>
-                  <span style={{ color: 'white', fontWeight: '600' }}>🕒 {formatteDateParis(prochainMatch.date)}</span>
-                  <span>📍 {prochainMatch.lieu || 'Lieu non défini'}</span>
+                <div style={{ color: '#F97316', fontWeight: '900', fontSize: '0.8rem', padding: '0 10px' }}>VS</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '1rem', fontWeight: '900' }}>{prochainMatch.clubB}</div>
                 </div>
-                <Link href="/matchs/a-venir" style={{ display: 'inline-block', marginTop: '20px', color: '#F97316', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.85rem' }}>Voir le calendrier →</Link>
               </div>
-            ) : ( <p style={{ color: '#475569' }}>Aucun match programmé.</p> )}
-          </div>
-          <div style={{ position: 'absolute', bottom: '-20px', right: '-20px', fontSize: '120px', opacity: 0.05, transform: 'rotate(-15deg)' }}>🏀</div>
+              <div style={{ marginTop: '15px', textAlign: 'center', fontSize: '0.85rem', color: '#94A3B8' }}>
+                <div style={{ color: 'white' }}>🕒 {formatteDateParis(prochainMatch.date)}</div>
+              </div>
+            </div>
+          ) : <p style={{ fontSize: '0.8rem', color: '#94A3B8' }}>Aucun match programmé.</p>}
         </div>
 
-        <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', border: '1px solid #F1F5F9' }}>
-          <h3 style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748B', marginBottom: '25px', textTransform: 'uppercase', letterSpacing: '1px' }}>🏆 Dernier Résultat</h3>
+        {/* DERNIER RÉSULTAT */}
+        <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '24px', border: '1px solid #F1F5F9' }}>
+          <h3 style={{ ...titleSectionStyle, color: '#64748B' }}>🏆 Dernier Score</h3>
           {dernierResultat ? (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.8rem', color: '#F97316', fontWeight: 'bold', marginBottom: '15px' }}>{dernierResultat.competition}</div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', marginBottom: '25px' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '900', fontSize: '1.2rem', color: '#1E293B', textTransform: 'uppercase' }}>{dernierResultat.clubA}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>{dernierResultat.equipeA}</div>
-                </div>
-                <div style={{ fontSize: '1.8rem', fontWeight: '900', color: 'white', backgroundColor: '#1E293B', padding: '8px 16px', borderRadius: '12px', minWidth: '100px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+                <span style={{ fontWeight: '700', fontSize: '0.9rem', flex: 1, textAlign: 'right' }}>{dernierResultat.clubA}</span>
+                <span style={{ backgroundColor: '#1E293B', color: 'white', padding: '5px 12px', borderRadius: '10px', fontWeight: '900' }}>
                   {dernierResultat.scoreA} - {dernierResultat.scoreB}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '900', fontSize: '1.2rem', color: '#1E293B', textTransform: 'uppercase' }}>{dernierResultat.clubB}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>{dernierResultat.equipeB}</div>
-                </div>
+                </span>
+                <span style={{ fontWeight: '700', fontSize: '0.9rem', flex: 1, textAlign: 'left' }}>{dernierResultat.clubB}</span>
               </div>
-              <Link href="/resultats" style={{ color: '#64748B', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 'bold', borderBottom: '1px solid #E2E8F0' }}>Tous les résultats ↗</Link>
             </div>
-          ) : ( <p style={{ textAlign: 'center', color: '#94A3B8' }}>Aucun résultat enregistré.</p> )}
+          ) : <p style={{ textAlign: 'center', color: '#94A3B8' }}>Aucun résultat.</p>}
         </div>
+
       </div>
 
-      <footer style={{ marginTop: 'auto', padding: '40px 0 20px', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', color: '#94A3B8', fontSize: '0.85rem' }}>
-        <div>© 2026 <strong>DUNKLY</strong></div>
-        <div>V 1.1.5</div>
+      <footer style={{ marginTop: '40px', textAlign: 'center', color: '#94A3B8', fontSize: '0.75rem' }}>
+        © 2026 <strong>DUNKLY</strong> • V 1.1.5
       </footer>
     </div>
   );
 }
 
+const titleSectionStyle = { 
+    fontSize: '0.7rem', fontWeight: '800', marginBottom: '15px', textTransform: 'uppercase' as const, letterSpacing: '1px' 
+};
+
 const btnAdminStyle = { 
   backgroundColor: '#1E293B', color: 'white', textDecoration: 'none', 
-  padding: '12px 24px', borderRadius: '14px', fontWeight: '800' as const, fontSize: '0.85rem' 
+  width: '45px', height: '45px', borderRadius: '12px', display: 'flex', 
+  alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' 
 };
