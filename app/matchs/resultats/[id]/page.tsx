@@ -1,71 +1,128 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
-import Link from "next/link";
+import { useState, useEffect, use } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
-export default function HomePage() {
-  const [stats, setStats] = useState<any[]>([]);
+export default function DetailCompetitionPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
+  const compId = resolvedParams.id;
+  const router = useRouter();
+
+  const [competition, setCompetition] = useState<any>(null);
+  const [clubs, setClubs] = useState<any[]>([]);
+  const [matchsTermines, setMatchsTermines] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totals, setTotals] = useState({ matchs: 0, points: 0 });
+  const [user, setUser] = useState<any>(null);
+
+  const [selectedClubId, setSelectedClubId] = useState('');
+  const [selectedEquipe, setSelectedEquipe] = useState<any>(null);
 
   useEffect(() => {
-    fetchGlobalStats();
-  }, []);
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) setUser(JSON.parse(storedUser));
+    chargerDonnees();
+  }, [compId]);
 
-  const fetchGlobalStats = async () => {
+  const chargerDonnees = async () => {
     setLoading(true);
-    const { data: matchs } = await supabase
-      .from('matchs')
-      .select('*')
-      .eq('status', 'termine');
+    try {
+      const { data: comp } = await supabase.from('competitions').select('*').eq('id', compId).single();
+      const { data: listeClubs } = await supabase.from('equipes_clubs').select('*').order('nom');
+      
+      if (comp) {
+        const { data: matchs } = await supabase
+          .from('matchs')
+          .select('*')
+          .eq('competition', comp.nom)
+          .eq('status', 'termine');
 
-    if (matchs) {
-      const compilation: Record<string, any> = {};
-      let totalPts = 0;
-
-      matchs.forEach(m => {
-        totalPts += (m.scoreA + m.scoreB);
-        
-        // Initialiser ou mettre à jour Club A
-        if (!compilation[m.clubA]) compilation[m.clubA] = { nom: m.clubA, v: 0, d: 0, pts: 0, m: 0 };
-        compilation[m.clubA].m += 1;
-        compilation[m.clubA].pts += m.scoreA;
-        
-        // Initialiser ou mettre à jour Club B
-        if (!compilation[m.clubB]) compilation[m.clubB] = { nom: m.clubB, v: 0, d: 0, pts: 0, m: 0 };
-        compilation[m.clubB].m += 1;
-        compilation[m.clubB].pts += m.scoreB;
-
-        // Calcul victoire / défaite
-        if (m.scoreA > m.scoreB) {
-          compilation[m.clubA].v += 1;
-          compilation[m.clubB].d += 1;
-        } else {
-          compilation[m.clubB].v += 1;
-          compilation[m.clubA].d += 1;
-        }
-      });
-
-      setTotals({ matchs: matchs.length, points: totalPts });
-      setStats(Object.values(compilation).sort((a, b) => b.v - a.v));
+        setCompetition(comp);
+        setMatchsTermines(matchs || []);
+      }
+      setClubs(listeClubs || []);
+    } catch (error) {
+      console.error("Erreur:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
+
+  const calculerClassement = () => {
+    const stats: Record<string, any> = {};
+    competition?.equipes_engagees?.forEach((eq: any) => {
+      const key = `${eq.clubNom}-${eq.nom}`;
+      stats[key] = { ...eq, m: 0, v: 0, d: 0, ptsPlus: 0, ptsMoins: 0, points: 0 };
+    });
+
+    matchsTermines.forEach(m => {
+      const keyA = `${m.clubA}-${m.equipeA}`;
+      const keyB = `${m.clubB}-${m.equipeB}`;
+      if (stats[keyA] && stats[keyB]) {
+        stats[keyA].m++; stats[keyB].m++;
+        stats[keyA].ptsPlus += (m.scoreA || 0);
+        stats[keyA].ptsMoins += (m.scoreB || 0);
+        stats[keyB].ptsPlus += (m.scoreB || 0);
+        stats[keyB].ptsMoins += (m.scoreA || 0);
+        if (m.scoreA > m.scoreB) {
+          stats[keyA].v++; stats[keyA].points += 2;
+          stats[keyB].d++; stats[keyB].points += 1;
+        } else {
+          stats[keyB].v++; stats[keyB].points += 2;
+          stats[keyA].d++; stats[keyA].points += 1;
+        }
+      }
+    });
+
+    return Object.values(stats)
+      .map((s: any) => ({ ...s, diff: s.ptsPlus - s.ptsMoins }))
+      .sort((a: any, b: any) => b.points - a.points || b.diff - a.diff);
+  };
+
+  const classement = calculerClassement();
+  const isAdmin = user?.username?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
+
+  const ajouterEquipeACompete = async () => {
+    if (!selectedEquipe || !selectedClubId) return;
+    const club = clubs.find(c => c.id === selectedClubId);
+    const nouvelleEntree = {
+      equipeId: selectedEquipe.id,
+      nom: selectedEquipe.nom,
+      clubNom: club.nom,
+      logoColor: club.logoColor
+    };
+    const nouvelles = [...(competition.equipes_engagees || []), nouvelleEntree];
+    const { error } = await supabase.from('competitions').update({ equipes_engagees: nouvelles }).eq('id', compId);
+    if (!error) {
+      setCompetition({ ...competition, equipes_engagees: nouvelles });
+      setSelectedEquipe(null);
+      setSelectedClubId('');
+    }
+  };
+
+  const retirerEquipe = async (id: string) => {
+    if (!confirm("Retirer cette équipe ?")) return;
+    const filtrees = competition.equipes_engagees.filter((e: any) => e.equipeId !== id);
+    await supabase.from('competitions').update({ equipes_engagees: filtrees }).eq('id', compId);
+    setCompetition({ ...competition, equipes_engagees: filtrees });
+  };
+
+  if (loading) return <div style={{ padding: '50px', textAlign: 'center' }}>🏀 Chargement...</div>;
 
   return (
     <div style={containerStyle}>
-      {/* SECTION HERO / CHIFFRES CLÉS */}
+      {/* HEADER AVEC STYLE HERO */}
       <div style={heroSection}>
-        <h1 style={titleStyle}>Tableau de Bord e-Marque</h1>
+        <button onClick={() => router.push('/competitions')} style={backBtn}>← Gestion des compétitions</button>
+        <h1 style={titleStyle}>{competition.nom}</h1>
         <div style={badgeGrid}>
-          <div style={miniBadge}>🏀 {totals.matchs} Matchs terminés</div>
-          <div style={miniBadge}>🔥 {totals.points} Points inscrits au total</div>
+          <div style={miniBadge}>🏆 {competition.type}</div>
+          <div style={miniBadge}>📅 Saison 2025/2026</div>
         </div>
       </div>
 
       <div style={mainGrid}>
-        {/* COLONNE GAUCHE : CLASSEMENT ÉQUIPES */}
+        {/* COLONNE GAUCHE : CLASSEMENT (REPRISE DU STYLE E-MARQUE) */}
         <div style={statsCard}>
           <h2 style={cardTitle}>🏆 Classement des Équipes</h2>
           <table style={tableStyle}>
@@ -75,37 +132,79 @@ export default function HomePage() {
                 <th style={thC}>M</th>
                 <th style={thC}>V</th>
                 <th style={thC}>D</th>
-                <th style={thC}>MOY. PTS</th>
+                <th style={thC}>DIFF</th>
+                <th style={thC}>PTS</th>
               </tr>
             </thead>
             <tbody>
-              {stats.map((team, index) => (
-                <tr key={team.nom} style={trStyle}>
+              {classement.map((team: any, index: number) => (
+                <tr key={index} style={trStyle}>
                   <td style={tdL}>
                     <span style={rankStyle(index)}>{index + 1}</span>
-                    {team.nom}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontWeight: '800' }}>{team.nom}</span>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 'normal' }}>{team.clubNom}</span>
+                    </div>
                   </td>
                   <td style={tdC}>{team.m}</td>
                   <td style={{ ...tdC, color: '#22c55e', fontWeight: 'bold' }}>{team.v}</td>
                   <td style={{ ...tdC, color: '#ef4444' }}>{team.d}</td>
-                  <td style={tdC}>{(team.pts / team.m).toFixed(1)}</td>
+                  <td style={{ ...tdC, fontWeight: 'bold', color: team.diff >= 0 ? '#22c55e' : '#ef4444' }}>
+                    {team.diff > 0 ? `+${team.diff}` : team.diff}
+                  </td>
+                  <td style={{ ...tdC, fontWeight: '900', color: '#F97316' }}>{team.points}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {stats.length === 0 && <p style={emptyText}>Aucun match terminé pour le moment.</p>}
+          {classement.length === 0 && <p style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>Aucune équipe engagée.</p>}
         </div>
 
-        {/* COLONNE DROITE : ACTIONS RAPIDES */}
+        {/* COLONNE DROITE : ADMINISTRATION & INFOS */}
         <div style={actionColumn}>
-          <Link href="/matchs/nouveau" style={primaryBtn}>+ Nouveau Match</Link>
-          <Link href="/matchs/resultats" style={secondaryBtn}>Consulter les Résultats</Link>
-          
+          {isAdmin && (
+            <div style={adminCard}>
+              <h3 style={{ fontSize: '1rem', marginBottom: '15px' }}>Engager une équipe</h3>
+              <select 
+                style={selectStyle} 
+                value={selectedClubId} 
+                onChange={(e) => { setSelectedClubId(e.target.value); setSelectedEquipe(null); }}
+              >
+                <option value="">-- Choisir un Club --</option>
+                {clubs.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+              </select>
+
+              <select 
+                style={{ ...selectStyle, marginTop: '10px' }} 
+                disabled={!selectedClubId}
+                value={selectedEquipe ? JSON.stringify(selectedEquipe) : ""}
+                onChange={(e) => setSelectedEquipe(e.target.value ? JSON.parse(e.target.value) : null)}
+              >
+                <option value="">-- Choisir l'Équipe --</option>
+                {clubs.find(c => c.id === selectedClubId)?.equipes?.map((eq: any) => (
+                  <option key={eq.id} value={JSON.stringify(eq)}>{eq.nom}</option>
+                ))}
+              </select>
+
+              <button onClick={ajouterEquipeACompete} disabled={!selectedEquipe} style={addBtn}>
+                + Engager l'équipe
+              </button>
+            </div>
+          )}
+
           <div style={infoBox}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '10px' }}>Dernière mise à jour</h3>
-            <p style={{ fontSize: '0.8rem', color: '#64748b' }}>
-              Les statistiques sont calculées en temps réel à partir des matchs enregistrés dans Supabase.
-            </p>
+            <h3 style={{ fontSize: '1rem', marginBottom: '10px' }}>Équipes Engagées ({competition.equipes_engagees?.length || 0})</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {competition.equipes_engagees?.map((eq: any) => (
+                <div key={eq.equipeId} style={equipeSmallTag}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: eq.logoColor }}></div>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{eq.nom}</span>
+                  </div>
+                  {isAdmin && <button onClick={() => retirerEquipe(eq.equipeId)} style={miniRemoveBtn}>×</button>}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -113,33 +212,39 @@ export default function HomePage() {
   );
 }
 
-// --- STYLES ---
+// --- STYLES REPRIS DU DASHBOARD E-MARQUE ---
 const containerStyle = { padding: '40px 20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif', color: '#1e293b' };
 const heroSection = { textAlign: 'center' as const, marginBottom: '50px' };
-const titleStyle = { fontSize: '2.5rem', fontWeight: '900', marginBottom: '20px', color: '#1e293b' };
-const badgeGrid = { display: 'flex', gap: '15px', justifyContent: 'center' };
-const miniBadge = { backgroundColor: '#f1f5f9', padding: '10px 20px', borderRadius: '30px', fontWeight: 'bold', fontSize: '0.9rem' };
+const titleStyle = { fontSize: '2.5rem', fontWeight: '900', marginBottom: '20px' };
+const badgeGrid = { display: 'flex', gap: '10px', justifyContent: 'center' };
+const miniBadge = { backgroundColor: '#f1f5f9', padding: '8px 16px', borderRadius: '30px', fontWeight: 'bold', fontSize: '0.8rem' };
+const backBtn = { background: 'none', border: 'none', color: '#F97316', cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px' };
 
-const mainGrid = { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px' };
+const mainGrid = { display: 'grid', gridTemplateColumns: '2.2fr 1fr', gap: '30px' };
 
 const statsCard = { backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' };
-const cardTitle = { fontSize: '1.3rem', fontWeight: '800', marginBottom: '25px', color: '#1e293b' };
+const cardTitle = { fontSize: '1.2rem', fontWeight: '800', marginBottom: '25px' };
 
 const tableStyle = { width: '100%', borderCollapse: 'collapse' as const };
 const thRow = { borderBottom: '2px solid #f1f5f9' };
-const thL = { textAlign: 'left' as const, padding: '15px', color: '#64748b', fontSize: '0.75rem', fontWeight: 'bold' };
-const thC = { textAlign: 'center' as const, padding: '15px', color: '#64748b', fontSize: '0.75rem', fontWeight: 'bold' };
+const thL = { textAlign: 'left' as const, padding: '15px', color: '#64748b', fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' as const };
+const thC = { textAlign: 'center' as const, padding: '15px', color: '#64748b', fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' as const };
 const trStyle = { borderBottom: '1px solid #f8fafc' };
-const tdL = { padding: '18px 15px', fontWeight: '700', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '12px' };
-const tdC = { padding: '18px 15px', textAlign: 'center' as const, fontSize: '1rem' };
+const tdL = { padding: '15px', display: 'flex', alignItems: 'center', gap: '15px' };
+const tdC = { padding: '15px', textAlign: 'center' as const, fontSize: '0.95rem' };
+
 const rankStyle = (i: number) => ({
   backgroundColor: i === 0 ? '#FEF3C7' : '#f1f5f9',
   color: i === 0 ? '#92400E' : '#475569',
-  width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem'
+  width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold', flexShrink: 0
 });
 
-const actionColumn = { display: 'flex', flexDirection: 'column' as const, gap: '15px' };
-const primaryBtn = { backgroundColor: '#F97316', color: 'white', padding: '20px', borderRadius: '16px', textAlign: 'center' as const, textDecoration: 'none', fontWeight: 'bold', fontSize: '1.1rem', boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)' };
-const secondaryBtn = { backgroundColor: '#1e293b', color: 'white', padding: '20px', borderRadius: '16px', textAlign: 'center' as const, textDecoration: 'none', fontWeight: 'bold' };
-const infoBox = { backgroundColor: '#f8fafc', padding: '20px', borderRadius: '16px', marginTop: '10px', border: '1px solid #e2e8f0' };
-const emptyText = { textAlign: 'center' as const, color: '#94a3b8', padding: '40px' };
+const actionColumn = { display: 'flex', flexDirection: 'column' as const, gap: '20px' };
+const adminCard = { backgroundColor: '#1e293b', color: 'white', padding: '25px', borderRadius: '24px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' };
+const infoBox = { backgroundColor: 'white', padding: '25px', borderRadius: '24px', border: '1px solid #e2e8f0' };
+
+const selectStyle = { width: '100%', padding: '12px', borderRadius: '12px', border: 'none', backgroundColor: '#334155', color: 'white', fontSize: '0.9rem' };
+const addBtn = { width: '100%', marginTop: '15px', padding: '14px', backgroundColor: '#F97316', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' };
+
+const equipeSmallTag = { display: 'flex', alignItems: 'center', padding: '10px 15px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' };
+const miniRemoveBtn = { background: '#fee2e2', color: '#ef4444', border: 'none', width: '22px', height: '22px', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' };
