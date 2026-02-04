@@ -7,19 +7,11 @@ import Link from "next/link";
 export default function ResultatsPage() {
   const [matchs, setMatchs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filter, setFilter] = useState("tous");
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      try { setUser(JSON.parse(storedUser)); } catch (e) { console.error(e); }
-    }
     chargerTousLesMatchs();
   }, []);
-
-  const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
 
   const chargerTousLesMatchs = async () => {
     setLoading(true);
@@ -31,186 +23,128 @@ export default function ResultatsPage() {
     setLoading(false);
   };
 
-  // LOGIQUE DE FILTRE DYNAMIQUE (JS)
   const filteredMatchs = useMemo(() => {
-    return matchs.filter(m => {
-      const matchesSearch = m.clubA.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            m.clubB.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = filter === "tous" ? true : m.status === filter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [matchs, searchTerm, filter]);
+    return matchs.filter(m => 
+      m.clubA.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      m.clubB.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.competition.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [matchs, searchTerm]);
 
-  // ANIMATION DE PARALLAXE SUR LES CARTES (JS)
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const card = e.currentTarget;
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    card.style.setProperty('--x', `${x}px`);
-    card.style.setProperty('--y', `${y}px`);
-  };
-
-  const renderStatus = (status: string) => {
-    switch (status) {
-      case 'termine': return <span className="status-badge finished">Terminé</span>;
-      case 'en-cours': return <span className="status-badge live">● Direct</span>;
-      default: return <span className="status-badge upcoming">À venir</span>;
-    }
-  };
-
-  if (loading) return <div className="loading-screen"><div className="ball">🏀</div></div>;
+  if (loading) return <div className="loading">Chargement...</div>;
 
   return (
-    <div className="results-container">
-      <header className="page-header">
-        <div className="title-stack">
-          <span className="kicker">Live Scores</span>
-          <h1 className="main-title">Résultats</h1>
+    <div className="page-wrapper">
+      {/* HEADER TYPE DASHBOARD */}
+      <header className="dashboard-header">
+        <div className="header-left">
+          <h1>Résultats <span className="dot">.</span></h1>
+          <p className="welcome-msg">Consultez les derniers scores de la saison.</p>
         </div>
-        
-        {/* BARRE DE RECHERCHE DYNAMIQUE */}
-        <div className="controls">
-          <input 
-            type="text" 
-            placeholder="Rechercher un club..." 
-            className="search-input"
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <select className="filter-select" onChange={(e) => setFilter(e.target.value)}>
-            <option value="tous">Tous les matchs</option>
-            <option value="termine">Terminés</option>
-            <option value="en-cours">En direct</option>
-          </select>
+        <div className="header-actions">
+           <input 
+              type="text" 
+              placeholder="Rechercher..." 
+              className="search-bar"
+              onChange={(e) => setSearchTerm(e.target.value)}
+           />
         </div>
       </header>
 
-      <div className="match-grid">
-        {filteredMatchs.map((m, index) => (
-          <div 
-            key={m.id} 
-            className="match-card-wrapper" 
-            style={{ animationDelay: `${index * 0.1}s` }} // Entrée séquencée
-            onMouseMove={handleMouseMove}
-          >
-            <Link href={`/matchs/resultats/${m.id}`} className="match-card">
-              <div className="gloss-effect"></div>
-              <div className="card-top">
-                <div className="info-left">
-                  {renderStatus(m.status)}
-                  <span className="comp-tag">{m.competition}</span>
-                </div>
+      {/* GRILLE DE CARTES */}
+      <div className="results-grid">
+        {filteredMatchs.map((m) => (
+          <Link href={`/matchs/resultats/${m.id}`} key={m.id} className="match-card">
+            {/* La petite barre de couleur à gauche comme sur tes captures */}
+            <div className={`side-accent ${m.status === 'termine' ? 'finished' : 'live'}`}></div>
+            
+            <div className="card-body">
+              <div className="card-meta">
+                <span className="comp-tag">🏆 {m.competition}</span>
                 <span className="date-tag">{m.date?.split('T')[0].split('-').reverse().join('/')}</span>
               </div>
 
-              <div className="scoreboard">
-                <div className="team home">
-                  <span className="team-name">{m.clubA}</span>
-                  <span className="team-sub">{m.equipeA}</span>
+              <div className="score-row">
+                <div className="team-info">
+                  <span className="t-name">{m.clubA}</span>
+                  <span className="t-cat">{m.equipeA}</span>
+                </div>
+                
+                <div className="score-center">
+                  <span className="score">{m.scoreA ?? 0}</span>
+                  <span className="sep">-</span>
+                  <span className="score">{m.scoreB ?? 0}</span>
                 </div>
 
-                <div className="score-area">
-                  <div className="score-box">{m.scoreA ?? 0}</div>
-                  <div className="score-sep">:</div>
-                  <div className="score-box">{m.scoreB ?? 0}</div>
-                </div>
-
-                <div className="team away">
-                  <span className="team-name">{m.clubB}</span>
-                  <span className="team-sub">{m.equipeB}</span>
+                <div className="team-info text-right">
+                  <span className="t-name">{m.clubB}</span>
+                  <span className="t-cat">{m.equipeB}</span>
                 </div>
               </div>
 
               <div className="card-footer">
-                <span>📍 {m.lieu || 'Terrain à définir'}</span>
-                <span className="view-more">Détails du match →</span>
+                <span>📍 {m.lieu || 'Terrain non défini'}</span>
+                {m.status === 'en-cours' && <span className="live-indicator">EN DIRECT</span>}
               </div>
-            </Link>
-          </div>
+            </div>
+          </Link>
         ))}
       </div>
 
       <style jsx>{`
-        .results-container { padding: 10px; max-width: 1100px; margin: 0 auto; }
+        .page-wrapper { animation: fadeIn 0.4s ease-out; }
 
-        /* HEADER & CONTROLS */
-        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; flex-wrap: wrap; gap: 20px; }
-        .kicker { font-size: 0.8rem; font-weight: 800; color: #F97316; text-transform: uppercase; letter-spacing: 3px; }
-        .main-title { font-size: 3rem; font-weight: 900; color: #0F172A; margin: 0; letter-spacing: -2px; }
+        /* TITRE DASHBOARD */
+        .dashboard-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
+        .dashboard-header h1 { font-size: 1.8rem; font-weight: 800; color: #1E293B; margin: 0; }
+        .dot { color: #F97316; }
+        .welcome-msg { color: #64748B; font-size: 0.9rem; margin-top: 4px; }
+
+        .search-bar { 
+          padding: 10px 15px; border-radius: 8px; border: 1px solid #E2E8F0; 
+          background: white; outline: none; font-size: 0.85rem; width: 250px;
+        }
+
+        /* CARTES INSPIRÉES DU DASHBOARD */
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)); gap: 20px; }
         
-        .controls { display: flex; gap: 10px; }
-        .search-input, .filter-select { 
-          padding: 12px 18px; border-radius: 14px; border: 1px solid #E2E8F0; 
-          font-weight: 600; font-family: inherit; outline: none; transition: 0.2s;
-        }
-        .search-input:focus { border-color: #F97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1); }
-
-        /* MATCH CARD ANIMATIONS */
-        .match-grid { display: flex; flex-direction: column; gap: 18px; }
-        .match-card-wrapper { 
-          opacity: 0; transform: translateY(20px); 
-          animation: slideIn 0.5s forwards ease-out;
-          position: relative;
-        }
-
         .match-card { 
-          display: block; background: white; border-radius: 24px; padding: 30px; 
+          background: white; border-radius: 12px; display: flex; overflow: hidden;
           text-decoration: none; color: inherit; border: 1px solid #E2E8F0;
-          position: relative; overflow: hidden; transition: transform 0.1s ease-out;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: 0.2s;
         }
+        .match-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
 
-        /* EFFET DE LUEUR JS */
-        .gloss-effect {
-          position: absolute; inset: 0; pointer-events: none;
-          background: radial-gradient(circle at var(--x) var(--y), rgba(249, 115, 22, 0.08) 0%, transparent 60%);
-        }
+        .side-accent { width: 6px; }
+        .side-accent.finished { background: #F97316; } /* Orange Dunkly */
+        .side-accent.live { background: #22C55E; } /* Vert pour le live */
 
-        .match-card:hover { border-color: #F97316; }
+        .card-body { flex: 1; padding: 20px; }
+        
+        .card-meta { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .comp-tag { font-size: 0.75rem; font-weight: 700; color: #64748B; text-transform: uppercase; }
+        .date-tag { font-size: 0.75rem; color: #94A3B8; }
 
-        /* SCOREBOARD */
-        .card-top { display: flex; justify-content: space-between; margin-bottom: 25px; }
-        .info-left { display: flex; gap: 12px; align-items: center; }
-        .status-badge { padding: 5px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: 800; }
-        .finished { background: #F1F5F9; color: #475569; }
-        .live { background: #F97316; color: white; animation: blink 1.5s infinite; }
-        .upcoming { background: #E0F2FE; color: #0284C7; }
+        .score-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .team-info { display: flex; flex-direction: column; width: 35%; }
+        .text-right { text-align: right; }
+        .t-name { font-size: 1rem; font-weight: 800; color: #1E293B; }
+        .t-cat { font-size: 0.7rem; color: #94A3B8; font-weight: 600; }
 
-        .scoreboard { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-        .team { flex: 1; display: flex; flex-direction: column; }
-        .home { text-align: right; }
-        .away { text-align: left; }
-        .team-name { font-size: 1.4rem; font-weight: 900; color: #0F172A; text-transform: uppercase; }
-        .team-sub { color: #94A3B8; font-weight: 600; font-size: 0.8rem; }
+        .score-center { display: flex; align-items: center; gap: 10px; background: #F8FAFC; padding: 8px 15px; border-radius: 8px; }
+        .score { font-size: 1.4rem; font-weight: 900; color: #1E293B; }
+        .sep { color: #CBD5E1; font-weight: bold; }
 
-        .score-area { display: flex; align-items: center; gap: 10px; }
-        .score-box { 
-          background: #0F172A; color: white; width: 55px; height: 65px; 
-          border-radius: 15px; display: flex; align-items: center; justify-content: center; 
-          font-size: 2rem; font-weight: 900; box-shadow: 0 8px 0 #F97316;
-        }
-        .score-sep { font-size: 1.5rem; font-weight: 900; color: #CBD5E1; }
+        .card-footer { display: flex; justify-content: space-between; border-top: 1px solid #F1F5F9; paddingTop: 12px; margin-top: 5px; font-size: 0.75rem; color: #64748B; font-weight: 600; }
+        .live-indicator { color: #22C55E; animation: pulse 2s infinite; }
 
-        .card-footer { 
-          margin-top: 25px; padding-top: 20px; border-top: 1px solid #F1F5F9;
-          display: flex; justify-content: space-between; align-items: center;
-          font-size: 0.8rem; color: #94A3B8; font-weight: 700;
-        }
-        .view-more { color: #F97316; opacity: 0; transition: 0.3s; transform: translateX(-10px); }
-        .match-card:hover .view-more { opacity: 1; transform: translateX(0); }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* KEYFRAMES */
-        @keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
-        @keyframes blink { 50% { opacity: 0.7; } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .loading-screen { height: 60vh; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
-        .ball { animation: spin 1s infinite linear; }
-
-        @media (max-width: 768px) {
-          .main-title { font-size: 2rem; }
-          .team-name { font-size: 1rem; }
-          .score-box { width: 40px; height: 50px; font-size: 1.4rem; }
-          .page-header { flex-direction: column; align-items: flex-start; }
+        @media (max-width: 1024px) {
+          .results-grid { grid-template-columns: 1fr; }
+          .search-bar { width: 100%; margin-top: 15px; }
+          .dashboard-header { flex-direction: column; }
         }
       `}</style>
     </div>
