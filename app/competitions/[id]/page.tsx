@@ -131,54 +131,56 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
   return (
     <div style={containerStyle}>
       {/* HEADER */}
-      <div style={heroSection}>
-        <button onClick={() => router.push('/competitions')} style={backBtn}>← Retour aux compétitions</button>
-        <h1 style={titleStyle}>{competition.nom}</h1>
+      <div className="hero-mobile" style={heroSection}>
+        <button onClick={() => router.push('/competitions')} style={backBtn}>← Retour</button>
+        <h1 className="title-mobile" style={titleStyle}>{competition.nom}</h1>
         <div style={badgeGrid}>
           <div style={miniBadge}>🏆 {competition.type}</div>
           <div style={miniBadge}>📅 Saison 2025/2026</div>
         </div>
       </div>
 
-      <div style={mainGrid}>
+      <div className="main-grid-mobile" style={mainGrid}>
         {/* CLASSEMENT DYNAMIQUE */}
         <div style={statsCard}>
           <h2 style={cardTitle}>🏆 Classement Officiel</h2>
-          <table style={tableStyle}>
-            <thead>
-              <tr style={thRow}>
-                <th style={thL}>CLUB / ÉQUIPE</th>
-                <th style={thC}>M</th>
-                <th style={thC}>V</th>
-                <th style={thC}>D</th>
-                <th style={thC}>DIFF</th>
-                <th style={thC}>PTS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {classement.map((team: any, index: number) => (
-                <tr key={index} style={trStyle}>
-                  <td style={tdL}>
-                    <span style={rankStyle(index)}>{index + 1}</span>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontWeight: '800' }}>{team.nom}</span>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>{team.clubNom}</span>
-                    </div>
-                  </td>
-                  <td style={tdC}>{team.m}</td>
-                  <td style={{ ...tdC, color: '#22c55e', fontWeight: 'bold' }}>{team.v}</td>
-                  <td style={{ ...tdC, color: '#ef4444' }}>{team.d}</td>
-                  <td style={tdC}>{team.diff > 0 ? `+${team.diff}` : team.diff}</td>
-                  <td style={{ ...tdC, fontWeight: '900', color: '#F97316' }}>{team.points}</td>
+          <div className="table-container">
+            <table style={tableStyle}>
+              <thead>
+                <tr style={thRow}>
+                  <th style={thL}>CLUB / ÉQUIPE</th>
+                  <th style={thC}>M</th>
+                  <th style={thC}>V</th>
+                  <th style={thC}>D</th>
+                  <th className="hide-mobile" style={thC}>DIFF</th>
+                  <th style={thC}>PTS</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {classement.map((team: any, index: number) => (
+                  <tr key={index} style={trStyle}>
+                    <td style={tdL}>
+                      <span style={rankStyle(index)}>{index + 1}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span className="team-name-mobile" style={{ fontWeight: '800' }}>{team.nom}</span>
+                        <span style={{ fontSize: '0.7rem', color: '#64748b' }}>{team.clubNom}</span>
+                      </div>
+                    </td>
+                    <td style={tdC}>{team.m}</td>
+                    <td style={{ ...tdC, color: '#22c55e', fontWeight: 'bold' }}>{team.v}</td>
+                    <td style={{ ...tdC, color: '#ef4444' }}>{team.d}</td>
+                    <td className="hide-mobile" style={tdC}>{team.diff > 0 ? `+${team.diff}` : team.diff}</td>
+                    <td style={{ ...tdC, fontWeight: '900', color: '#F97316' }}>{team.points}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {classement.length === 0 && <p style={emptyText}>Aucune équipe engagée.</p>}
         </div>
 
         {/* ADMIN & INFOS */}
-        <div style={actionColumn}>
+        <div className="action-column-mobile" style={actionColumn}>
           {isAdmin && (
             <div style={adminCard}>
               <h3 style={{ fontSize: '1rem', marginBottom: '15px' }}>Engager une équipe</h3>
@@ -216,37 +218,49 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .title-mobile { font-size: 1.8rem !important; }
+          .hero-mobile { margin-bottom: 25px !important; }
+          .main-grid-mobile { grid-template-columns: 1fr !important; gap: 20px !important; }
+          .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .hide-mobile { display: none !important; }
+          .team-name-mobile { font-size: 0.8rem !important; }
+          td, th { padding: 10px 5px !important; font-size: 0.75rem !important; }
+        }
+      `}</style>
     </div>
   );
 }
 
-// --- STYLES HARMONISÉS ---
+// --- STYLES HARMONISÉS (INCHANGÉS) ---
 const containerStyle = { padding: '40px 20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif', color: '#1e293b' };
-const loadingOverlay = { height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#F97316' };
+const loadingOverlay = { height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' as const, color: '#F97316' };
 const heroSection = { textAlign: 'center' as const, marginBottom: '40px' };
 const titleStyle = { fontSize: '2.5rem', fontWeight: '900', marginBottom: '15px' };
 const badgeGrid = { display: 'flex', gap: '10px', justifyContent: 'center' };
-const miniBadge = { backgroundColor: '#f1f5f9', padding: '8px 16px', borderRadius: '30px', fontWeight: 'bold', fontSize: '0.8rem' };
-const backBtn = { background: 'none', border: 'none', color: '#F97316', cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px' };
+const miniBadge = { backgroundColor: '#f1f5f9', padding: '8px 16px', borderRadius: '30px', fontWeight: 'bold' as const, fontSize: '0.8rem' };
+const backBtn = { background: 'none', border: 'none', color: '#F97316', cursor: 'pointer', fontWeight: 'bold' as const, marginBottom: '10px' };
 
 const mainGrid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '30px' };
 
 const statsCard = { backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' };
-const cardTitle = { fontSize: '1.2rem', fontWeight: '800', marginBottom: '25px' };
+const cardTitle = { fontSize: '1.2rem', fontWeight: '800' as const, marginBottom: '25px' };
 
 const tableStyle = { width: '100%', borderCollapse: 'collapse' as const };
 const thRow = { borderBottom: '2px solid #f1f5f9' };
-const thL = { textAlign: 'left' as const, padding: '15px', color: '#64748b', fontSize: '0.7rem', fontWeight: 'bold' };
-const thC = { textAlign: 'center' as const, padding: '15px', color: '#64748b', fontSize: '0.7rem', fontWeight: 'bold' };
+const thL = { textAlign: 'left' as const, padding: '15px', color: '#64748b', fontSize: '0.7rem', fontWeight: 'bold' as const };
+const thC = { textAlign: 'center' as const, padding: '15px', color: '#64748b', fontSize: '0.7rem', fontWeight: 'bold' as const };
 const trStyle = { borderBottom: '1px solid #f8fafc' };
 const tdL = { padding: '15px', display: 'flex', alignItems: 'center', gap: '15px' };
 const tdC = { padding: '15px', textAlign: 'center' as const };
-const rankStyle = (i: number) => ({ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: i === 0 ? '#FEF3C7' : '#f1f5f9', color: i === 0 ? '#92400E' : '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' });
+const rankStyle = (i: number) => ({ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: i === 0 ? '#FEF3C7' : '#f1f5f9', color: i === 0 ? '#92400E' : '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' as const });
 
 const actionColumn = { display: 'flex', flexDirection: 'column' as const, gap: '20px' };
 const adminCard = { backgroundColor: '#1e293b', color: 'white', padding: '25px', borderRadius: '24px' };
 const selectStyle = { width: '100%', padding: '12px', borderRadius: '12px', border: 'none', backgroundColor: '#334155', color: 'white' };
-const addBtn = { width: '100%', marginTop: '15px', padding: '15px', backgroundColor: '#F97316', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' };
+const addBtn = { width: '100%', marginTop: '15px', padding: '15px', backgroundColor: '#F97316', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold' as const, cursor: 'pointer' };
 
 const infoBox = { backgroundColor: 'white', padding: '25px', borderRadius: '24px', border: '1px solid #e2e8f0' };
 const equipeTag = { display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '12px' };
