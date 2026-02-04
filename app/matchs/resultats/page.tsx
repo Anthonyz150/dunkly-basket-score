@@ -10,14 +10,6 @@ export default function ResultatsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [user, setUser] = useState<any>(null);
 
-  // ÉTAT POUR L'AJOUT (ADMIN UNIQUEMENT)
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newMatch, setNewMatch] = useState({
-    clubA: '', clubB: '', equipeA: '', equipeB: '', 
-    competition: '', date: '', lieu: '', status: 'a-venir',
-    scoreA: 0, scoreB: 0
-  });
-
   useEffect(() => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
@@ -38,17 +30,6 @@ export default function ResultatsPage() {
     setLoading(false);
   };
 
-  const ajouterMatch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const { error } = await supabase.from('matchs').insert([newMatch]);
-    if (error) alert(error.message);
-    else {
-      setShowAddForm(false);
-      chargerTousLesMatchs();
-      setNewMatch({ clubA: '', clubB: '', equipeA: '', equipeB: '', competition: '', date: '', lieu: '', status: 'a-venir', scoreA: 0, scoreB: 0 });
-    }
-  };
-
   const filteredMatchs = useMemo(() => {
     return matchs.filter(m => 
       m.clubA?.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -66,14 +47,20 @@ export default function ResultatsPage() {
           <h1>Résultats <span className="orange-dot">.</span></h1>
           <p className="subtitle">Consultez les derniers scores de la saison.</p>
         </div>
-        <div className="header-right" style={{ display: 'flex', gap: '10px' }}>
+        <div className="header-right" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {/* BOUTON ADMIN AVEC LIEN VERS A-VENIR */}
           {isAdmin && (
-            <button 
-              onClick={() => setShowAddForm(!showAddForm)}
-              style={{ background: '#0f172a', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}
-            >
-              {showAddForm ? "Fermer" : "Ajouter un match"}
-            </button>
+            <Link href="/matchs/a-venir" style={{ 
+              background: '#0f172a', 
+              color: 'white', 
+              textDecoration: 'none',
+              padding: '10px 15px', 
+              borderRadius: '10px', 
+              fontWeight: 'bold', 
+              fontSize: '0.85rem' 
+            }}>
+              + Ajouter un match
+            </Link>
           )}
           <input 
             type="text" 
@@ -83,22 +70,6 @@ export default function ResultatsPage() {
           />
         </div>
       </header>
-
-      {/* FORMULAIRE ADMIN (VISIBLE SEULEMENT SI isAdmin ET showAddForm) */}
-      {isAdmin && showAddForm && (
-        <div style={{ background: 'white', padding: '20px', borderRadius: '16px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
-          <form onSubmit={ajouterMatch} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <input style={inputStyle} type="text" placeholder="Club Domicile" required onChange={e => setNewMatch({...newMatch, clubA: e.target.value})} />
-            <input style={inputStyle} type="text" placeholder="Club Extérieur" required onChange={e => setNewMatch({...newMatch, clubB: e.target.value})} />
-            <input style={inputStyle} type="text" placeholder="Catégorie Domicile" onChange={e => setNewMatch({...newMatch, equipeA: e.target.value})} />
-            <input style={inputStyle} type="text" placeholder="Catégorie Extérieur" onChange={e => setNewMatch({...newMatch, equipeB: e.target.value})} />
-            <input style={inputStyle} type="text" placeholder="Compétition" onChange={e => setNewMatch({...newMatch, competition: e.target.value})} />
-            <input style={inputStyle} type="datetime-local" required onChange={e => setNewMatch({...newMatch, date: e.target.value})} />
-            <input style={{...inputStyle, gridColumn: 'span 2'}} type="text" placeholder="Lieu" onChange={e => setNewMatch({...newMatch, lieu: e.target.value})} />
-            <button type="submit" style={{ gridColumn: 'span 2', background: '#f97316', color: 'white', border: 'none', padding: '12px', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>Enregistrer le match</button>
-          </form>
-        </div>
-      )}
 
       <div className="matchs-grid">
         {filteredMatchs.map((m) => (
