@@ -41,10 +41,8 @@ export default function Dashboard() {
           supabase.from('competitions').select('*', { count: 'exact', head: true }),
           supabase.from('equipes_clubs').select('*', { count: 'exact', head: true }),
           supabase.from('matchs').select('*', { count: 'exact', head: true }),
-          // Récupère le prochain match à venir
-          supabase.from('matchs').select('*').eq('status', 'a-venir').order('date', { ascending: true }).limit(1).single(),
-          // Récupère le dernier match terminé
-          supabase.from('matchs').select('*').eq('status', 'termine').order('date', { ascending: false }).limit(1).single()
+          supabase.from('matchs').select('*').eq('status', 'a-venir').order('date', { ascending: true }).limit(1).maybeSingle(),
+          supabase.from('matchs').select('*').eq('status', 'termine').order('date', { ascending: false }).limit(1).maybeSingle()
         ]);
 
         setStats({
@@ -72,13 +70,13 @@ export default function Dashboard() {
     <div style={{ height: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '3rem' }}>🏀</div>
-        <p style={{ color: '#64748B', fontWeight: 'bold' }}>Préparation du parquet...</p>
+        <p style={{ color: '#64748B', fontWeight: 'bold', fontFamily: 'sans-serif' }}>Préparation du parquet...</p>
       </div>
     </div>
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '90vh' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '90vh', fontFamily: 'sans-serif' }}>
       
       {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
@@ -87,7 +85,7 @@ export default function Dashboard() {
             Accueil <span style={{ color: '#F97316' }}>.</span>
           </h1>
           <p style={{ color: '#64748B', marginTop: '5px' }}>
-            Content de vous revoir, <strong>{user?.prenom || user?.username}</strong>.
+            Ravi de vous revoir, <strong>{user?.prenom || user?.username}</strong>.
           </p>
         </div>
 
@@ -108,21 +106,31 @@ export default function Dashboard() {
       {/* SECTION DYNAMIQUE */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
         
-        {/* GAUCHE : PROCHAIN MATCH */}
+        {/* GAUCHE : PROCHAIN RDV */}
         <div style={{ backgroundColor: '#1E293B', padding: '30px', borderRadius: '24px', color: 'white', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'relative', zIndex: 2 }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#94A3B8', marginBottom: '20px', textTransform: 'uppercase' }}>📅 Prochain RDV</h3>
+            <h3 style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1px' }}>📅 Prochain RDV</h3>
             {prochainMatch ? (
               <div>
-                <div style={{ fontSize: '0.85rem', color: '#F97316', fontWeight: 'bold', marginBottom: '5px' }}>{prochainMatch.competition}</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: '900', marginBottom: '15px' }}>
-                  {prochainMatch.equipeA} <span style={{ color: '#475569' }}>vs</span> {prochainMatch.equipeB}
+                <div style={{ fontSize: '0.8rem', color: '#F97316', fontWeight: 'bold', marginBottom: '5px' }}>{prochainMatch.competition}</div>
+                
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '15px', marginBottom: '15px' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '1.4rem', fontWeight: '900' }}>{prochainMatch.clubA}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>{prochainMatch.equipeA}</div>
+                  </div>
+                  <div style={{ color: '#475569', fontWeight: '900', fontSize: '0.8rem' }}>VS</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '1.4rem', fontWeight: '900' }}>{prochainMatch.clubB}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>{prochainMatch.equipeB}</div>
+                  </div>
                 </div>
+
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', color: '#94A3B8', fontSize: '0.9rem' }}>
-                  <span>🕒 {new Date(prochainMatch.date).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
+                  <span style={{ color: 'white', fontWeight: '600' }}>🕒 {new Date(prochainMatch.date).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
                   <span>📍 {prochainMatch.lieu || 'Lieu non défini'}</span>
                 </div>
-                <Link href="/matchs/a-venir" style={{ display: 'inline-block', marginTop: '20px', color: 'white', fontWeight: 'bold', fontSize: '0.85rem' }}>Voir le calendrier →</Link>
+                <Link href="/matchs/a-venir" style={{ display: 'inline-block', marginTop: '20px', color: '#F97316', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.85rem' }}>Voir le calendrier →</Link>
               </div>
             ) : (
               <p style={{ color: '#475569' }}>Aucun match programmé.</p>
@@ -133,21 +141,31 @@ export default function Dashboard() {
 
         {/* DROITE : DERNIER RÉSULTAT */}
         <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', border: '1px solid #F1F5F9' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: '700', color: '#64748B', marginBottom: '25px', textTransform: 'uppercase' }}>🏆 Dernier Résultat</h3>
+          <h3 style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748B', marginBottom: '25px', textTransform: 'uppercase', letterSpacing: '1px' }}>🏆 Dernier Résultat</h3>
           {dernierResultat ? (
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '0.8rem', color: '#F97316', fontWeight: 'bold', marginBottom: '15px' }}>{dernierResultat.competition}</div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', marginBottom: '20px' }}>
-                <div style={{ flex: 1, fontWeight: '800', fontSize: '1rem' }}>{dernierResultat.equipeA}</div>
-                <div style={{ fontSize: '2.2rem', fontWeight: '900', color: '#1E293B', backgroundColor: '#F8FAFC', padding: '10px 20px', borderRadius: '16px' }}>
+              
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '20px' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '800', fontSize: '1rem', color: '#1E293B' }}>{dernierResultat.clubA}</div>
+                  <div style={{ fontSize: '0.7rem', color: '#94A3B8', fontWeight: 'bold' }}>{dernierResultat.equipeA}</div>
+                </div>
+
+                <div style={{ fontSize: '1.8rem', fontWeight: '900', color: 'white', backgroundColor: '#1E293B', padding: '8px 16px', borderRadius: '12px', minWidth: '90px' }}>
                   {dernierResultat.scoreA} - {dernierResultat.scoreB}
                 </div>
-                <div style={{ flex: 1, fontWeight: '800', fontSize: '1rem' }}>{dernierResultat.equipeB}</div>
+
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '800', fontSize: '1rem', color: '#1E293B' }}>{dernierResultat.clubB}</div>
+                  <div style={{ fontSize: '0.7rem', color: '#94A3B8', fontWeight: 'bold' }}>{dernierResultat.equipeB}</div>
+                </div>
               </div>
-              <Link href="/resultats" style={{ color: '#64748B', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold' }}>Consulter tous les résultats ↗</Link>
+
+              <Link href="/resultats" style={{ color: '#64748B', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 'bold', borderBottom: '1px solid #E2E8F0' }}>Tous les résultats ↗</Link>
             </div>
           ) : (
-            <p style={{ textAlign: 'center', color: '#94A3B8' }}>En attente des premiers scores.</p>
+            <p style={{ textAlign: 'center', color: '#94A3B8' }}>Aucun résultat enregistré.</p>
           )}
         </div>
 
@@ -155,7 +173,7 @@ export default function Dashboard() {
 
       <footer style={{ marginTop: 'auto', padding: '40px 0 20px', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', color: '#94A3B8', fontSize: '0.85rem' }}>
         <div>© 2026 <strong>DUNKLY</strong></div>
-        <div>V 1.1.0</div>
+        <div>V 1.1.5</div>
       </footer>
     </div>
   );

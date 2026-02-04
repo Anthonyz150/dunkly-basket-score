@@ -7,17 +7,14 @@ import Link from "next/link";
 export default function ResultatsPage() {
   const [matchs, setMatchs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null); // État pour stocker l'utilisateur
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    // Récupérer l'utilisateur local
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) setUser(JSON.parse(storedUser));
-    
     chargerTousLesMatchs();
   }, []);
 
-  // Déterminer si l'utilisateur est admin
   const isAdmin = user?.username?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
 
   const chargerTousLesMatchs = async () => {
@@ -35,10 +32,9 @@ export default function ResultatsPage() {
     setLoading(false);
   };
 
-  // NOUVELLE FONCTION : Supprimer un match
   const supprimerMatch = async (e: React.MouseEvent, id: string) => {
-    e.preventDefault(); // Empêche le comportement par défaut du lien
-    e.stopPropagation(); // Empêche de naviguer vers la page de détail
+    e.preventDefault();
+    e.stopPropagation();
 
     if (!confirm("⚠️ Voulez-vous vraiment supprimer ce match et son résultat ?")) return;
 
@@ -49,8 +45,6 @@ export default function ResultatsPage() {
         .eq('id', id);
 
       if (error) throw error;
-
-      // Mise à jour locale de la liste
       setMatchs(matchs.filter(m => m.id !== id));
     } catch (error: any) {
       alert("Erreur lors de la suppression : " + error.message);
@@ -104,7 +98,6 @@ export default function ResultatsPage() {
                         </span>
                       </div>
                       
-                      {/* Affichage conditionnel du bouton supprimer */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         {isAdmin && (
                           <button 
@@ -120,24 +113,27 @@ export default function ResultatsPage() {
                     </div>
                     
                     <div style={teamsRowStyle}>
+                      {/* DOMICILE */}
                       <div style={teamBlock}>
-                        <span style={m.status === 'termine' && m.scoreA > m.scoreB ? winName : teamNameStyle}>
-                          {m.equipeA}
-                        </span>
-                        <span style={clubStyle}>{m.clubA}</span>
+                        <div style={m.status === 'termine' && m.scoreA > m.scoreB ? winClubName : clubTitleStyle}>
+                          {m.clubA}
+                        </div>
+                        <div style={teamSmallStyle}>{m.equipeA}</div>
                       </div>
 
+                      {/* SCORE */}
                       <div style={scoreBoxStyle}>
                         <span style={scoreValue}>{m.scoreA ?? 0}</span>
                         <span style={{ color: '#F97316', opacity: 0.5 }}>:</span>
                         <span style={scoreValue}>{m.scoreB ?? 0}</span>
                       </div>
 
+                      {/* EXTÉRIEUR */}
                       <div style={teamBlock}>
-                        <span style={m.status === 'termine' && m.scoreB > m.scoreA ? winName : teamNameStyle}>
-                          {m.equipeB}
-                        </span>
-                        <span style={clubStyle}>{m.clubB}</span>
+                        <div style={m.status === 'termine' && m.scoreB > m.scoreA ? winClubName : clubTitleStyle}>
+                          {m.clubB}
+                        </div>
+                        <div style={teamSmallStyle}>{m.equipeB}</div>
                       </div>
                     </div>
                     
@@ -170,19 +166,8 @@ export default function ResultatsPage() {
   );
 }
 
-// STYLES SUPPLÉMENTAIRES
-const deleteBtnStyle = {
-  background: '#fee2e2',
-  border: 'none',
-  padding: '5px 8px',
-  borderRadius: '8px',
-  cursor: 'pointer',
-  fontSize: '1rem',
-  transition: 'background 0.2s',
-  zIndex: 10,
-};
-
-// TES STYLES EXISTANTS (Gardés identiques)
+// STYLES
+const deleteBtnStyle = { background: '#fee2e2', border: 'none', padding: '5px 8px', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', transition: 'background 0.2s', zIndex: 10 };
 const containerStyle = { padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'sans-serif' };
 const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' };
 const gridStyle = { display: 'flex', flexDirection: 'column' as const, gap: '20px' };
@@ -190,9 +175,12 @@ const cardStyle = { backgroundColor: '#fff', borderRadius: '20px', padding: '25p
 const infoSideStyle = { display: 'flex', flexDirection: 'column' as const };
 const teamsRowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '15px 0' };
 const teamBlock = { display: 'flex', flexDirection: 'column' as const, flex: 1, textAlign: 'center' as const };
-const teamNameStyle = { fontWeight: '800', fontSize: '1.3rem', color: '#1e293b' };
-const winName = { ...teamNameStyle, color: '#F97316' };
-const clubStyle = { fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase' as const, fontWeight: 'bold' };
+
+// Modifié pour mettre le club en avant
+const clubTitleStyle = { fontWeight: '800', fontSize: '1.2rem', color: '#1e293b', textTransform: 'uppercase' as const };
+const winClubName = { ...clubTitleStyle, color: '#F97316' };
+const teamSmallStyle = { fontSize: '0.8rem', color: '#64748b', fontWeight: '600' };
+
 const scoreBoxStyle = { display: 'flex', alignItems: 'center', gap: '15px', padding: '0 30px' };
 const scoreValue = { fontSize: '2.5rem', fontWeight: '900', color: '#1e293b', fontFamily: 'monospace' };
 const dateBadgeStyle = { fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b' };
