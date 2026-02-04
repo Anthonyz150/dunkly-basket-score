@@ -4,158 +4,159 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 
-// AUCUN IMPORT DE globals.css ICI POUR ÉVITER L'ERREUR DE BUILD
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
-  const loadUser = () => {
+  useEffect(() => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Erreur parsing", e);
-      }
+      try { setUser(JSON.parse(storedUser)); } catch (e) { console.error(e); }
     }
-  };
-
-  useEffect(() => {
-    loadUser();
-    setLoading(false);
-    setIsMenuOpen(false);
-
-    if (!localStorage.getItem('currentUser') && pathname !== '/login') {
-      router.push('/login');
-    }
-
-    window.addEventListener('storage', loadUser);
-    return () => window.removeEventListener('storage', loadUser);
-  }, [pathname, router]);
+    setIsMenuOpen(false); 
+  }, [pathname]);
 
   const isLoginPage = pathname === '/login';
-  
-  const isAdmin = 
-    user?.role?.toLowerCase() === 'admin' ||
-    user?.username?.toLowerCase() === 'admin' || 
-    user?.email === 'anthony.didier.pro@gmail.com';
+  const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
 
-  if (loading && !isLoginPage) {
-    return (
-      <html lang="fr">
-        <body style={{ background: '#111827' }}></body>
-      </html>
-    );
-  }
+  // Récupération de l'initiale
+  const initial = user?.username ? user.username.charAt(0).toUpperCase() : (user?.email ? user.email.charAt(0).toUpperCase() : 'U');
+
+  if (isLoginPage) return <html lang="fr"><body>{children}</body></html>;
 
   return (
     <html lang="fr">
-      <body className={isLoginPage ? 'login-body' : 'app-body'}>
-        {isLoginPage ? (
-          children
-        ) : (
-          <div className="layout-container">
-            {/* BOUTON BURGER MOBILE */}
-            <button className="burger-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? '✕' : '☰'}
+      <body>
+        <div className="app-container">
+          
+          {/* HEADER MOBILE AMÉLIORÉ */}
+          <header className="mobile-header">
+            <button className="burger-icon" onClick={() => setIsMenuOpen(true)}>
+              <span></span><span></span><span></span>
             </button>
+            
+            <div className="logo-brand">🏀 DUNKLY</div>
+            
+            <Link href="/profil" className="profile-avatar-link">
+              <div className="avatar-circle">{initial}</div>
+            </Link>
+          </header>
 
-            {isMenuOpen && <div className="menu-overlay" onClick={() => setIsMenuOpen(false)}></div>}
+          {isMenuOpen && <div className="menu-overlay" onClick={() => setIsMenuOpen(false)}></div>}
 
-            <nav className={`sidebar ${isMenuOpen ? 'mobile-open' : ''}`}>
-              <div className="sidebar-brand">
-                <h2 style={{ color: '#F97316', margin: 0, fontWeight: '900' }}>🏀 DUNKLY</h2>
-              </div>
-              
-              <div className="nav-list">
+          <aside className={`main-sidebar ${isMenuOpen ? 'open' : ''}`}>
+            <div className="sidebar-header">
+              <span className="logo-full">🏀 DUNKLY</span>
+              <button className="close-menu" onClick={() => setIsMenuOpen(false)}>✕</button>
+            </div>
+
+            <nav className="nav-links">
+              <div className="nav-group">
+                <p className="group-title">MENU</p>
                 <Link href="/" className={`nav-item ${pathname === '/' ? 'active' : ''}`}>🏠 Accueil</Link>
                 <Link href="/competitions" className={`nav-item ${pathname === '/competitions' ? 'active' : ''}`}>🏆 Compétitions</Link>
-                
-                <div className="nav-section">
-                  <p className="section-title">CLUBS</p>
-                  <Link href="/equipes" className={`nav-item ${pathname === '/equipes' ? 'active' : ''}`}>🛡️ Clubs</Link>
-                </div>
-
-                <div className="nav-section">
-                  <p className="section-title">MATCHS</p>
-                  <Link href="/matchs/resultats" className={`nav-item ${pathname === '/matchs/resultats' ? 'active' : ''}`}>✅ Résultats</Link>
-                  <Link href="/matchs/a-venir" className={`nav-item ${pathname === '/matchs/a-venir' ? 'active' : ''}`}>📅 À venir</Link>
-                </div>
-
-                {isAdmin && (
-                  <div className="nav-section">
-                    <p className="section-title admin">ADMINISTRATION</p>
-                    <Link href="/membres" className={`nav-item ${pathname === '/membres' ? 'active' : ''}`}>👥 Gestion Membres</Link>
-                    <Link href="/arbitres" className={`nav-item ${pathname === '/arbitres' ? 'active' : ''}`}>🏁 Arbitres</Link>
-                  </div>
-                )}
+                <Link href="/matchs/resultats" className={`nav-item ${pathname === '/matchs/resultats' ? 'active' : ''}`}>✅ Résultats</Link>
+                <Link href="/equipes" className={`nav-item ${pathname === '/equipes' ? 'active' : ''}`}>🛡️ Clubs</Link>
               </div>
 
-              <div className="profile-footer">
-                <div className="user-details">
-                  <p className="conn-label">CONNECTÉ</p>
-                  <strong className="user-display">
-                     {user?.username || user?.email?.split('@')[0] || 'Utilisateur'}
-                  </strong>
+              {isAdmin && (
+                <div className="nav-group admin">
+                  <p className="group-title">ADMINISTRATION</p>
+                  <Link href="/membres" className={`nav-item ${pathname === '/membres' ? 'active' : ''}`}>👥 Membres</Link>
+                  <Link href="/arbitres" className={`nav-item ${pathname === '/arbitres' ? 'active' : ''}`}>🏁 Arbitres</Link>
                 </div>
-                <button 
-                  onClick={() => { localStorage.clear(); window.location.href='/login'; }} 
-                  className="btn-logout"
-                >
-                  Déconnexion
-                </button>
+              )}
+
+              <div className="nav-group">
+                <p className="group-title">COMPTE</p>
+                <Link href="/profil" className={`nav-item ${pathname === '/profil' ? 'active' : ''}`}>👤 Mon Profil</Link>
               </div>
             </nav>
 
-            <main className="main-content">
-              {children}
-            </main>
-          </div>
-        )}
+            <div className="sidebar-footer">
+              <div className="user-box">
+                <p className="u-name">{user?.username || 'Utilisateur'}</p>
+                <button onClick={() => { localStorage.clear(); window.location.href='/login'; }} className="logout-btn">
+                  Déconnexion
+                </button>
+              </div>
+            </div>
+          </aside>
 
-        {/* INJECTION DIRECTE DES STYLES POUR ÉVITER L'ERREUR DE MODULE */}
+          <main className="page-content">
+            <div className="content-inner">
+              {children}
+            </div>
+          </main>
+        </div>
+
         <style jsx global>{`
           :root {
-            --orange-basket: #F97316;
-            --noir-sidebar: #111827;
-            --gris-fond: #f4f4f4;
+            --primary: #F97316;
+            --dark: #0F172A;
+            --sidebar-w: 280px;
           }
-          body { margin: 0; font-family: sans-serif; background: var(--gris-fond); }
-          .layout-container { display: flex; min-height: 100vh; }
-          .sidebar { 
-            width: 280px; background: var(--noir-sidebar); height: 100vh; position: fixed; 
-            display: flex; flex-direction: column; z-index: 1000; transition: 0.3s ease;
+
+          body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; background: #F8FAFC; color: #1E293B; }
+          .app-container { display: flex; min-height: 100vh; }
+
+          .main-sidebar {
+            width: var(--sidebar-w); background: var(--dark); color: white; position: fixed;
+            height: 100vh; display: flex; flex-direction: column; z-index: 1000;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           }
-          .main-content { 
-            flex: 1; margin-left: 280px; padding: 20px; 
-            width: calc(100% - 280px); min-height: 100vh;
-          }
-          .sidebar-brand { padding: 30px 20px; text-align: center; }
-          .nav-list { flex: 1; padding: 0 15px; overflow-y: auto; }
-          .nav-item { display: block; padding: 12px 15px; color: #94a3b8; text-decoration: none; border-radius: 10px; margin-bottom: 5px; font-weight: 600; transition: 0.2s; font-size: 0.9rem; }
-          .nav-item:hover { background: #1f2937; color: white; }
-          .nav-item.active { background: var(--orange-basket) !important; color: white !important; }
-          .nav-section { margin-top: 25px; }
-          .section-title { font-size: 0.65rem; color: #4b5563; padding-left: 15px; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; }
-          .section-title.admin { color: var(--orange-basket); }
-          .profile-footer { padding: 20px; border-top: 1px solid #1f2937; background: #0f172a; margin-top: auto; }
-          .conn-label { margin: 0; font-size: 0.65rem; color: #64748b; font-weight: 800; }
-          .user-display { color: white; font-size: 1rem; display: block; }
-          .btn-logout { width: 100%; margin-top: 15px; padding: 10px; border-radius: 10px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 800; cursor: pointer; }
-          
-          .burger-btn { display: none; position: fixed; top: 15px; right: 15px; z-index: 2000; background: var(--orange-basket); color: white; border: none; border-radius: 8px; padding: 10px 15px; font-size: 1.2rem; }
-          .menu-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; }
-          
-          @media (max-width: 900px) {
-            .sidebar { transform: translateX(-100%); width: 260px; }
-            .sidebar.mobile-open { transform: translateX(0); }
-            .main-content { margin-left: 0; width: 100%; padding-top: 70px; }
-            .burger-btn { display: block; }
-            .menu-overlay { display: block; }
+
+          .sidebar-header { padding: 30px 24px; display: flex; justify-content: space-between; align-items: center; }
+          .logo-full { font-weight: 900; font-size: 1.5rem; color: var(--primary); letter-spacing: -1px; }
+          .close-menu { display: none; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+
+          .nav-links { flex: 1; padding: 0 16px; overflow-y: auto; }
+          .nav-group { margin-bottom: 25px; }
+          .group-title { font-size: 0.65rem; font-weight: 800; color: #475569; letter-spacing: 1.5px; padding-left: 12px; margin-bottom: 10px; }
+          .nav-item { display: block; padding: 12px 16px; color: #94A3B8; text-decoration: none; border-radius: 12px; font-weight: 600; transition: 0.2s; margin-bottom: 4px; }
+          .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
+          .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2); }
+
+          .sidebar-footer { padding: 20px; background: #020617; }
+          .user-box { padding: 15px; background: rgba(255,255,255,0.03); border-radius: 12px; }
+          .u-name { margin: 0; font-weight: 700; font-size: 0.9rem; }
+          .logout-btn { background: none; border: none; color: #EF4444; font-weight: 700; cursor: pointer; padding: 0; margin-top: 8px; font-size: 0.8rem; }
+
+          .page-content { flex: 1; margin-left: var(--sidebar-w); transition: 0.3s; }
+          .content-inner { padding: 40px; max-width: 1200px; margin: 0 auto; }
+
+          .mobile-header { display: none; }
+
+          @media (max-width: 1024px) {
+            .main-sidebar { transform: translateX(-100%); width: 280px; }
+            .main-sidebar.open { transform: translateX(0); box-shadow: 20px 0 50px rgba(0,0,0,0.5); }
+            .close-menu { display: block; }
+            .page-content { margin-left: 0; }
+            .content-inner { padding: 20px; padding-top: 85px; }
+
+            .mobile-header {
+              display: flex; justify-content: space-between; align-items: center;
+              position: fixed; top: 0; left: 0; right: 0; height: 70px;
+              background: white; padding: 0 16px; border-bottom: 1px solid #E2E8F0; z-index: 900;
+            }
+            
+            .logo-brand { font-weight: 900; color: var(--primary); font-size: 1.2rem; position: absolute; left: 50%; transform: translateX(-50%); }
+            
+            .burger-icon { 
+              display: flex; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 10px;
+            }
+            .burger-icon span { width: 22px; height: 2px; background: var(--dark); border-radius: 10px; }
+
+            .profile-avatar-link { text-decoration: none; }
+            .avatar-circle {
+              width: 38px; height: 38px; background: var(--primary); color: white;
+              border-radius: 50%; display: flex; align-items: center; justify-content: center;
+              font-weight: 900; font-size: 0.9rem; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+
+            .menu-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 950; }
           }
         `}</style>
       </body>
