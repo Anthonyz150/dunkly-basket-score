@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-
+import "@/app/globals.css";
 // --- TOUT IMPORT CSS SUPPRIMÉ POUR ÉVITER L'ERREUR MODULE NOT FOUND ---
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
