@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 
+// AUCUN IMPORT CSS ICI - L'ERREUR VIENT DE CETTE LIGNE DANS TON FICHIER ACTUEL
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
