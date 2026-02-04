@@ -119,7 +119,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {children}
             </main>
 
-            {/* TAB BAR MOBILE (Masquée si le menu burger est ouvert) */}
             {!isMenuOpen && (
               <nav className="mobile-tab-bar">
                   <Link href="/" className={`tab-item ${pathname === '/' ? 'active' : ''}`}>🏠 <span>Home</span></Link>
@@ -137,20 +136,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .sidebar { 
             width: 280px; background: #111827; height: 100vh; position: fixed; 
             display: flex; flex-direction: column; z-index: 1000; transition: 0.3s ease;
+            overflow-y: auto; /* Permet de scroller si le menu est trop long */
           }
           .main-content { 
             flex: 1; margin-left: 280px; padding: 20px; 
             width: calc(100% - 280px); min-height: 100vh;
           }
-          .sidebar-brand { padding: 30px 20px; text-align: center; }
-          .nav-list { flex: 1; padding: 0 15px; overflow-y: auto; }
+          .sidebar-brand { padding: 30px 20px; text-align: center; flex-shrink: 0; }
+          .nav-list { flex: 1; padding: 0 15px; }
           .nav-item { display: block; padding: 12px 15px; color: #94a3b8; text-decoration: none; border-radius: 10px; margin-bottom: 5px; font-weight: 600; transition: 0.2s; font-size: 0.9rem; }
           .nav-item:hover { background: #1f2937; color: white; }
           .nav-item.active { background: #F97316 !important; color: white !important; }
           .nav-section { margin-top: 25px; }
           .section-title { font-size: 0.65rem; color: #4b5563; padding-left: 15px; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
           .section-title.admin { color: #F97316; }
-          .profile-footer { padding: 20px; border-top: 1px solid #1f2937; background: #0f172a; }
+          .profile-footer { padding: 20px; border-top: 1px solid #1f2937; background: #0f172a; flex-shrink: 0; margin-top: auto; }
           .conn-label { margin: 0; font-size: 0.65rem; color: #64748b; font-weight: 800; }
           .user-display { color: white; font-size: 1.1rem; display: block; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           .btn-logout { width: 100%; margin-top: 15px; padding: 10px; border-radius: 10px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
@@ -163,7 +163,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .tab-item.active { color: #F97316; }
 
           @media (max-width: 900px) {
-            .sidebar { transform: translateX(-100%); width: 100%; } 
+            .sidebar { transform: translateX(-100%); width: 100%; height: 100vh; } 
             .sidebar.mobile-open { transform: translateX(0); }
             .main-content { margin-left: 0; width: 100%; padding-top: 60px; padding-bottom: 80px; }
             .burger-btn { display: block; }
