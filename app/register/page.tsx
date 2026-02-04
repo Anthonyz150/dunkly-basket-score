@@ -5,33 +5,34 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const { data: user, error: fetchError } = await supabase
+      const { data: existing } = await supabase.from('membres').select('id').eq('email', email.toLowerCase().trim()).maybeSingle();
+      if (existing) throw new Error("Cet email est déjà utilisé.");
+
+      const { data, error: insError } = await supabase
         .from('membres')
-        .select('*')
-        .eq('email', email.toLowerCase().trim())
-        .single();
+        .insert([{ email: email.toLowerCase().trim(), password, role: 'membre' }])
+        .select().single();
 
-      if (fetchError || !user) throw new Error("Identifiants incorrects.");
-      if (user.password !== password) throw new Error("Identifiants incorrects.");
+      if (insError) throw insError;
 
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      router.replace('/');
+      localStorage.setItem('currentUser', JSON.stringify(data));
+      router.push('/');
       router.refresh();
     } catch (err: any) {
-      setError(err.message || "Une erreur est survenue.");
+      setError(err.message || "Erreur lors de l'inscription.");
     } finally {
       setLoading(false);
     }
@@ -43,12 +44,12 @@ export default function LoginPage() {
         <div style={logoSection}>
           <span style={{ fontSize: '3rem' }}>🏀</span>
           <h1 style={titleStyle}>DUNKLY <span style={{ color: '#F97316' }}>.</span></h1>
-          <p style={subtitleStyle}>Bon retour ! Connectez-vous.</p>
+          <p style={subtitleStyle}>Rejoignez la communauté.</p>
         </div>
 
         {error && <div style={errorBadge}>{error}</div>}
 
-        <form onSubmit={handleLogin} style={formStyle}>
+        <form onSubmit={handleRegister} style={formStyle}>
           <div style={inputGroup}>
             <label style={labelStyle}>ADRESSE E-MAIL</label>
             <input type="email" placeholder="nom@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} />
@@ -58,10 +59,10 @@ export default function LoginPage() {
             <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required style={inputStyle} />
           </div>
           <button type="submit" disabled={loading} style={submitBtn}>
-            {loading ? 'CONNEXION...' : 'SE CONNECTER'}
+            {loading ? 'CRÉATION...' : 'CRÉER MON COMPTE'}
           </button>
         </form>
-        <p style={footerText}>Pas de compte ? <Link href="/register" style={linkStyle}>S'inscrire</Link></p>
+        <p style={footerText}>Déjà inscrit ? <Link href="/login" style={linkStyle}>Se connecter</Link></p>
       </div>
     </div>
   );
