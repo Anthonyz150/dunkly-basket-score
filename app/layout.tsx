@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-// Modification ici : import relatif universel pour Next.js
-import "../globals.css"; 
+
+// SOLUTION RADICALE : On ne charge plus globals.css par import car Turbopack ne le trouve pas.
+// Le CSS est maintenant injecté directement en bas via <style jsx global>.
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
@@ -99,11 +100,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </div>
 
+              {/* Bouton de déconnexion */}
               <div className="profile-footer">
                 <div className="user-details">
                   <p className="conn-label">CONNECTÉ EN TANT QUE</p>
                   <strong className="user-display">
-                     {user?.username || user?.email?.split('@')[0] || 'Arbitre'}
+                     {user?.username || user?.email?.split('@')[0] || 'Utilisateur'}
                   </strong>
                 </div>
                 
@@ -123,6 +125,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
 
         <style jsx global>{`
+          /* Styles de secours pour assurer le visuel sans globals.css */
           body { margin: 0; font-family: sans-serif; background: #f4f4f4; }
           .layout-container { display: flex; min-height: 100vh; }
           .sidebar { 
@@ -141,19 +144,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .nav-section { margin-top: 25px; }
           .section-title { font-size: 0.65rem; color: #4b5563; padding-left: 15px; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
           .section-title.admin { color: #F97316; }
+          
+          /* Footer et Logout */
           .profile-footer { padding: 20px; border-top: 1px solid #1f2937; background: #0f172a; margin-top: auto; }
           .conn-label { margin: 0; font-size: 0.65rem; color: #64748b; font-weight: 800; }
-          .user-display { color: white; font-size: 1.1rem; display: block; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-          .btn-logout { width: 100%; margin-top: 15px; padding: 10px; border-radius: 10px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
+          .user-display { color: white; font-size: 1.1rem; display: block; margin-top: 2px; }
+          .btn-logout { width: 100%; margin-top: 15px; padding: 10px; border-radius: 10px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 800; cursor: pointer; transition: 0.2s; }
           .btn-logout:hover { background: #ef4444; color: white; }
-          .burger-btn { display: none; position: fixed; top: 15px; right: 15px; z-index: 2000; background: #F97316; color: white; border: none; border-radius: 8px; padding: 10px 15px; font-size: 1.2rem; cursor: pointer; }
-          .menu-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; }
+          
+          .burger-btn { display: none; position: fixed; top: 15px; right: 15px; z-index: 2000; background: #F97316; color: white; border: none; border-radius: 8px; padding: 10px 15px; cursor: pointer; }
           @media (max-width: 900px) {
             .sidebar { transform: translateX(-100%); width: 260px; }
             .sidebar.mobile-open { transform: translateX(0); }
-            .main-content { margin-left: 0; width: 100%; padding-top: 70px; }
+            .main-content { margin-left: 0; width: 100%; }
             .burger-btn { display: block; }
-            .menu-overlay { display: block; }
           }
         `}</style>
       </body>
