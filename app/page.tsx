@@ -64,6 +64,18 @@ export default function Dashboard() {
     initDashboard();
   }, [router]);
 
+  // FONCTION DE FORMATAGE DATE (FUSEAU PARIS)
+  const formatteDateParis = (dateString: string) => {
+    return new Date(dateString).toLocaleString('fr-FR', { 
+      weekday: 'long', 
+      day: 'numeric', 
+      month: 'long', 
+      hour: '2-digit', 
+      minute: '2-digit',
+      timeZone: 'Europe/Paris' 
+    });
+  };
+
   const isAdmin = user?.role === 'admin' || user?.username?.toLowerCase() === 'admin' || user?.username?.toLowerCase() === 'anthony.didier.prop';
 
   if (loading) return (
@@ -114,20 +126,20 @@ export default function Dashboard() {
               <div>
                 <div style={{ fontSize: '0.8rem', color: '#F97316', fontWeight: 'bold', marginBottom: '5px' }}>{prochainMatch.competition}</div>
                 
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '15px', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '20px', marginBottom: '20px' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '1.4rem', fontWeight: '900' }}>{prochainMatch.clubA}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>{prochainMatch.equipeA}</div>
+                    <div style={{ fontSize: '1.6rem', fontWeight: '900', textTransform: 'uppercase' }}>{prochainMatch.clubA}</div>
+                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 'bold' }}>{prochainMatch.equipeA}</div>
                   </div>
-                  <div style={{ color: '#475569', fontWeight: '900', fontSize: '0.8rem' }}>VS</div>
+                  <div style={{ color: '#F97316', fontWeight: '900', fontSize: '1rem' }}>VS</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '1.4rem', fontWeight: '900' }}>{prochainMatch.clubB}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>{prochainMatch.equipeB}</div>
+                    <div style={{ fontSize: '1.6rem', fontWeight: '900', textTransform: 'uppercase' }}>{prochainMatch.clubB}</div>
+                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: 'bold' }}>{prochainMatch.equipeB}</div>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', color: '#94A3B8', fontSize: '0.9rem' }}>
-                  <span style={{ color: 'white', fontWeight: '600' }}>🕒 {new Date(prochainMatch.date).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
+                  <span style={{ color: 'white', fontWeight: '600' }}>🕒 {formatteDateParis(prochainMatch.date)}</span>
                   <span>📍 {prochainMatch.lieu || 'Lieu non défini'}</span>
                 </div>
                 <Link href="/matchs/a-venir" style={{ display: 'inline-block', marginTop: '20px', color: '#F97316', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.85rem' }}>Voir le calendrier →</Link>
@@ -146,19 +158,19 @@ export default function Dashboard() {
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '0.8rem', color: '#F97316', fontWeight: 'bold', marginBottom: '15px' }}>{dernierResultat.competition}</div>
               
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', marginBottom: '25px' }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '800', fontSize: '1rem', color: '#1E293B' }}>{dernierResultat.clubA}</div>
-                  <div style={{ fontSize: '0.7rem', color: '#94A3B8', fontWeight: 'bold' }}>{dernierResultat.equipeA}</div>
+                  <div style={{ fontWeight: '900', fontSize: '1.2rem', color: '#1E293B', textTransform: 'uppercase' }}>{dernierResultat.clubA}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>{dernierResultat.equipeA}</div>
                 </div>
 
-                <div style={{ fontSize: '1.8rem', fontWeight: '900', color: 'white', backgroundColor: '#1E293B', padding: '8px 16px', borderRadius: '12px', minWidth: '90px' }}>
+                <div style={{ fontSize: '1.8rem', fontWeight: '900', color: 'white', backgroundColor: '#1E293B', padding: '8px 16px', borderRadius: '12px', minWidth: '100px' }}>
                   {dernierResultat.scoreA} - {dernierResultat.scoreB}
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '800', fontSize: '1rem', color: '#1E293B' }}>{dernierResultat.clubB}</div>
-                  <div style={{ fontSize: '0.7rem', color: '#94A3B8', fontWeight: 'bold' }}>{dernierResultat.equipeB}</div>
+                  <div style={{ fontWeight: '900', fontSize: '1.2rem', color: '#1E293B', textTransform: 'uppercase' }}>{dernierResultat.clubB}</div>
+                  <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 'bold' }}>{dernierResultat.equipeB}</div>
                 </div>
               </div>
 
