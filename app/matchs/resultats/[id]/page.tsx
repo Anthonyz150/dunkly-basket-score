@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use as reactUse } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 export default function DetailCompetitionPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const compId = resolvedParams.id;
+  const resolvedParams = reactUse(params);
+  const compId = resolvedParams?.id;
   const router = useRouter();
 
   const [competition, setCompetition] = useState<any>(null);
@@ -21,7 +21,7 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
   useEffect(() => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) setUser(JSON.parse(storedUser));
-    chargerDonnees();
+    if (compId) chargerDonnees();
   }, [compId]);
 
   const chargerDonnees = async () => {
@@ -49,8 +49,10 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
   };
 
   const calculerClassement = () => {
+    if (!competition?.equipes_engagees) return [];
     const stats: Record<string, any> = {};
-    competition?.equipes_engagees?.forEach((eq: any) => {
+    
+    competition.equipes_engagees.forEach((eq: any) => {
       const key = `${eq.clubNom}-${eq.nom}`;
       stats[key] = { ...eq, m: 0, v: 0, d: 0, ptsPlus: 0, ptsMoins: 0, points: 0 };
     });
@@ -59,15 +61,19 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
       const keyA = `${m.clubA}-${m.equipeA}`;
       const keyB = `${m.clubB}-${m.equipeB}`;
       if (stats[keyA] && stats[keyB]) {
+        const sA = Number(m.scoreA) || 0;
+        const sB = Number(m.scoreB) || 0;
+        
         stats[keyA].m++; stats[keyB].m++;
-        stats[keyA].ptsPlus += (m.scoreA || 0);
-        stats[keyA].ptsMoins += (m.scoreB || 0);
-        stats[keyB].ptsPlus += (m.scoreB || 0);
-        stats[keyB].ptsMoins += (m.scoreA || 0);
-        if (m.scoreA > m.scoreB) {
+        stats[keyA].ptsPlus += sA;
+        stats[keyA].ptsMoins += sB;
+        stats[keyB].ptsPlus += sB;
+        stats[keyB].ptsMoins += sA;
+        
+        if (sA > sB) {
           stats[keyA].v++; stats[keyA].points += 2;
           stats[keyB].d++; stats[keyB].points += 1;
-        } else {
+        } else if (sB > sA) {
           stats[keyB].v++; stats[keyB].points += 2;
           stats[keyA].d++; stats[keyA].points += 1;
         }
@@ -83,8 +89,10 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
   const isAdmin = user?.username?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
 
   const ajouterEquipeACompete = async () => {
-    if (!selectedEquipe || !selectedClubId) return;
+    if (!selectedEquipe || !selectedClubId || !competition) return;
     const club = clubs.find(c => c.id === selectedClubId);
+    if (!club) return;
+
     const nouvelleEntree = {
       equipeId: selectedEquipe.id,
       nom: selectedEquipe.nom,
@@ -107,13 +115,15 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
     setCompetition({ ...competition, equipes_engagees: filtrees });
   };
 
-  if (loading) return <div style={{ padding: '50px', textAlign: 'center' }}>🏀 Chargement...</div>;
+  // SECURITÉ ANTI-CRASH
+  if (loading || !competition) {
+    return <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif', fontWeight: 'bold', color: '#F97316' }}>🏀 Chargement Dunkly...</div>;
+  }
 
   return (
     <div style={containerStyle}>
-      {/* HEADER AVEC STYLE HERO */}
       <div style={heroSection}>
-        <button onClick={() => router.push('/competitions')} style={backBtn}>← Gestion des compétitions</button>
+        <button onClick={() => router.push('/competitions')} style={backBtn}>← Retour aux compétitions</button>
         <h1 style={titleStyle}>{competition.nom}</h1>
         <div style={badgeGrid}>
           <div style={miniBadge}>🏆 {competition.type}</div>
@@ -122,9 +132,8 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
       </div>
 
       <div style={mainGrid}>
-        {/* COLONNE GAUCHE : CLASSEMENT (REPRISE DU STYLE E-MARQUE) */}
         <div style={statsCard}>
-          <h2 style={cardTitle}>🏆 Classement des Équipes</h2>
+          <h2 style={cardTitle}>🏆 Classement Officiel</h2>
           <table style={tableStyle}>
             <thead>
               <tr style={thRow}>
@@ -143,7 +152,7 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
                     <span style={rankStyle(index)}>{index + 1}</span>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                       <span style={{ fontWeight: '800' }}>{team.nom}</span>
-                      <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 'normal' }}>{team.clubNom}</span>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>{team.clubNom}</span>
                     </div>
                   </td>
                   <td style={tdC}>{team.m}</td>
@@ -160,51 +169,33 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
           {classement.length === 0 && <p style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>Aucune équipe engagée.</p>}
         </div>
 
-        {/* COLONNE DROITE : ADMINISTRATION & INFOS */}
         <div style={actionColumn}>
           {isAdmin && (
             <div style={adminCard}>
               <h3 style={{ fontSize: '1rem', marginBottom: '15px' }}>Engager une équipe</h3>
-              <select 
-                style={selectStyle} 
-                value={selectedClubId} 
-                onChange={(e) => { setSelectedClubId(e.target.value); setSelectedEquipe(null); }}
-              >
-                <option value="">-- Choisir un Club --</option>
+              <select style={selectStyle} value={selectedClubId} onChange={(e) => setSelectedClubId(e.target.value)}>
+                <option value="">-- Club --</option>
                 {clubs.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
               </select>
-
-              <select 
-                style={{ ...selectStyle, marginTop: '10px' }} 
-                disabled={!selectedClubId}
-                value={selectedEquipe ? JSON.stringify(selectedEquipe) : ""}
-                onChange={(e) => setSelectedEquipe(e.target.value ? JSON.parse(e.target.value) : null)}
-              >
-                <option value="">-- Choisir l'Équipe --</option>
+              <select style={{ ...selectStyle, marginTop: '10px' }} disabled={!selectedClubId} onChange={(e) => setSelectedEquipe(e.target.value ? JSON.parse(e.target.value) : null)}>
+                <option value="">-- Équipe --</option>
                 {clubs.find(c => c.id === selectedClubId)?.equipes?.map((eq: any) => (
                   <option key={eq.id} value={JSON.stringify(eq)}>{eq.nom}</option>
                 ))}
               </select>
-
-              <button onClick={ajouterEquipeACompete} disabled={!selectedEquipe} style={addBtn}>
-                + Engager l'équipe
-              </button>
+              <button onClick={ajouterEquipeACompete} disabled={!selectedEquipe} style={addBtn}>Ajouter l'équipe</button>
             </div>
           )}
 
           <div style={infoBox}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '10px' }}>Équipes Engagées ({competition.equipes_engagees?.length || 0})</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {competition.equipes_engagees?.map((eq: any) => (
+            <h3 style={{ fontSize: '1rem', marginBottom: '10px' }}>Inscriptions ({competition.equipes_engagees?.length || 0})</h3>
+            {competition.equipes_engagees?.map((eq: any) => (
                 <div key={eq.equipeId} style={equipeSmallTag}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
-                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: eq.logoColor }}></div>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{eq.nom}</span>
-                  </div>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: eq.logoColor }}></div>
+                  <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 'bold' }}>{eq.nom}</span>
                   {isAdmin && <button onClick={() => retirerEquipe(eq.equipeId)} style={miniRemoveBtn}>×</button>}
                 </div>
-              ))}
-            </div>
+            ))}
           </div>
         </div>
       </div>
@@ -212,19 +203,16 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
   );
 }
 
-// --- STYLES REPRIS DU DASHBOARD E-MARQUE ---
+// STYLES (Conservés selon ton design)
 const containerStyle = { padding: '40px 20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif', color: '#1e293b' };
 const heroSection = { textAlign: 'center' as const, marginBottom: '50px' };
 const titleStyle = { fontSize: '2.5rem', fontWeight: '900', marginBottom: '20px' };
 const badgeGrid = { display: 'flex', gap: '10px', justifyContent: 'center' };
 const miniBadge = { backgroundColor: '#f1f5f9', padding: '8px 16px', borderRadius: '30px', fontWeight: 'bold', fontSize: '0.8rem' };
 const backBtn = { background: 'none', border: 'none', color: '#F97316', cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px' };
-
-const mainGrid = { display: 'grid', gridTemplateColumns: '2.2fr 1fr', gap: '30px' };
-
+const mainGrid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '30px' };
 const statsCard = { backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' };
 const cardTitle = { fontSize: '1.2rem', fontWeight: '800', marginBottom: '25px' };
-
 const tableStyle = { width: '100%', borderCollapse: 'collapse' as const };
 const thRow = { borderBottom: '2px solid #f1f5f9' };
 const thL = { textAlign: 'left' as const, padding: '15px', color: '#64748b', fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' as const };
@@ -232,19 +220,11 @@ const thC = { textAlign: 'center' as const, padding: '15px', color: '#64748b', f
 const trStyle = { borderBottom: '1px solid #f8fafc' };
 const tdL = { padding: '15px', display: 'flex', alignItems: 'center', gap: '15px' };
 const tdC = { padding: '15px', textAlign: 'center' as const, fontSize: '0.95rem' };
-
-const rankStyle = (i: number) => ({
-  backgroundColor: i === 0 ? '#FEF3C7' : '#f1f5f9',
-  color: i === 0 ? '#92400E' : '#475569',
-  width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold', flexShrink: 0
-});
-
+const rankStyle = (i: number) => ({ backgroundColor: i === 0 ? '#FEF3C7' : '#f1f5f9', color: i === 0 ? '#92400E' : '#475569', width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold', flexShrink: 0 });
 const actionColumn = { display: 'flex', flexDirection: 'column' as const, gap: '20px' };
-const adminCard = { backgroundColor: '#1e293b', color: 'white', padding: '25px', borderRadius: '24px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' };
+const adminCard = { backgroundColor: '#1e293b', color: 'white', padding: '25px', borderRadius: '24px' };
 const infoBox = { backgroundColor: 'white', padding: '25px', borderRadius: '24px', border: '1px solid #e2e8f0' };
-
-const selectStyle = { width: '100%', padding: '12px', borderRadius: '12px', border: 'none', backgroundColor: '#334155', color: 'white', fontSize: '0.9rem' };
+const selectStyle = { width: '100%', padding: '12px', borderRadius: '12px', border: 'none', backgroundColor: '#334155', color: 'white' };
 const addBtn = { width: '100%', marginTop: '15px', padding: '14px', backgroundColor: '#F97316', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' };
-
-const equipeSmallTag = { display: 'flex', alignItems: 'center', padding: '10px 15px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9' };
-const miniRemoveBtn = { background: '#fee2e2', color: '#ef4444', border: 'none', width: '22px', height: '22px', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const equipeSmallTag = { display: 'flex', alignItems: 'center', padding: '10px 15px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #f1f5f9', marginBottom: '8px' };
+const miniRemoveBtn = { background: '#fee2e2', color: '#ef4444', border: 'none', width: '22px', height: '22px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' };
