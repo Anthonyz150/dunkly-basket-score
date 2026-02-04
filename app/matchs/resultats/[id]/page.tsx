@@ -21,7 +21,6 @@ export default function DetailMatchPage({ params }: { params: Promise<{ id: stri
   const chargerMatch = async () => {
     try {
       setLoading(true);
-      // Récupération des données réelles du match (incluant scoresA et scoreB)
       const { data, error } = await supabase
         .from('matchs')
         .select('*')
@@ -35,6 +34,20 @@ export default function DetailMatchPage({ params }: { params: Promise<{ id: stri
     } finally {
       setLoading(false);
     }
+  };
+
+  // FORMATAGE FRANÇAIS + HEURE DE PARIS
+  const formatteDateParis = (dateString: string) => {
+    if (!dateString) return 'Date non définie';
+    return new Intl.DateTimeFormat('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Paris'
+    }).format(new Date(dateString));
   };
 
   if (loading) {
@@ -61,19 +74,20 @@ export default function DetailMatchPage({ params }: { params: Promise<{ id: stri
 
       <div style={scoreCard}>
         <p style={competitionLabel}>{match.competition}</p>
-        <p style={dateLabel}>{match.date ? new Date(match.date).toLocaleDateString('fr-FR') : 'Date non définie'}</p>
+        {/* Affichage de la date et de l'heure formatée */}
+        <p style={dateLabel}>{formatteDateParis(match.date)}</p>
 
         <div style={matchFlex}>
-          {/* EQUIPE DOMICILE */}
+          {/* CLUB & EQUIPE DOMICILE (Inversés) */}
           <div style={teamSide}>
             <div style={{ ...logoCircle, backgroundColor: match.logoColorA || '#1e293b' }}>
               {match.clubA?.[0] || 'A'}
             </div>
-            <h2 style={teamName}>{match.equipeA}</h2>
-            <p style={clubSub}>{match.clubA}</p>
+            <h2 style={teamName}>{match.clubA}</h2> {/* Club en Gros */}
+            <p style={clubSub}>{match.equipeA}</p>   {/* Équipe en Petit */}
           </div>
 
-          {/* SCORE CENTRAL (Données dynamiques de la table matchs) */}
+          {/* SCORE CENTRAL */}
           <div style={scoreInfo}>
             <div style={scoreNumbers}>
               <span style={match.scoreA >= match.scoreB ? winScore : loseScore}>{match.scoreA ?? 0}</span>
@@ -83,13 +97,13 @@ export default function DetailMatchPage({ params }: { params: Promise<{ id: stri
             <div style={statusBadge}>{match.status === 'termine' ? 'TERMINÉ' : 'À VENIR'}</div>
           </div>
 
-          {/* EQUIPE EXTERIEUR */}
+          {/* CLUB & EQUIPE EXTERIEUR (Inversés) */}
           <div style={teamSide}>
             <div style={{ ...logoCircle, backgroundColor: match.logoColorB || '#1e293b' }}>
               {match.clubB?.[0] || 'B'}
             </div>
-            <h2 style={teamName}>{match.equipeB}</h2>
-            <p style={clubSub}>{match.clubB}</p>
+            <h2 style={teamName}>{match.clubB}</h2> {/* Club en Gros */}
+            <p style={clubSub}>{match.equipeB}</p>   {/* Équipe en Petit */}
           </div>
         </div>
       </div>
@@ -97,7 +111,6 @@ export default function DetailMatchPage({ params }: { params: Promise<{ id: stri
       <div style={detailsGrid}>
         <div style={infoBox}>
           <h3 style={infoTitle}>📍 Lieu</h3>
-          {/* Modification Lieu -> Lien Google Maps */}
           {match.lieu ? (
             <a 
               href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(match.lieu)}`}
@@ -120,17 +133,17 @@ export default function DetailMatchPage({ params }: { params: Promise<{ id: stri
   );
 }
 
-// --- STYLES REPRIS DU DESIGN DUNKLY ---
+// --- STYLES ---
 const containerStyle = { padding: '40px 20px', maxWidth: '900px', margin: '0 auto', fontFamily: 'sans-serif', color: '#1e293b' };
 const backBtn = { background: '#f1f5f9', border: 'none', color: '#64748b', padding: '10px 20px', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', marginBottom: '30px' };
 const scoreCard = { backgroundColor: 'white', borderRadius: '30px', padding: '50px 30px', boxShadow: '0 10px 40px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9', textAlign: 'center' as const };
 const competitionLabel = { color: '#F97316', fontWeight: 'bold', textTransform: 'uppercase' as const, fontSize: '0.8rem', letterSpacing: '1px', marginBottom: '5px' };
-const dateLabel = { color: '#94a3b8', fontSize: '0.9rem', marginBottom: '40px' };
+const dateLabel = { color: '#94a3b8', fontSize: '0.9rem', marginBottom: '40px', textTransform: 'capitalize' as const };
 const matchFlex = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px' };
 const teamSide = { flex: 1, display: 'flex', flexDirection: 'column' as const, alignItems: 'center' };
 const logoCircle = { width: '90px', height: '90px', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '15px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' };
-const teamName = { fontSize: '1.4rem', fontWeight: '900', margin: '0 0 5px 0' };
-const clubSub = { margin: 0, color: '#64748b', fontSize: '0.85rem' };
+const teamName = { fontSize: '1.6rem', fontWeight: '900', margin: '0 0 5px 0', textTransform: 'uppercase' as const }; // Club agrandi et majuscule
+const clubSub = { margin: 0, color: '#64748b', fontSize: '1rem', fontWeight: '600' }; // Équipe réduit
 const scoreInfo = { flex: 1 };
 const scoreNumbers = { fontSize: '4.5rem', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', lineHeight: '1' };
 const winScore = { color: '#1e293b' };
