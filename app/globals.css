@@ -44,10 +44,11 @@ html, body {
   top: 0;
   left: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* Indispensable pour le sticky footer */
   z-index: 1000;
   color: white;
   border-right: 1px solid #333;
+  overflow-y: hidden; /* On gère le scroll sur la liste interne */
 }
 
 .main-content {
@@ -59,7 +60,11 @@ html, body {
 }
 
 /* --- 4. NAVIGATION --- */
-.nav-container { flex: 1; padding: 10px; }
+.nav-container { 
+  flex: 1; 
+  padding: 10px; 
+  overflow-y: auto; /* Permet de scroller les liens si la liste est longue */
+}
 
 .nav-link {
   color: #ccc !important;
@@ -123,6 +128,8 @@ html, body {
   background: #111;
   padding: 20px;
   border-top: 1px solid #333;
+  margin-top: auto; /* Pousse le profil vers le bas */
+  flex-shrink: 0; /* Empêche le bouton de s'écraser */
 }
 
 /* --- 7. CHARGEMENT (LOADER) --- */
@@ -149,6 +156,7 @@ html, body {
 @media (max-width: 992px) {
   .sidebar {
     left: -260px;
+    width: 260px;
     transition: left 0.3s ease;
   }
 
@@ -186,4 +194,30 @@ html, body {
     backdrop-filter: blur(3px);
     z-index: 998;
   }
+
+  /* Correctif pour que le profil soit toujours visible sur petit écran mobile */
+  .profile-box {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+}
+
+/* --- 9. AJOUTS SPÉCIFIQUES POUR BOUTON DÉCONNEXION --- */
+.btn-logout {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444 !important;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: 0.3s;
+}
+
+.btn-logout:hover {
+  background: #ef4444;
+  color: white !important;
 }
