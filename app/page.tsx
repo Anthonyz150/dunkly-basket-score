@@ -80,8 +80,8 @@ export default function Dashboard() {
         if (lastRes.data) setDernierResultat(lastRes.data);
 
       } catch (error) {
+        alert(error);
         console.error("Erreur chargement dashboard:", error);
-        setLoading(false);
       } finally {
         setLoading(false);
       }
@@ -104,7 +104,7 @@ export default function Dashboard() {
     <div style={{ height: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '3rem' }}>🏀</div>
-        <p style={{ color: '#64748B', fontWeight: 'bold', fontFamily: 'sans-serif' }}>1 Préparation du parquet...</p>
+        <p style={{ color: '#64748B', fontWeight: 'bold', fontFamily: 'sans-serif' }}>Préparation du parquet...</p>
       </div>
     </div>
   );
