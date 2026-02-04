@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 // Import corrigé pour pointer vers la racine du projet (basketball/)
-import "../globals.css"; 
+import "@/app/globals.css"; 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
