@@ -1,11 +1,10 @@
-// VERSION DE SECOURS - FORCE BUILD 2026
 "use client";
 
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import "@/app/globals.css";
-// --- TOUT IMPORT CSS SUPPRIMÉ POUR ÉVITER L'ERREUR MODULE NOT FOUND ---
+// Importation du CSS depuis la racine du projet (basketball/)
+import "../globals.css"; 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
@@ -14,13 +13,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const router = useRouter();
 
+  // Chargement de l'utilisateur
   const loadUser = () => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
       } catch (e) {
-        console.error("Erreur parsing", e);
+        console.error("Erreur de lecture du profil", e);
       }
     }
   };
@@ -30,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     setLoading(false);
     setIsMenuOpen(false);
 
+    // Redirection si non connecté (sauf page login)
     if (!localStorage.getItem('currentUser') && pathname !== '/login') {
       router.push('/login');
     }
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   const isLoginPage = pathname === '/login';
   
+  // Vérification des droits Admin
   const isAdmin = 
     user?.role?.toLowerCase() === 'admin' ||
     user?.username?.toLowerCase() === 'admin' || 
@@ -60,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           children
         ) : (
           <div className="layout-container">
+            {/* Bouton Menu Mobile */}
             <button className="burger-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
               {isMenuOpen ? '✕' : '☰'}
             </button>
@@ -74,35 +77,41 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="nav-list">
                 <Link href="/" className={`nav-item ${pathname === '/' ? 'active' : ''}`}>🏠 Accueil</Link>
                 <Link href="/competitions" className={`nav-item ${pathname === '/competitions' ? 'active' : ''}`}>🏆 Compétitions</Link>
+                
                 <div className="nav-section">
                   <p className="section-title">CLUBS</p>
                   <Link href="/equipes" className={`nav-item ${pathname === '/equipes' ? 'active' : ''}`}>🛡️ Clubs</Link>
                 </div>
+
                 <div className="nav-section">
                   <p className="section-title">MATCHS</p>
                   <Link href="/matchs/resultats" className={`nav-item ${pathname === '/matchs/resultats' ? 'active' : ''}`}>✅ Résultats</Link>
                   <Link href="/matchs/a-venir" className={`nav-item ${pathname === '/matchs/a-venir' ? 'active' : ''}`}>📅 À venir</Link>
                 </div>
+
                 {isAdmin && (
                   <div className="nav-section">
                     <p className="section-title admin">ADMINISTRATION</p>
-                    <Link href="/membres" className={`nav-item ${pathname === '/membres' ? 'active' : ''}`}>👥 Gestion Membres</Link>
+                    <Link href="/membres" className={`nav-item ${pathname === '/membres' ? 'active' : ''}`}>👥 Membres</Link>
                     <Link href="/arbitres" className={`nav-item ${pathname === '/arbitres' ? 'active' : ''}`}>🏁 Arbitres</Link>
                   </div>
                 )}
+
                 <div className="nav-section">
                   <p className="section-title">PARAMÈTRES</p>
                   <Link href="/profil" className={`nav-item ${pathname === '/profil' ? 'active' : ''}`}>👤 Mon Profil</Link>
                 </div>
               </div>
 
+              {/* Footer de la Sidebar */}
               <div className="profile-footer">
                 <div className="user-details">
-                  <p className="conn-label">CONNECTÉ EN TANT QUE</p>
+                  <p className="conn-label">CONNECTÉ</p>
                   <strong className="user-display">
-                     {user?.username || user?.email?.split('@')[0] || 'Joueur'}
+                     {user?.username || user?.email?.split('@')[0] || 'Arbitre'}
                   </strong>
                 </div>
+                
                 <button 
                   onClick={() => { localStorage.clear(); window.location.href='/login'; }} 
                   className="btn-logout"
@@ -125,7 +134,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             width: 280px; background: #111827; height: 100vh; position: fixed; 
             display: flex; flex-direction: column; z-index: 1000; transition: 0.3s ease;
           }
-          .main-content { flex: 1; margin-left: 280px; padding: 20px; width: calc(100% - 280px); min-height: 100vh; }
+          .main-content { 
+            flex: 1; margin-left: 280px; padding: 20px; 
+            width: calc(100% - 280px); min-height: 100vh;
+          }
           .sidebar-brand { padding: 30px 20px; text-align: center; }
           .nav-list { flex: 1; padding: 0 15px; overflow-y: auto; }
           .nav-item { display: block; padding: 12px 15px; color: #94a3b8; text-decoration: none; border-radius: 10px; margin-bottom: 5px; font-weight: 600; transition: 0.2s; font-size: 0.9rem; }
@@ -134,13 +146,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .nav-section { margin-top: 25px; }
           .section-title { font-size: 0.65rem; color: #4b5563; padding-left: 15px; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
           .section-title.admin { color: #F97316; }
+          
           .profile-footer { padding: 20px; border-top: 1px solid #1f2937; background: #0f172a; margin-top: auto; }
           .conn-label { margin: 0; font-size: 0.65rem; color: #64748b; font-weight: 800; }
           .user-display { color: white; font-size: 1.1rem; display: block; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          
           .btn-logout { width: 100%; margin-top: 15px; padding: 10px; border-radius: 10px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
           .btn-logout:hover { background: #ef4444; color: white; }
+          
           .burger-btn { display: none; position: fixed; top: 15px; right: 15px; z-index: 2000; background: #F97316; color: white; border: none; border-radius: 8px; padding: 10px 15px; font-size: 1.2rem; cursor: pointer; }
           .menu-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; }
+          
           @media (max-width: 900px) {
             .sidebar { transform: translateX(-100%); width: 260px; }
             .sidebar.mobile-open { transform: translateX(0); }
