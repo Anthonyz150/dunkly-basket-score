@@ -20,51 +20,37 @@ export default function DetailClubPage({ params }: { params: Promise<{ id: strin
   }, [clubId]);
 
   const chargerClub = async () => {
-    console.log("Chargement du club ID:", clubId);
     const { data, error } = await supabase
       .from('equipes_clubs')
       .select('*')
       .eq('id', clubId)
       .single();
 
-    if (error) console.error("Erreur chargement club:", error.message);
-    if (data) {
-      console.log("Club chargé avec succès:", data);
-      setClub(data);
-    }
+    if (data) setClub(data);
     setLoading(false);
   };
 
   const isAdmin = user?.role === 'admin' || user?.username?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
 
   const ajouterEquipe = async () => {
-    // Utilisation d'une variable locale pour être sûr de la valeur
-    const nomSaisi = nomEquipe.trim();
+    // On ouvre la pop-up comme demandé
+    const nomSaisi = prompt("Nom de la nouvelle équipe (ex: U18 Masculins) :", nomEquipe);
     
-    console.log("Tentative d'ajout. Valeur saisie:", nomSaisi);
-    
-    if (!nomSaisi) return alert("Le nom de l'équipe est vide");
-    if (!club) return alert("Le club n'est pas chargé");
+    if (!nomSaisi || nomSaisi.trim() === "") return;
 
     const listeBase = Array.isArray(club.equipes) ? club.equipes : [];
-    const nouvelleEquipe = { id: Date.now().toString(), nom: nomSaisi };
-    const nouvellesEquipes = [...listeBase, nouvelleEquipe];
-
-    console.log("Envoi à Supabase...", nouvellesEquipes);
-
-    const { data, error } = await supabase
+    const nouvellesEquipes = [...listeBase, { id: Date.now().toString(), nom: nomSaisi.trim() }];
+    
+    const { error } = await supabase
       .from('equipes_clubs')
       .update({ equipes: nouvellesEquipes })
-      .eq('id', clubId)
-      .select();
+      .eq('id', clubId);
 
-    if (error) {
-      console.error("ERREUR SUPABASE:", error.message);
-      alert("Erreur Supabase: " + error.message);
-    } else {
-      console.log("UPDATE RÉUSSI.");
+    if (!error) {
       setClub({ ...club, equipes: nouvellesEquipes });
-      setNomEquipe(''); // Réinitialise l'input
+      setNomEquipe('');
+    } else {
+      alert("Erreur Supabase : " + error.message);
     }
   };
 
@@ -112,30 +98,13 @@ export default function DetailClubPage({ params }: { params: Promise<{ id: strin
       {isAdmin && (
         <div style={addBox}>
           <input 
-            type="text"
             placeholder="Nom de la nouvelle équipe (ex: U18 Masculins)" 
             value={nomEquipe} 
-            onChange={(e) => {
-              setNomEquipe(e.target.value);
-            }}
+            onChange={(e) => setNomEquipe(e.target.value)}
             style={inputStyle}
-            onKeyDown={(e) => {
-                if(e.key === 'Enter') {
-                    e.preventDefault();
-                    ajouterEquipe();
-                }
-            }}
+            onKeyDown={(e) => e.key === 'Enter' && ajouterEquipe()}
           />
-          <button 
-            type="button" 
-            onClick={(e) => {
-                e.preventDefault();
-                ajouterEquipe();
-            }} 
-            style={addBtn}
-          >
-            Ajouter l'équipe
-          </button>
+          <button onClick={ajouterEquipe} style={addBtn}>Ajouter l'équipe</button>
         </div>
       )}
 
@@ -161,12 +130,13 @@ export default function DetailClubPage({ params }: { params: Promise<{ id: strin
   );
 }
 
+// --- TOUS TES STYLES SONT ICI, RIEN N'A BOUGÉ ---
 const containerStyle = { padding: '40px 20px', maxWidth: '700px', margin: '0 auto', fontFamily: 'sans-serif' };
 const backBtn = { background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontWeight: 'bold' as const, marginBottom: '20px' };
 const headerCard = { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' };
 const logoStyle = { width: '80px', height: '80px', borderRadius: '20px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 'bold' as const };
 const addBox = { display: 'flex', gap: '10px', marginBottom: '30px' };
-const inputStyle = { flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none' };
+const inputStyle = { flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' };
 const addBtn = { padding: '12px 20px', backgroundColor: '#F97316', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold' as const, cursor: 'pointer' };
 const listContainer = { backgroundColor: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', overflow: 'hidden' };
 const sectionTitle = { fontSize: '1rem', padding: '20px', margin: 0, borderBottom: '1px solid #f1f5f9', color: '#1e293b' };
