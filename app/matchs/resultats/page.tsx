@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase"; 
 import Link from "next/link";
 
@@ -8,22 +8,18 @@ export default function ResultatsPage() {
   const [matchs, setMatchs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState("tous");
 
   useEffect(() => {
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Erreur parsing user", e);
-      }
+      try { setUser(JSON.parse(storedUser)); } catch (e) { console.error(e); }
     }
     chargerTousLesMatchs();
   }, []);
 
-  const isAdmin = user?.role?.toLowerCase() === 'admin' || 
-                  user?.username?.toLowerCase() === 'admin' || 
-                  user?.email === 'anthony.didier.pro@gmail.com';
+  const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
 
   const chargerTousLesMatchs = async () => {
     setLoading(true);
@@ -31,167 +27,190 @@ export default function ResultatsPage() {
       .from('matchs')
       .select('*')
       .order('date', { ascending: false });
-
-    if (error) {
-      console.error("Erreur de chargement:", error.message);
-    } else {
-      setMatchs(data || []);
-    }
+    if (!error) setMatchs(data || []);
     setLoading(false);
   };
 
-  const supprimerMatch = async (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!confirm("⚠️ Voulez-vous vraiment supprimer ce match ?")) return;
-    try {
-      const { error } = await supabase.from('matchs').delete().eq('id', id);
-      if (error) throw error;
-      setMatchs(matchs.filter(m => m.id !== id));
-    } catch (error: any) {
-      alert("Erreur : " + error.message);
-    }
+  // LOGIQUE DE FILTRE DYNAMIQUE (JS)
+  const filteredMatchs = useMemo(() => {
+    return matchs.filter(m => {
+      const matchesSearch = m.clubA.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            m.clubB.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = filter === "tous" ? true : m.status === filter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [matchs, searchTerm, filter]);
+
+  // ANIMATION DE PARALLAXE SUR LES CARTES (JS)
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    card.style.setProperty('--x', `${x}px`);
+    card.style.setProperty('--y', `${y}px`);
   };
 
   const renderStatus = (status: string) => {
     switch (status) {
-      case 'termine':
-        return <span className="status-badge finished">Terminé</span>;
-      case 'en-cours':
-        return <span className="status-badge live">● Direct</span>;
-      default:
-        return <span className="status-badge upcoming">À venir</span>;
+      case 'termine': return <span className="status-badge finished">Terminé</span>;
+      case 'en-cours': return <span className="status-badge live">● Direct</span>;
+      default: return <span className="status-badge upcoming">À venir</span>;
     }
   };
 
-  if (loading) return (
-    <div className="loader-container">
-      <div className="spinner"></div>
-      <p>Chargement des scores...</p>
-    </div>
-  );
+  if (loading) return <div className="loading-screen"><div className="ball">🏀</div></div>;
 
   return (
     <div className="results-container">
-      {/* NOUVEAU TITRE HARMONISÉ */}
       <header className="page-header">
         <div className="title-stack">
-          <span className="kicker">Compétitions 2025-2026</span>
-          <h1 className="main-title">
-            Tableau des <span className="text-orange">Résultats</span>
-          </h1>
+          <span className="kicker">Live Scores</span>
+          <h1 className="main-title">Résultats</h1>
         </div>
-        <Link href="/matchs/a-venir" className="calendar-btn">
-          Calendrier complet
-        </Link>
+        
+        {/* BARRE DE RECHERCHE DYNAMIQUE */}
+        <div className="controls">
+          <input 
+            type="text" 
+            placeholder="Rechercher un club..." 
+            className="search-input"
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <select className="filter-select" onChange={(e) => setFilter(e.target.value)}>
+            <option value="tous">Tous les matchs</option>
+            <option value="termine">Terminés</option>
+            <option value="en-cours">En direct</option>
+          </select>
+        </div>
       </header>
 
-      {/* LISTE DES MATCHS */}
       <div className="match-grid">
-        {matchs.length > 0 ? (
-          matchs.map((m) => (
-            <Link href={`/matchs/resultats/${m.id}`} key={m.id} className="match-card">
+        {filteredMatchs.map((m, index) => (
+          <div 
+            key={m.id} 
+            className="match-card-wrapper" 
+            style={{ animationDelay: `${index * 0.1}s` }} // Entrée séquencée
+            onMouseMove={handleMouseMove}
+          >
+            <Link href={`/matchs/resultats/${m.id}`} className="match-card">
+              <div className="gloss-effect"></div>
               <div className="card-top">
                 <div className="info-left">
                   {renderStatus(m.status)}
                   <span className="comp-tag">{m.competition}</span>
                 </div>
-                {isAdmin && (
-                  <button onClick={(e) => supprimerMatch(e, m.id)} className="btn-delete">🗑️</button>
-                )}
+                <span className="date-tag">{m.date?.split('T')[0].split('-').reverse().join('/')}</span>
               </div>
 
               <div className="scoreboard">
                 <div className="team home">
-                  <span className={`team-name ${m.status === 'termine' && m.scoreA > m.scoreB ? 'winner' : ''}`}>
-                    {m.clubA}
-                  </span>
+                  <span className="team-name">{m.clubA}</span>
                   <span className="team-sub">{m.equipeA}</span>
                 </div>
 
-                <div className="score-display">
+                <div className="score-area">
                   <div className="score-box">{m.scoreA ?? 0}</div>
                   <div className="score-sep">:</div>
                   <div className="score-box">{m.scoreB ?? 0}</div>
                 </div>
 
                 <div className="team away">
-                  <span className={`team-name ${m.status === 'termine' && m.scoreB > m.scoreA ? 'winner' : ''}`}>
-                    {m.clubB}
-                  </span>
+                  <span className="team-name">{m.clubB}</span>
                   <span className="team-sub">{m.equipeB}</span>
                 </div>
               </div>
 
               <div className="card-footer">
                 <span>📍 {m.lieu || 'Terrain à définir'}</span>
-                <span>📅 {m.date ? m.date.split('T')[0].split('-').reverse().join('/') : 'Date NC'}</span>
+                <span className="view-more">Détails du match →</span>
               </div>
             </Link>
-          ))
-        ) : (
-          <div className="empty-state">Aucun résultat pour le moment.</div>
-        )}
+          </div>
+        ))}
       </div>
 
       <style jsx>{`
-        .results-container { padding: 10px; animation: fadeIn 0.4s ease; }
+        .results-container { padding: 10px; max-width: 1100px; margin: 0 auto; }
 
-        /* HEADER & TITRE */
-        .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
-        .kicker { font-size: 0.8rem; font-weight: 800; color: #F97316; text-transform: uppercase; letter-spacing: 2px; }
-        .main-title { font-size: 2.6rem; font-weight: 900; color: #0F172A; margin: 0; letter-spacing: -1.5px; line-height: 1.1; }
-        .text-orange { color: #F97316; }
-        .calendar-btn { background: #0F172A; color: white; padding: 12px 24px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 0.85rem; transition: 0.2s; }
-        .calendar-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2); }
-
-        /* CARDS */
-        .match-grid { display: flex; flex-direction: column; gap: 16px; }
-        .match-card { 
-          background: white; border-radius: 20px; padding: 25px; border: 1px solid #E2E8F0; 
-          text-decoration: none; color: inherit; transition: 0.2s;
+        /* HEADER & CONTROLS */
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; flex-wrap: wrap; gap: 20px; }
+        .kicker { font-size: 0.8rem; font-weight: 800; color: #F97316; text-transform: uppercase; letter-spacing: 3px; }
+        .main-title { font-size: 3rem; font-weight: 900; color: #0F172A; margin: 0; letter-spacing: -2px; }
+        
+        .controls { display: flex; gap: 10px; }
+        .search-input, .filter-select { 
+          padding: 12px 18px; border-radius: 14px; border: 1px solid #E2E8F0; 
+          font-weight: 600; font-family: inherit; outline: none; transition: 0.2s;
         }
-        .match-card:hover { border-color: #F97316; transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .search-input:focus { border-color: #F97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1); }
 
-        .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .info-left { display: flex; gap: 12px; align-items: center; }
-        .status-badge { padding: 4px 10px; border-radius: 8px; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; }
-        .finished { background: #F1F5F9; color: #475569; }
-        .live { background: #FFEDD5; color: #F97316; }
-        .upcoming { background: #F0FDF4; color: #16A34A; }
-        .comp-tag { font-size: 0.75rem; color: #94A3B8; font-weight: 700; }
+        /* MATCH CARD ANIMATIONS */
+        .match-grid { display: flex; flex-direction: column; gap: 18px; }
+        .match-card-wrapper { 
+          opacity: 0; transform: translateY(20px); 
+          animation: slideIn 0.5s forwards ease-out;
+          position: relative;
+        }
+
+        .match-card { 
+          display: block; background: white; border-radius: 24px; padding: 30px; 
+          text-decoration: none; color: inherit; border: 1px solid #E2E8F0;
+          position: relative; overflow: hidden; transition: transform 0.1s ease-out;
+        }
+
+        /* EFFET DE LUEUR JS */
+        .gloss-effect {
+          position: absolute; inset: 0; pointer-events: none;
+          background: radial-gradient(circle at var(--x) var(--y), rgba(249, 115, 22, 0.08) 0%, transparent 60%);
+        }
+
+        .match-card:hover { border-color: #F97316; }
 
         /* SCOREBOARD */
-        .scoreboard { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
+        .card-top { display: flex; justify-content: space-between; margin-bottom: 25px; }
+        .info-left { display: flex; gap: 12px; align-items: center; }
+        .status-badge { padding: 5px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: 800; }
+        .finished { background: #F1F5F9; color: #475569; }
+        .live { background: #F97316; color: white; animation: blink 1.5s infinite; }
+        .upcoming { background: #E0F2FE; color: #0284C7; }
+
+        .scoreboard { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
         .team { flex: 1; display: flex; flex-direction: column; }
         .home { text-align: right; }
         .away { text-align: left; }
-        .team-name { font-size: 1.2rem; font-weight: 800; color: #0F172A; text-transform: uppercase; }
-        .winner { color: #F97316; }
-        .team-sub { font-size: 0.75rem; color: #94A3B8; font-weight: 600; }
+        .team-name { font-size: 1.4rem; font-weight: 900; color: #0F172A; text-transform: uppercase; }
+        .team-sub { color: #94A3B8; font-weight: 600; font-size: 0.8rem; }
 
-        .score-display { display: flex; align-items: center; gap: 8px; }
+        .score-area { display: flex; align-items: center; gap: 10px; }
         .score-box { 
-          background: #0F172A; color: white; width: 45px; height: 55px; 
-          border-radius: 10px; display: flex; align-items: center; justify-content: center; 
-          font-size: 1.6rem; font-weight: 900; border-bottom: 3px solid #F97316;
+          background: #0F172A; color: white; width: 55px; height: 65px; 
+          border-radius: 15px; display: flex; align-items: center; justify-content: center; 
+          font-size: 2rem; font-weight: 900; box-shadow: 0 8px 0 #F97316;
         }
-        .score-sep { font-weight: 900; color: #CBD5E1; }
+        .score-sep { font-size: 1.5rem; font-weight: 900; color: #CBD5E1; }
 
-        .card-footer { display: flex; justify-content: space-between; padding-top: 15px; border-top: 1px solid #F8FAFC; font-size: 0.8rem; color: #94A3B8; font-weight: 600; }
-        .btn-delete { background: #FEE2E2; border: none; padding: 6px; border-radius: 8px; cursor: pointer; }
+        .card-footer { 
+          margin-top: 25px; padding-top: 20px; border-top: 1px solid #F1F5F9;
+          display: flex; justify-content: space-between; align-items: center;
+          font-size: 0.8rem; color: #94A3B8; font-weight: 700;
+        }
+        .view-more { color: #F97316; opacity: 0; transition: 0.3s; transform: translateX(-10px); }
+        .match-card:hover .view-more { opacity: 1; transform: translateX(0); }
 
-        .loader-container { padding: 100px; text-align: center; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #F97316; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
-
+        /* KEYFRAMES */
+        @keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
+        @keyframes blink { 50% { opacity: 0.7; } }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .loading-screen { height: 60vh; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
+        .ball { animation: spin 1s infinite linear; }
 
         @media (max-width: 768px) {
-          .page-header { flex-direction: column; align-items: flex-start; gap: 20px; }
-          .main-title { font-size: 1.8rem; }
-          .team-name { font-size: 0.95rem; }
-          .score-box { width: 35px; height: 45px; font-size: 1.2rem; }
+          .main-title { font-size: 2rem; }
+          .team-name { font-size: 1rem; }
+          .score-box { width: 40px; height: 50px; font-size: 1.4rem; }
+          .page-header { flex-direction: column; align-items: flex-start; }
         }
       `}</style>
     </div>
