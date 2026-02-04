@@ -75,7 +75,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 
                 <div className="nav-section">
                   <p className="section-title">CLUBS</p>
-                  <Link href="/equipes" className={`nav-item ${pathname === '/equipes' ? 'active' : ''}`}>🛡️ Équipes</Link>
+                  <Link href="/equipes" className={`nav-item ${pathname === '/equipes' ? 'active' : ''}`}>🛡️ Clubs</Link>
                 </div>
 
                 <div className="nav-section">
