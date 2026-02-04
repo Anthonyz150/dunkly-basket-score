@@ -25,21 +25,28 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
 
   const chargerDonnees = async () => {
     setLoading(true);
-    // 1. Charger la compétition
-    const { data: comp } = await supabase.from('competitions').select('*').eq('id', compId).single();
-    
-    // 2. Charger tous les clubs pour le sélecteur
-    const { data: listeClubs } = await supabase.from('equipes_clubs').select('*').order('nom');
+    try {
+      // 1. Charger la compétition
+      const { data: comp, error: err1 } = await supabase.from('competitions').select('*').eq('id', compId).single();
+      if (err1) throw err1;
 
-    if (comp) setCompetition(comp);
-    if (listeClubs) setClubs(listeClubs);
-    setLoading(false);
+      // 2. Charger tous les clubs
+      const { data: listeClubs, error: err2 } = await supabase.from('equipes_clubs').select('*').order('nom');
+      if (err2) throw err2;
+
+      setCompetition(comp);
+      setClubs(listeClubs || []);
+    } catch (error) {
+      console.error("Erreur chargement:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isAdmin = user?.username?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
 
   const ajouterEquipeACompete = async () => {
-    if (!selectedEquipe) return;
+    if (!selectedEquipe || !selectedClubId) return;
 
     // Vérifier si déjà présente
     const dejaPresente = competition.equipes_engagees?.some((e: any) => e.equipeId === selectedEquipe.id);
@@ -63,16 +70,21 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
     if (!error) {
       setCompetition({ ...competition, equipes_engagees: nouvellesEquipes });
       setSelectedEquipe(null);
+      setSelectedClubId(''); // Reset après succès
+    } else {
+      alert("Erreur base de données : " + error.message);
     }
   };
 
   const retirerEquipe = async (equipeId: string) => {
+    if (!confirm("Retirer cette équipe ?")) return;
     const filtrées = competition.equipes_engagees.filter((e: any) => e.equipeId !== equipeId);
     const { error } = await supabase.from('competitions').update({ equipes_engagees: filtrées }).eq('id', compId);
     if (!error) setCompetition({ ...competition, equipes_engagees: filtrées });
   };
 
-  if (loading) return <div style={containerStyle}>Chargement...</div>;
+  if (loading) return <div style={containerStyle}>🏀 Chargement des données...</div>;
+  if (!competition) return <div style={containerStyle}>Compétition introuvable.</div>;
 
   const clubSelectionne = clubs.find(c => c.id === selectedClubId);
 
@@ -91,31 +103,51 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
       {/* SECTION ENGAGEMENT DES ÉQUIPES */}
       {isAdmin && (
         <div style={addBox}>
-          <h3 style={{ marginTop: 0, fontSize: '0.9rem', color: '#1e293b' }}>Engager une équipe</h3>
+          <h3 style={{ marginTop: 0, fontSize: '0.9rem', color: '#1e293b', textTransform: 'uppercase' }}>Engager une équipe</h3>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {/* Choisir le Club */}
+            
+            {/* 1. Choisir le Club */}
             <select 
               style={selectStyle} 
               value={selectedClubId} 
-              onChange={(e) => { setSelectedClubId(e.target.value); setSelectedEquipe(null); }}
+              onChange={(e) => { 
+                setSelectedClubId(e.target.value); 
+                setSelectedEquipe(null); 
+              }}
             >
-              <option value="">Sélectionner un club...</option>
+              <option value="">-- Sélectionner un club --</option>
               {clubs.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
             </select>
 
-            {/* Choisir l'Équipe du club */}
+            {/* 2. Choisir l'Équipe (Valeur contrôlée pour éviter le blocage) */}
             <select 
               style={selectStyle} 
               disabled={!selectedClubId}
-              onChange={(e) => setSelectedEquipe(JSON.parse(e.target.value))}
+              value={selectedEquipe ? JSON.stringify(selectedEquipe) : ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val) {
+                  setSelectedEquipe(JSON.parse(val));
+                } else {
+                  setSelectedEquipe(null);
+                }
+              }}
             >
-              <option value="">Choisir l'équipe...</option>
+              <option value="">-- Choisir l'équipe --</option>
               {clubSelectionne?.equipes?.map((eq: any) => (
                 <option key={eq.id} value={JSON.stringify(eq)}>{eq.nom}</option>
               ))}
             </select>
 
-            <button onClick={ajouterEquipeACompete} style={addBtn} disabled={!selectedEquipe}>
+            <button 
+              onClick={ajouterEquipeACompete} 
+              style={{
+                ...addBtn,
+                opacity: selectedEquipe ? 1 : 0.5,
+                cursor: selectedEquipe ? 'pointer' : 'not-allowed'
+              }} 
+              disabled={!selectedEquipe}
+            >
               Engager
             </button>
           </div>
@@ -126,21 +158,23 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
       <div style={listContainer}>
         <h2 style={sectionTitle}>Équipes engagées ({competition.equipes_engagees?.length || 0})</h2>
         <div style={equipesGrid}>
-          {competition.equipes_engagees?.length > 0 ? (
+          {competition.equipes_engagees && competition.equipes_engagees.length > 0 ? (
             competition.equipes_engagees.map((eq: any) => (
               <div key={eq.equipeId} style={equipeTag}>
-                <div style={{ ...miniLogo, backgroundColor: eq.logoColor }}>{eq.clubNom[0]}</div>
+                <div style={{ ...miniLogo, backgroundColor: eq.logoColor || '#cbd5e1' }}>
+                  {eq.clubNom ? eq.clubNom[0] : '?'}
+                </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{eq.nom}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#1e293b' }}>{eq.nom}</div>
                   <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{eq.clubNom}</div>
                 </div>
                 {isAdmin && <button onClick={() => retirerEquipe(eq.equipeId)} style={removeBtn}>×</button>}
               </div>
             ))
           ) : (
-            <p style={{ gridColumn: '1/-1', textAlign: 'center', color: '#94a3b8', padding: '20px' }}>
-              Aucune équipe pour le moment.
-            </p>
+            <div style={{ gridColumn: '1/-1', textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
+              Aucune équipe engagée pour le moment.
+            </div>
           )}
         </div>
       </div>
@@ -148,19 +182,19 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
   );
 }
 
-// --- STYLES ---
-const containerStyle = { padding: '40px 20px', maxWidth: '800px', margin: '0 auto', fontFamily: 'sans-serif' };
+// --- STYLES (S'ASSURER DU "as const" POUR TYPESCRIPT) ---
+const containerStyle = { padding: '40px 20px', maxWidth: '850px', margin: '0 auto', fontFamily: 'sans-serif' };
 const backBtn = { background: '#f1f5f9', border: 'none', color: '#64748b', padding: '10px 15px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' as const, marginBottom: '20px' };
-const headerCard = { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px', background: 'white', padding: '25px', borderRadius: '20px', border: '1px solid #e2e8f0' };
-const iconStyle = { fontSize: '2.5rem', background: '#fff7ed', width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '15px' };
+const headerCard = { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px', background: 'white', padding: '25px', borderRadius: '25px', border: '1px solid #e2e8f0' };
+const iconStyle = { fontSize: '2.5rem', background: '#fff7ed', width: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '20px', border: '1px solid #ffedd5' };
 
 const addBox = { background: '#f8fafc', padding: '20px', borderRadius: '20px', border: '1px solid #e2e8f0', marginBottom: '30px' };
-const selectStyle = { padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', flex: 1, minWidth: '150px' };
-const addBtn = { padding: '10px 20px', background: '#F97316', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold' as const, cursor: 'pointer' };
+const selectStyle = { padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', flex: 1, minWidth: '200px', backgroundColor: 'white' };
+const addBtn = { padding: '12px 25px', background: '#F97316', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold' as const, transition: 'all 0.2s' };
 
-const listContainer = { background: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '20px' };
-const sectionTitle = { fontSize: '1rem', margin: '0 0 20px 0', color: '#1e293b' };
-const equipesGrid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '15px' };
-const equipeTag = { display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', background: '#f1f5f9', borderRadius: '12px', position: 'relative' as const };
-const miniLogo = { width: '30px', height: '30px', borderRadius: '8px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' as const };
-const removeBtn = { background: '#ef4444', color: 'white', border: 'none', width: '20px', height: '20px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' };
+const listContainer = { background: 'white', borderRadius: '25px', border: '1px solid #e2e8f0', padding: '25px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' };
+const sectionTitle = { fontSize: '0.9rem', margin: '0 0 20px 0', color: '#64748b', textTransform: 'uppercase' as const, letterSpacing: '0.5px' };
+const equipesGrid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '15px' };
+const equipeTag = { display: 'flex', alignItems: 'center', gap: '12px', padding: '15px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #f1f5f9', position: 'relative' as const };
+const miniLogo = { width: '35px', height: '35px', borderRadius: '10px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 'bold' as const };
+const removeBtn = { position: 'absolute' as const, top: '-8px', right: '-8px', background: '#ef4444', color: 'white', border: 'none', width: '24px', height: '24px', borderRadius: '50%', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' };
