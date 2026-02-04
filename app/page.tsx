@@ -71,7 +71,7 @@ export default function Dashboard() {
         ]);
 
         setStats({
-          compets: competsRes.count || 0,
+          compets: competsRes.count || 1,
           equipes: equipesRes.count || 0,
           matchs: matchsRes.count || 0
         });
@@ -98,7 +98,7 @@ export default function Dashboard() {
   };
 
   const isAdmin = user?.role === 'admin' || user?.username?.toLowerCase() === 'admin' || user?.username?.toLowerCase() === 'anthony.didier.prop' || user?.user_metadata?.role === 'admin';
-/*
+
   if (loading) return (
     <div style={{ height: '80vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <div style={{ textAlign: 'center' }}>
@@ -107,7 +107,7 @@ export default function Dashboard() {
       </div>
     </div>
   );
-*/
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '90vh', fontFamily: 'sans-serif' }}>
       
