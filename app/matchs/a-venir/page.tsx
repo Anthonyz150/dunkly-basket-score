@@ -252,7 +252,7 @@ export default function MatchsAVenirPage() {
             </div>
             <div style={footerCard}>
               <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                <div>📅 {m.date?.replace('T', ' ')} | {m.competition}</div>
+                <div>📅 {new Date(m.date).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })} | {m.competition}</div>
                 <div style={{marginTop: 4}}>🏁 <span style={{fontWeight: 'bold', color: '#1e293b'}}>{m.arbitre || "Non assigné"}</span></div>
               </div>
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -263,8 +263,8 @@ export default function MatchsAVenirPage() {
                     <Link href={`/matchs/${m.id}`} style={startBtnStyle}>GÉRER (LIVE)</Link>
                   </>
                 )}
-                {/* Toujours visible, même pour les non-admins */}
-                <Link href={`/resultats/${m.id}`} style={detailsBtnStyle}>VOIR DÉTAILS</Link>
+                {/* CORRECTION DU LIEN CI-DESSOUS */}
+                <Link href={`/matchs/resultats/${m.id}`} style={detailsBtnStyle}>VOIR DÉTAILS</Link>
               </div>
             </div>
           </div>
