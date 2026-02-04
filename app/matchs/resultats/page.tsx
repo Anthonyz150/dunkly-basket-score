@@ -17,9 +17,7 @@ export default function ResultatsPage() {
     chargerTousLesMatchs();
   }, []);
 
-  const isAdmin = user?.role?.toLowerCase() === 'admin' || 
-                  user?.username?.toLowerCase() === 'admin' || 
-                  user?.email === 'anthony.didier.pro@gmail.com';
+  const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
 
   const chargerTousLesMatchs = async () => {
     setLoading(true);
@@ -27,162 +25,116 @@ export default function ResultatsPage() {
       .from('matchs')
       .select('*')
       .order('date', { ascending: false });
-
     if (!error) setMatchs(data || []);
     setLoading(false);
   };
 
-  const supprimerMatch = async (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!confirm("⚠️ Voulez-vous vraiment supprimer ce match ?")) return;
-    try {
-      const { error } = await supabase.from('matchs').delete().eq('id', id);
-      if (error) throw error;
-      setMatchs(matchs.filter(m => m.id !== id));
-    } catch (error: any) {
-      alert("Erreur : " + error.message);
-    }
-  };
-
   const renderStatus = (status: string) => {
     switch (status) {
-      case 'termine':
-        return <span className="status-pill finished">Terminé</span>;
-      case 'en-cours':
-        return <span className="status-pill live">● Direct</span>;
-      default:
-        return <span className="status-pill upcoming">À venir</span>;
+      case 'termine': return <span className="st-badge finished">Terminé</span>;
+      case 'en-cours': return <span className="st-badge live">Direct</span>;
+      default: return <span className="st-badge upcoming">À venir</span>;
     }
   };
 
-  if (loading) return (
-    <div className="loader-box">
-      <div className="spinner"></div>
-      <p>Récupération des scores...</p>
-    </div>
-  );
+  if (loading) return <div className="loader-full">Chargement...</div>;
 
   return (
-    <div className="results-container">
-      {/* NOUVELLE INTERFACE DE TITRE */}
-      <header className="results-header">
-        <div className="title-block">
-          <span className="subtitle">Saison 2025/2026</span>
-          <h1 className="main-title">Scores & <span className="orange">Résultats</span></h1>
+    <div className="results-page">
+      {/* Header aligné sur le style Sidebar */}
+      <header className="page-header">
+        <div className="header-txt">
+          <h1>Résultats des Matchs</h1>
+          <p>Saison régulière 2025/2026</p>
         </div>
-        <Link href="/matchs/a-venir" className="calendar-link">
-          Calendrier complet →
-        </Link>
+        <Link href="/matchs/a-venir" className="add-btn">Calendrier</Link>
       </header>
 
-      <div className="matchs-grid">
-        {matchs.length > 0 ? (
-          matchs.map((m) => (
-            <Link href={`/matchs/resultats/${m.id}`} key={m.id} className="match-card-wrapper">
-              <div className="match-card">
-                <div className="card-top">
-                  <div className="meta-info">
-                    {renderStatus(m.status)}
-                    <span className="competition-tag">{m.competition}</span>
-                  </div>
-                  {isAdmin && (
-                    <button onClick={(e) => supprimerMatch(e, m.id)} className="del-btn">🗑️</button>
-                  )}
+      <div className="results-list">
+        {matchs.map((m) => (
+          <div key={m.id} className="match-row">
+            <Link href={`/matchs/resultats/${m.id}`} className="match-link">
+              
+              <div className="match-top-info">
+                {renderStatus(m.status)}
+                <span className="match-comp">🏆 {m.competition}</span>
+                <span className="match-date">📅 {m.date?.split('T')[0].split('-').reverse().join('/')}</span>
+              </div>
+
+              <div className="match-main">
+                <div className="team home">
+                  <span className="t-name">{m.clubA}</span>
+                  <span className="t-cat">{m.equipeA}</span>
                 </div>
 
-                <div className="scoreboard">
-                  <div className="team home">
-                    <span className={`team-name ${m.status === 'termine' && m.scoreA > m.scoreB ? 'winner' : ''}`}>
-                      {m.clubA}
-                    </span>
-                    <span className="team-sub">{m.equipeA}</span>
-                  </div>
-
-                  <div className="score-center">
-                    <span className="score-digit">{m.scoreA ?? 0}</span>
-                    <span className="score-sep">:</span>
-                    <span className="score-digit">{m.scoreB ?? 0}</span>
-                  </div>
-
-                  <div className="team away">
-                    <span className={`team-name ${m.status === 'termine' && m.scoreB > m.scoreA ? 'winner' : ''}`}>
-                      {m.clubB}
-                    </span>
-                    <span className="team-sub">{m.equipeB}</span>
-                  </div>
+                <div className="score-block">
+                  <div className="score-box">{m.scoreA ?? 0}</div>
+                  <div className="score-sep">:</div>
+                  <div className="score-box">{m.scoreB ?? 0}</div>
                 </div>
 
-                <div className="card-bottom">
-                  <div className="match-loc">📍 {m.lieu || 'Terrain inconnu'}</div>
-                  <div className="match-date">{m.date ? m.date.split('T')[0].split('-').reverse().join('/') : ''}</div>
+                <div className="team away">
+                  <span className="t-name">{m.clubB}</span>
+                  <span className="t-cat">{m.equipeB}</span>
                 </div>
               </div>
+
+              <div className="match-bottom">
+                <span>📍 {m.lieu || 'Non défini'}</span>
+                <span>⚖️ {m.arbitre || 'NC'}</span>
+              </div>
             </Link>
-          ))
-        ) : (
-          <div className="empty-state">Aucun résultat disponible pour le moment.</div>
-        )}
+          </div>
+        ))}
       </div>
 
       <style jsx>{`
-        .results-container { padding: 10px; max-width: 1100px; margin: 0 auto; animation: fadeInUp 0.5s ease; }
+        .results-page { animation: fadeIn 0.3s ease-in; }
         
-        /* HEADER */
-        .results-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0; }
-        .subtitle { font-size: 0.8rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 2px; }
-        .main-title { font-size: 2.8rem; font-weight: 900; color: #0f172a; margin: 0; line-height: 1; letter-spacing: -1.5px; }
-        .orange { color: var(--primary, #f97316); }
-        .calendar-link { text-decoration: none; color: #64748b; font-weight: 700; font-size: 0.9rem; transition: color 0.2s; }
-        .calendar-link:hover { color: #f97316; }
+        /* HEADER STYLE (Harmonisé avec la Sidebar) */
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .header-txt h1 { font-size: 2rem; font-weight: 800; color: #0F172A; margin: 0; letter-spacing: -1px; }
+        .header-txt p { color: #64748B; margin: 5px 0 0; font-weight: 500; }
+        .add-btn { background: #0F172A; color: white; padding: 10px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 0.9rem; transition: 0.2s; }
+        .add-btn:hover { background: #F97316; }
 
-        /* GRID */
-        .matchs-grid { display: grid; gap: 20px; }
-        .match-card-wrapper { text-decoration: none; color: inherit; }
-        .match-card { 
-          background: white; border-radius: 24px; padding: 25px; border: 1px solid #e2e8f0;
-          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .match-card:hover { transform: translateY(-5px); border-color: #f97316; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); }
+        /* LISTE ET LIGNES */
+        .results-list { display: flex; flex-direction: column; gap: 16px; }
+        .match-row { background: white; border-radius: 20px; border: 1px solid #E2E8F0; overflow: hidden; transition: 0.2s; }
+        .match-row:hover { border-color: #F97316; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transform: translateY(-2px); }
+        .match-link { text-decoration: none; color: inherit; display: block; padding: 20px; }
 
-        /* SCOREBOARD */
-        .scoreboard { display: flex; align-items: center; justify-content: space-between; margin: 25px 0; }
-        .team { display: flex; flex-direction: column; flex: 1; }
+        /* TOP INFO */
+        .match-top-info { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .st-badge { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; }
+        .finished { background: #F1F5F9; color: #475569; }
+        .live { background: #FFEDD5; color: #F97316; }
+        .upcoming { background: #E0F2FE; color: #0284C7; }
+        .match-comp { font-size: 0.75rem; color: #64748B; font-weight: 700; flex: 1; }
+        .match-date { font-size: 0.75rem; color: #94A3B8; font-weight: 600; }
+
+        /* MAIN SCOREBOARD (Harmonisé Dark/Orange) */
+        .match-main { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 10px 0; }
+        .team { flex: 1; display: flex; flex-direction: column; }
         .home { text-align: right; }
         .away { text-align: left; }
-        .team-name { font-size: 1.3rem; font-weight: 900; color: #1e293b; text-transform: uppercase; }
-        .team-name.winner { color: #f97316; position: relative; }
-        .team-sub { font-size: 0.8rem; color: #94a3b8; font-weight: 600; }
-        
-        .score-center { display: flex; align-items: center; gap: 15px; padding: 0 30px; }
-        .score-digit { font-size: 2.8rem; font-weight: 900; color: #0f172a; font-family: 'JetBrains Mono', monospace; }
-        .score-sep { color: #cbd5e1; font-size: 1.5rem; font-weight: 300; }
+        .t-name { font-size: 1.1rem; font-weight: 800; color: #0F172A; text-transform: uppercase; }
+        .t-cat { font-size: 0.75rem; color: #94A3B8; font-weight: 600; }
 
-        /* PILLS */
-        .meta-info { display: flex; gap: 10px; align-items: center; }
-        .status-pill { padding: 4px 12px; border-radius: 100px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
-        .finished { background: #f1f5f9; color: #475569; }
-        .live { background: #ffedd5; color: #f97316; animation: pulse 2s infinite; }
-        .upcoming { background: #ecfdf5; color: #10b981; }
-        .competition-tag { font-size: 0.75rem; color: #94a3b8; font-weight: 700; }
+        .score-block { display: flex; align-items: center; gap: 10px; }
+        .score-box { background: #0F172A; color: white; width: 45px; height: 55px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 900; border-bottom: 3px solid #F97316; }
+        .score-sep { font-weight: 900; color: #CBD5E1; }
 
-        .card-bottom { display: flex; justify-content: space-between; padding-top: 15px; border-top: 1px solid #f8fafc; font-size: 0.8rem; color: #94a3b8; font-weight: 600; }
-        .del-btn { background: #fee2e2; border: none; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
-
-        .loader-box { padding: 100px; text-align: center; color: #94a3b8; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #f97316; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px; }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        /* BOTTOM */
+        .match-bottom { margin-top: 15px; padding-top: 15px; border-top: 1px solid #F8FAFC; display: flex; justify-content: space-between; font-size: 0.75rem; color: #94A3B8; font-weight: 600; }
 
         @media (max-width: 768px) {
-          .main-title { font-size: 1.8rem; }
-          .score-digit { font-size: 1.8rem; }
-          .team-name { font-size: 1rem; }
-          .scoreboard { margin: 15px 0; }
-          .score-center { padding: 0 15px; }
+          .t-name { font-size: 0.9rem; }
+          .score-box { width: 35px; height: 45px; font-size: 1.2rem; }
+          .page-header h1 { font-size: 1.5rem; }
         }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
       `}</style>
     </div>
   );
