@@ -137,7 +137,7 @@ export default function MatchsAVenirPage() {
       month: 'short',
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: 'Europe/London'
+      timeZone: 'Europe/Paris'
     }).format(new Date(dateString)).replace(':', 'h');
   };
 
@@ -235,7 +235,7 @@ export default function MatchsAVenirPage() {
 
             <div style={colStyle}>
               <label style={miniLabel}>📍 LIEU / GYMNASE</label>
-              <input type="text" placeholder="Ex: Gymnase Herzog" value={newMatch.lieu} onChange={e => setNewMatch({...newMatch, lieu: e.target.value})} style={inputStyle} />
+              <input type="text" placeholder="Ex: Gymnase André Carton" value={newMatch.lieu} onChange={e => setNewMatch({...newMatch, lieu: e.target.value})} style={inputStyle} />
             </div>
 
             <button type="submit" style={submitBtn}>{editingId ? "METTRE À JOUR" : "CRÉER LE MATCH"}</button>
