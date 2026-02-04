@@ -25,66 +25,68 @@ export default function ResultatsPage() {
 
   const filteredMatchs = useMemo(() => {
     return matchs.filter(m => 
-      m.clubA.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      m.clubB.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.competition.toLowerCase().includes(searchTerm.toLowerCase())
+      m.clubA?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      m.clubB?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.competition?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [matchs, searchTerm]);
 
-  if (loading) return <div className="loading">Chargement...</div>;
+  if (loading) return <div className="loading-state">Chargement des scores...</div>;
 
   return (
-    <div className="page-wrapper">
-      {/* HEADER TYPE DASHBOARD */}
+    <div className="page-container">
+      {/* HEADER ALIGNÉ SUR TON ACCUEIL */}
       <header className="dashboard-header">
         <div className="header-left">
-          <h1>Résultats <span className="dot">.</span></h1>
-          <p className="welcome-msg">Consultez les derniers scores de la saison.</p>
+          <h1>Résultats <span className="orange-dot">.</span></h1>
+          <p className="subtitle">Consultez les derniers scores de la saison.</p>
         </div>
-        <div className="header-actions">
-           <input 
-              type="text" 
-              placeholder="Rechercher..." 
-              className="search-bar"
-              onChange={(e) => setSearchTerm(e.target.value)}
-           />
+        <div className="header-right">
+          <input 
+            type="text" 
+            placeholder="Rechercher un club ou une compétition..." 
+            className="search-input"
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </header>
 
-      {/* GRILLE DE CARTES */}
-      <div className="results-grid">
+      {/* GRILLE DE MATCHS TYPE "CARDS" */}
+      <div className="matchs-grid">
         {filteredMatchs.map((m) => (
-          <Link href={`/matchs/resultats/${m.id}`} key={m.id} className="match-card">
-            {/* La petite barre de couleur à gauche comme sur tes captures */}
-            <div className={`side-accent ${m.status === 'termine' ? 'finished' : 'live'}`}></div>
-            
-            <div className="card-body">
-              <div className="card-meta">
-                <span className="comp-tag">🏆 {m.competition}</span>
-                <span className="date-tag">{m.date?.split('T')[0].split('-').reverse().join('/')}</span>
-              </div>
-
-              <div className="score-row">
-                <div className="team-info">
-                  <span className="t-name">{m.clubA}</span>
-                  <span className="t-cat">{m.equipeA}</span>
-                </div>
-                
-                <div className="score-center">
-                  <span className="score">{m.scoreA ?? 0}</span>
-                  <span className="sep">-</span>
-                  <span className="score">{m.scoreB ?? 0}</span>
+          <Link href={`/matchs/resultats/${m.id}`} key={m.id} className="match-card-link">
+            <div className="match-card">
+              {/* Barre de couleur latérale comme sur tes stats */}
+              <div className={`status-border ${m.status === 'en-cours' ? 'bg-live' : 'bg-finished'}`}></div>
+              
+              <div className="card-content">
+                <div className="card-top">
+                  <span className="competition">🏆 {m.competition}</span>
+                  <span className="date">{m.date ? m.date.split('T')[0].split('-').reverse().join('/') : 'NC'}</span>
                 </div>
 
-                <div className="team-info text-right">
-                  <span className="t-name">{m.clubB}</span>
-                  <span className="t-cat">{m.equipeB}</span>
-                </div>
-              </div>
+                <div className="main-score-row">
+                  <div className="team-info home">
+                    <span className="team-name">{m.clubA}</span>
+                    <span className="team-cat">{m.equipeA}</span>
+                  </div>
 
-              <div className="card-footer">
-                <span>📍 {m.lieu || 'Terrain non défini'}</span>
-                {m.status === 'en-cours' && <span className="live-indicator">EN DIRECT</span>}
+                  <div className="score-badge">
+                    <span className="score-num">{m.scoreA ?? 0}</span>
+                    <span className="score-sep">-</span>
+                    <span className="score-num">{m.scoreB ?? 0}</span>
+                  </div>
+
+                  <div className="team-info away">
+                    <span className="team-name">{m.clubB}</span>
+                    <span className="team-cat">{m.equipeB}</span>
+                  </div>
+                </div>
+
+                <div className="card-bottom">
+                  <div className="location">📍 {m.lieu || 'Lieu non défini'}</div>
+                  {m.status === 'en-cours' && <span className="live-tag">DIRECT</span>}
+                </div>
               </div>
             </div>
           </Link>
@@ -92,59 +94,69 @@ export default function ResultatsPage() {
       </div>
 
       <style jsx>{`
-        .page-wrapper { animation: fadeIn 0.4s ease-out; }
-
-        /* TITRE DASHBOARD */
-        .dashboard-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
-        .dashboard-header h1 { font-size: 1.8rem; font-weight: 800; color: #1E293B; margin: 0; }
-        .dot { color: #F97316; }
-        .welcome-msg { color: #64748B; font-size: 0.9rem; margin-top: 4px; }
-
-        .search-bar { 
-          padding: 10px 15px; border-radius: 8px; border: 1px solid #E2E8F0; 
-          background: white; outline: none; font-size: 0.85rem; width: 250px;
+        .page-container { animation: fadeIn 0.4s ease; padding-bottom: 40px; }
+        
+        /* HEADER STYLE */
+        .dashboard-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; }
+        .dashboard-header h1 { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin: 0; }
+        .orange-dot { color: #f97316; }
+        .subtitle { color: #64748b; font-size: 0.9rem; margin: 5px 0 0; }
+        
+        .search-input { 
+          padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; 
+          background: white; width: 300px; outline: none; font-size: 0.85rem;
+          transition: border-color 0.2s;
         }
+        .search-input:focus { border-color: #f97316; }
 
-        /* CARTES INSPIRÉES DU DASHBOARD */
-        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)); gap: 20px; }
+        /* MATCH CARDS (Inspirées de tes Stats Cards) */
+        .matchs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; }
+        .match-card-link { text-decoration: none; color: inherit; }
         
         .match-card { 
-          background: white; border-radius: 12px; display: flex; overflow: hidden;
-          text-decoration: none; color: inherit; border: 1px solid #E2E8F0;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: 0.2s;
+          background: white; border-radius: 16px; display: flex; overflow: hidden;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #f1f5f9;
+          transition: transform 0.2s, box-shadow 0.2s; height: 100%;
         }
-        .match-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .match-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1); }
 
-        .side-accent { width: 6px; }
-        .side-accent.finished { background: #F97316; } /* Orange Dunkly */
-        .side-accent.live { background: #22C55E; } /* Vert pour le live */
+        .status-border { width: 6px; flex-shrink: 0; }
+        .bg-finished { background: #f97316; } /* Orange Dunkly */
+        .bg-live { background: #22c55e; } /* Vert Live */
 
-        .card-body { flex: 1; padding: 20px; }
-        
-        .card-meta { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .comp-tag { font-size: 0.75rem; font-weight: 700; color: #64748B; text-transform: uppercase; }
-        .date-tag { font-size: 0.75rem; color: #94A3B8; }
+        .card-content { flex: 1; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
 
-        .score-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .card-top { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .competition { font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
+        .date { font-size: 0.75rem; color: #94a3b8; font-weight: 600; }
+
+        .main-score-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin: 10px 0; }
         .team-info { display: flex; flex-direction: column; width: 35%; }
-        .text-right { text-align: right; }
-        .t-name { font-size: 1rem; font-weight: 800; color: #1E293B; }
-        .t-cat { font-size: 0.7rem; color: #94A3B8; font-weight: 600; }
+        .home { text-align: right; }
+        .team-name { font-size: 1rem; font-weight: 800; color: #1e293b; text-transform: uppercase; }
+        .team-cat { font-size: 0.7rem; color: #94a3b8; font-weight: 600; }
 
-        .score-center { display: flex; align-items: center; gap: 10px; background: #F8FAFC; padding: 8px 15px; border-radius: 8px; }
-        .score { font-size: 1.4rem; font-weight: 900; color: #1E293B; }
-        .sep { color: #CBD5E1; font-weight: bold; }
+        .score-badge { 
+          background: #f8fafc; padding: 8px 16px; border-radius: 12px; 
+          display: flex; align-items: center; gap: 8px; border: 1px solid #e2e8f0;
+        }
+        .score-num { font-size: 1.4rem; font-weight: 900; color: #1e293b; }
+        .score-sep { color: #cbd5e1; font-weight: bold; }
 
-        .card-footer { display: flex; justify-content: space-between; border-top: 1px solid #F1F5F9; paddingTop: 12px; margin-top: 5px; font-size: 0.75rem; color: #64748B; font-weight: 600; }
-        .live-indicator { color: #22C55E; animation: pulse 2s infinite; }
+        .card-bottom { 
+          margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f5f9;
+          display: flex; justify-content: space-between; align-items: center;
+          font-size: 0.75rem; color: #64748b; font-weight: 600;
+        }
+        .live-tag { color: #22c55e; font-weight: 800; animation: pulse 2s infinite; }
 
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        @media (max-width: 1024px) {
-          .results-grid { grid-template-columns: 1fr; }
-          .search-bar { width: 100%; margin-top: 15px; }
-          .dashboard-header { flex-direction: column; }
+        @media (max-width: 768px) {
+          .matchs-grid { grid-template-columns: 1fr; }
+          .dashboard-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+          .search-input { width: 100%; }
         }
       `}</style>
     </div>
