@@ -85,12 +85,14 @@ export default function MatchsAVenirPage() {
     };
 
     if (editingId) {
-      await supabase.from('matchs').update(matchData).eq('id', editingId);
+      const { error } = await supabase.from('matchs').update(matchData).eq('id', editingId);
+      if (error) alert("Erreur Update: " + error.message);
     } else {
-      await supabase.from('matchs').insert([matchData]);
+      const { error } = await supabase.from('matchs').insert([matchData]);
+      if (error) alert("Erreur Insert: " + error.message);
     }
     
-    chargerDonnees();
+    await chargerDonnees();
     resetForm();
   };
 
@@ -221,7 +223,7 @@ export default function MatchsAVenirPage() {
         </div>
       )}
 
-      {/* LISTE DES MATCHS (IDENTIQUE) */}
+      {/* LISTE DES MATCHS */}
       <div style={{ display: 'grid', gap: '15px' }}>
         {matchs.map((m) => (
           <div key={m.id} style={matchCardStyle}>
@@ -244,7 +246,7 @@ export default function MatchsAVenirPage() {
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => { if(confirm("Supprimer ?")) supabase.from('matchs').delete().eq('id', m.id).then(() => chargerDonnees()) }} style={iconBtn}>🗑️</button>
                 <button onClick={() => handleEditer(m)} style={editBtnSmall}>✎</button>
-                <Link href={`/matchs/marque/${m.id}`} style={startBtnStyle}>MARQUER</Link>
+                <Link href={`/matchs/${m.id}`} style={startBtnStyle}>GÉRER</Link>
               </div>
             </div>
           </div>
@@ -254,7 +256,6 @@ export default function MatchsAVenirPage() {
   );
 }
 
-// STYLES (Identiques au précédent pour la cohérence)
 const inputStyle = { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', width: '100%', boxSizing: 'border-box' as const };
 const addBtnStyle = { backgroundColor: '#111827', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold' as const, cursor: 'pointer' };
 const submitBtn = { gridColumn: '1/span 2', backgroundColor: '#F97316', color: 'white', padding: '14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '900' as const, border: 'none', marginTop: '10px' };
