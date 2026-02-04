@@ -1,20 +1,27 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase"; // Import du client Supabase
+import { supabase } from "@/lib/supabase"; 
 import Link from "next/link";
 
 export default function ResultatsPage() {
   const [matchs, setMatchs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null); // État pour stocker l'utilisateur
 
   useEffect(() => {
+    // Récupérer l'utilisateur local
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser) setUser(JSON.parse(storedUser));
+    
     chargerTousLesMatchs();
   }, []);
 
+  // Déterminer si l'utilisateur est admin
+  const isAdmin = user?.username?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
+
   const chargerTousLesMatchs = async () => {
     setLoading(true);
-    // On récupère tous les matchs, triés par date (les plus récents en premier)
     const { data, error } = await supabase
       .from('matchs')
       .select('*')
@@ -26,6 +33,28 @@ export default function ResultatsPage() {
       setMatchs(data || []);
     }
     setLoading(false);
+  };
+
+  // NOUVELLE FONCTION : Supprimer un match
+  const supprimerMatch = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault(); // Empêche le comportement par défaut du lien
+    e.stopPropagation(); // Empêche de naviguer vers la page de détail
+
+    if (!confirm("⚠️ Voulez-vous vraiment supprimer ce match et son résultat ?")) return;
+
+    try {
+      const { error } = await supabase
+        .from('matchs')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Mise à jour locale de la liste
+      setMatchs(matchs.filter(m => m.id !== id));
+    } catch (error: any) {
+      alert("Erreur lors de la suppression : " + error.message);
+    }
   };
 
   const renderStatus = (status: string) => {
@@ -60,51 +89,65 @@ export default function ResultatsPage() {
       <div style={gridStyle}>
         {matchs.length > 0 ? (
           matchs.map((m) => (
-            <Link 
-              key={m.id} 
-              href={`/matchs/resultats/${m.id}`} 
-              style={{ textDecoration: 'none', color: 'inherit' }}
-            >
-              <div style={cardStyle} className="match-card">
-                <div style={infoSideStyle}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      {renderStatus(m.status)}
-                      <span style={dateBadgeStyle}>
-                        {m.date ? m.date.replace('T', ' à ') : "Date non fixée"}
-                      </span>
+            <div key={m.id} style={{ position: 'relative' }}>
+              <Link 
+                href={`/matchs/resultats/${m.id}`} 
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
+                <div style={cardStyle} className="match-card">
+                  <div style={infoSideStyle}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        {renderStatus(m.status)}
+                        <span style={dateBadgeStyle}>
+                          {m.date ? m.date.replace('T', ' à ') : "Date non fixée"}
+                        </span>
+                      </div>
+                      
+                      {/* Affichage conditionnel du bouton supprimer */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        {isAdmin && (
+                          <button 
+                            onClick={(e) => supprimerMatch(e, m.id)}
+                            style={deleteBtnStyle}
+                            title="Supprimer le match"
+                          >
+                            🗑️
+                          </button>
+                        )}
+                        <span style={{ fontSize: '0.7rem', color: '#F97316', fontWeight: 'bold' }}>VOIR STATS →</span>
+                      </div>
                     </div>
-                    <span style={{ fontSize: '0.7rem', color: '#F97316', fontWeight: 'bold' }}>VOIR STATS →</span>
-                  </div>
-                  
-                  <div style={teamsRowStyle}>
-                    <div style={teamBlock}>
-                      <span style={m.status === 'termine' && m.scoreA > m.scoreB ? winName : teamNameStyle}>
-                        {m.equipeA}
-                      </span>
-                      <span style={clubStyle}>{m.clubA}</span>
-                    </div>
+                    
+                    <div style={teamsRowStyle}>
+                      <div style={teamBlock}>
+                        <span style={m.status === 'termine' && m.scoreA > m.scoreB ? winName : teamNameStyle}>
+                          {m.equipeA}
+                        </span>
+                        <span style={clubStyle}>{m.clubA}</span>
+                      </div>
 
-                    <div style={scoreBoxStyle}>
-                      <span style={scoreValue}>{m.scoreA ?? 0}</span>
-                      <span style={{ color: '#F97316', opacity: 0.5 }}>:</span>
-                      <span style={scoreValue}>{m.scoreB ?? 0}</span>
-                    </div>
+                      <div style={scoreBoxStyle}>
+                        <span style={scoreValue}>{m.scoreA ?? 0}</span>
+                        <span style={{ color: '#F97316', opacity: 0.5 }}>:</span>
+                        <span style={scoreValue}>{m.scoreB ?? 0}</span>
+                      </div>
 
-                    <div style={teamBlock}>
-                      <span style={m.status === 'termine' && m.scoreB > m.scoreA ? winName : teamNameStyle}>
-                        {m.equipeB}
-                      </span>
-                      <span style={clubStyle}>{m.clubB}</span>
+                      <div style={teamBlock}>
+                        <span style={m.status === 'termine' && m.scoreB > m.scoreA ? winName : teamNameStyle}>
+                          {m.equipeB}
+                        </span>
+                        <span style={clubStyle}>{m.clubB}</span>
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div style={footerDetail}>
-                    📍 {m.competition} {m.arbitre && ` | ⚖️ ${m.arbitre}`} {m.lieu && ` | 🏢 ${m.lieu}`}
+                    
+                    <div style={footerDetail}>
+                      📍 {m.competition} {m.arbitre && ` | ⚖️ ${m.arbitre}`} {m.lieu && ` | 🏢 ${m.lieu}`}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </div>
           ))
         ) : (
           <div style={emptyCardStyle}>
@@ -127,7 +170,19 @@ export default function ResultatsPage() {
   );
 }
 
-// STYLES
+// STYLES SUPPLÉMENTAIRES
+const deleteBtnStyle = {
+  background: '#fee2e2',
+  border: 'none',
+  padding: '5px 8px',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  fontSize: '1rem',
+  transition: 'background 0.2s',
+  zIndex: 10,
+};
+
+// TES STYLES EXISTANTS (Gardés identiques)
 const containerStyle = { padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'sans-serif' };
 const headerStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' };
 const gridStyle = { display: 'flex', flexDirection: 'column' as const, gap: '20px' };
