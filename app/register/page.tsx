@@ -18,9 +18,7 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      const { data: existing } = await supabase.from('membres').select('id').eq('email', email.toLowerCase().trim()).maybeSingle();
-      if (existing) throw new Error("Cet email est déjà utilisé.");
-
+      // Logique d'inscription
       const { data, error: insError } = await supabase
         .from('membres')
         .insert([{ email: email.toLowerCase().trim(), password, role: 'membre' }])
@@ -30,7 +28,6 @@ export default function RegisterPage() {
 
       localStorage.setItem('currentUser', JSON.stringify(data));
       router.push('/');
-      router.refresh();
     } catch (err: any) {
       setError(err.message || "Erreur lors de l'inscription.");
     } finally {
@@ -75,7 +72,7 @@ export default function RegisterPage() {
           </div>
 
           <button type="submit" disabled={loading} style={btnStyle}>
-            {loading ? 'CRÉATION...' : "S'INSCRIRE"}
+            {loading ? 'CHARGEMENT...' : "S'INSCRIRE"}
           </button>
         </form>
         
@@ -87,32 +84,33 @@ export default function RegisterPage() {
   );
 }
 
-// Utilise les mêmes objets "const" que la LoginPage ci-dessus.
+// Utilise les mêmes constantes de style que la LoginPage
 const fullPageWrapper: React.CSSProperties = {
     position: 'fixed',
     top: 0,
     left: 0,
     width: '100vw',
     height: '100vh',
-    // Ce background crée la bande centrale sombre de ton image
-    background: 'linear-gradient(to right, #0a0a0a 0%, #0a0a0a 40%, #0f172a 40%, #0f172a 60%, #0a0a0a 60%, #0a0a0a 100%)',
+    // Ce dégradé crée la bande centrale bleu nuit sur fond noir (image 7a1aa7)
+    background: 'linear-gradient(to right, #0a0a0a 0%, #0a0a0a 42%, #0f172a 42%, #0f172a 58%, #0a0a0a 58%, #0a0a0a 100%)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     margin: 0,
     padding: 0,
+    overflow: 'hidden',
   };
   
   const cardStyle: React.CSSProperties = {
     backgroundColor: '#1c2331',
     padding: '50px 40px',
     borderRadius: '24px',
-    width: '400px',
-    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)',
+    width: '420px',
+    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
     textAlign: 'center',
   };
   
-  const headerStyle = { marginBottom: '30px' };
+  const headerStyle = { marginBottom: '35px' };
   
   const logoIconStyle: React.CSSProperties = {
     fontSize: '28px',
@@ -127,7 +125,7 @@ const fullPageWrapper: React.CSSProperties = {
   };
   
   const titleStyle: React.CSSProperties = { 
-    fontSize: '3rem', 
+    fontSize: '3.2rem', 
     fontWeight: '900', 
     color: '#fff', 
     margin: 0, 
@@ -137,7 +135,7 @@ const fullPageWrapper: React.CSSProperties = {
   
   const subtitleStyle = { color: '#94a3b8', fontSize: '14px', marginTop: '5px' };
   
-  const formStyle = { display: 'flex', flexDirection: 'column' as const, gap: '20px' };
+  const formStyle = { display: 'flex', flexDirection: 'column' as const, gap: '22px' };
   
   const inputGroupStyle = { textAlign: 'left' as const };
   
@@ -174,6 +172,6 @@ const fullPageWrapper: React.CSSProperties = {
   
   const errorStyle = { color: '#ef4444', fontSize: '13px', marginBottom: '15px' };
   
-  const footerTextStyle = { marginTop: '25px', color: '#94a3b8', fontSize: '13px' };
+  const footerTextStyle = { marginTop: '25px', color: '#94a3b8', fontSize: '14px' };
   
   const linkStyle = { color: '#fff', textDecoration: 'none', fontWeight: 'bold' };
