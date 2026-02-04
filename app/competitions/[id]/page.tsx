@@ -12,6 +12,9 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
   const [clubs, setClubs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  
+  // AJOUT : État pour les matchs terminés afin de calculer le classement
+  const [matchsTermines, setMatchsTermines] = useState<any[]>([]);
 
   // États pour la sélection
   const [selectedClubId, setSelectedClubId] = useState('');
@@ -34,8 +37,17 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
       const { data: listeClubs, error: err2 } = await supabase.from('equipes_clubs').select('*').order('nom');
       if (err2) throw err2;
 
+      // AJOUT : 3. Charger les matchs terminés de cette compétition
+      const { data: matchs, error: err3 } = await supabase
+        .from('matchs')
+        .select('*')
+        .eq('competition', comp.nom)
+        .eq('status', 'termine');
+      if (err3) throw err3;
+
       setCompetition(comp);
       setClubs(listeClubs || []);
+      setMatchsTermines(matchs || []);
     } catch (error) {
       console.error("Erreur chargement:", error);
     } finally {
@@ -43,6 +55,45 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
     }
   };
 
+  // AJOUT : LOGIQUE DE CALCUL DU CLASSEMENT
+  const calculerClassement = () => {
+    const stats: Record<string, any> = {};
+
+    // Initialiser avec les équipes engagées
+    competition?.equipes_engagees?.forEach((eq: any) => {
+      const key = `${eq.clubNom}-${eq.nom}`;
+      stats[key] = { ...eq, joues: 0, v: 0, d: 0, ptsPlus: 0, ptsMoins: 0, points: 0 };
+    });
+
+    // Traiter les matchs
+    matchsTermines.forEach(m => {
+      const keyA = `${m.clubA}-${m.equipeA}`;
+      const keyB = `${m.clubB}-${m.equipeB}`;
+
+      if (stats[keyA] && stats[keyB]) {
+        stats[keyA].joues++;
+        stats[keyB].joues++;
+        stats[keyA].ptsPlus += (m.scoreA || 0);
+        stats[keyA].ptsMoins += (m.scoreB || 0);
+        stats[keyB].ptsPlus += (m.scoreB || 0);
+        stats[keyB].ptsMoins += (m.scoreA || 0);
+
+        if (m.scoreA > m.scoreB) {
+          stats[keyA].v++; stats[keyA].points += 2;
+          stats[keyB].d++; stats[keyB].points += 1;
+        } else if (m.scoreB > m.scoreA) {
+          stats[keyB].v++; stats[keyB].points += 2;
+          stats[keyA].d++; stats[keyA].points += 1;
+        }
+      }
+    });
+
+    return Object.values(stats)
+      .map((s: any) => ({ ...s, diff: s.ptsPlus - s.ptsMoins }))
+      .sort((a: any, b: any) => b.points - a.points || b.diff - a.diff);
+  };
+
+  const classement = calculerClassement();
   const isAdmin = user?.username?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
 
   const ajouterEquipeACompete = async () => {
@@ -100,6 +151,47 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
         </div>
       </div>
 
+      {/* AJOUT : TABLEAU DU CHAMPIONNAT */}
+      <div style={{ ...listContainer, marginBottom: '30px' }}>
+        <h2 style={sectionTitle}>Classement Général</h2>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={tableStyle}>
+            <thead>
+              <tr style={thrStyle}>
+                <th style={thStyle}>Pos</th>
+                <th style={{ ...thStyle, textAlign: 'left' }}>Équipe</th>
+                <th style={thStyle}>J</th>
+                <th style={thStyle}>V</th>
+                <th style={thStyle}>D</th>
+                <th style={thStyle}>+/-</th>
+                <th style={thStyle}>Pts</th>
+              </tr>
+            </thead>
+            <tbody>
+              {classement.map((row: any, idx: number) => (
+                <tr key={idx} style={trStyle}>
+                  <td style={{ ...tdStyle, fontWeight: 'bold' }}>{idx + 1}</td>
+                  <td style={{ ...tdStyle, textAlign: 'left' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ ...miniLogo, width: '25px', height: '25px', fontSize: '0.7rem', backgroundColor: row.logoColor }}>{row.clubNom ? row.clubNom[0] : '?'}</div>
+                      <div>
+                        <div style={{ fontWeight: 'bold' }}>{row.nom}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{row.clubNom}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style={tdStyle}>{row.joues}</td>
+                  <td style={tdStyle}>{row.v}</td>
+                  <td style={tdStyle}>{row.d}</td>
+                  <td style={{ ...tdStyle, fontWeight: 'bold', color: row.diff >= 0 ? '#10b981' : '#ef4444' }}>{row.diff > 0 ? `+${row.diff}` : row.diff}</td>
+                  <td style={{ ...tdStyle, fontWeight: '900', color: '#F97316' }}>{row.points}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* SECTION ENGAGEMENT DES ÉQUIPES */}
       {isAdmin && (
         <div style={addBox}>
@@ -119,7 +211,7 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
               {clubs.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
             </select>
 
-            {/* 2. Choisir l'Équipe (Valeur contrôlée pour éviter le blocage) */}
+            {/* 2. Choisir l'Équipe */}
             <select 
               style={selectStyle} 
               disabled={!selectedClubId}
@@ -182,7 +274,13 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
   );
 }
 
-// --- STYLES (S'ASSURER DU "as const" POUR TYPESCRIPT) ---
+// --- STYLES ---
+const tableStyle = { width: '100%', borderCollapse: 'collapse' as const, marginTop: '10px' };
+const thrStyle = { borderBottom: '2px solid #f1f5f9' };
+const thStyle = { padding: '12px 8px', textAlign: 'center' as const, color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' as const };
+const trStyle = { borderBottom: '1px solid #f8fafc' };
+const tdStyle = { padding: '12px 8px', textAlign: 'center' as const, fontSize: '0.9rem' };
+
 const containerStyle = { padding: '40px 20px', maxWidth: '850px', margin: '0 auto', fontFamily: 'sans-serif' };
 const backBtn = { background: '#f1f5f9', border: 'none', color: '#64748b', padding: '10px 15px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' as const, marginBottom: '20px' };
 const headerCard = { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '30px', background: 'white', padding: '25px', borderRadius: '25px', border: '1px solid #e2e8f0' };
