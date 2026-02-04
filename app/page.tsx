@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+// 1. On importe OneSignal
+import OneSignal from 'react-onesignal';
 
 // --- 1. COMPOSANTS DE STYLE INTERNES ---
 function StatCard({ label, value, icon, color }: { label: string; value: number | string; icon: string; color: string }) {
@@ -35,8 +37,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     const initDashboard = async () => {
-      // --- CORRECTION MAJEURE ICI ---
-      // On demande la session à Supabase au lieu de regarder le localStorage
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) { 
@@ -44,13 +44,22 @@ export default function Dashboard() {
         return; 
       }
       
-      // On récupère les infos de l'utilisateur depuis la session Supabase
-      // Si tu as besoin de metadonnées spécifiques (prenom, role), on les cherche ici
       setUser({
         ...session.user,
-        // On fusionne avec le localStorage au cas où tu y stockes des infos custom (ex: prenom)
         ...JSON.parse(localStorage.getItem('currentUser') || '{}')
       });
+
+      // --- AJOUT : INITIALISATION ONESIGNAL ---
+      try {
+        await OneSignal.init({
+          appId: "a60eae06-8739-4515-8827-858c2ec0c07b", // <--- METS TON ID ICI
+          allowLocalhostAsSecureOrigin: true,
+        });
+        // Demande la permission de notifier (affiche la cloche ou le pop-up)
+        OneSignal.Notifications.requestPermission();
+      } catch (err) {
+        console.error("OneSignal Error:", err);
+      }
 
       try {
         const [competsRes, equipesRes, matchsRes, nextRes, lastRes] = await Promise.all([
@@ -88,7 +97,6 @@ export default function Dashboard() {
     });
   };
 
-  // Logique Admin préservée
   const isAdmin = user?.role === 'admin' || user?.username?.toLowerCase() === 'admin' || user?.username?.toLowerCase() === 'anthony.didier.prop' || user?.user_metadata?.role === 'admin';
 
   if (loading) return (
@@ -103,7 +111,6 @@ export default function Dashboard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '90vh', fontFamily: 'sans-serif' }}>
       
-      {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <div>
           <h1 style={{ fontSize: '2.2rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
@@ -121,17 +128,14 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* STATS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '25px', marginBottom: '40px' }}>
         <StatCard label="Championnats" value={stats.compets} icon="🏆" color="#F97316" />
         <StatCard label="Clubs & Équipes" value={stats.equipes} icon="🛡️" color="#3B82F6" />
         <StatCard label="Matchs Total" value={stats.matchs} icon="⏱️" color="#10B981" />
       </div>
 
-      {/* SECTION DYNAMIQUE */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
         
-        {/* PROCHAIN RDV */}
         <div style={{ backgroundColor: '#1E293B', padding: '30px', borderRadius: '24px', color: 'white', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'relative', zIndex: 2 }}>
             <h3 style={{ fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1px' }}>📅 Prochain RDV</h3>
@@ -160,7 +164,6 @@ export default function Dashboard() {
           <div style={{ position: 'absolute', bottom: '-20px', right: '-20px', fontSize: '120px', opacity: 0.05, transform: 'rotate(-15deg)' }}>🏀</div>
         </div>
 
-        {/* DERNIER RÉSULTAT */}
         <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', border: '1px solid #F1F5F9' }}>
           <h3 style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748B', marginBottom: '25px', textTransform: 'uppercase', letterSpacing: '1px' }}>🏆 Dernier Résultat</h3>
           {dernierResultat ? (
