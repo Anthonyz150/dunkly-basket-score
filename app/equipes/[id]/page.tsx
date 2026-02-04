@@ -20,52 +20,49 @@ export default function DetailClubPage({ params }: { params: Promise<{ id: strin
   }, [clubId]);
 
   const chargerClub = async () => {
+    console.log("Chargement du club ID:", clubId);
     const { data, error } = await supabase
       .from('equipes_clubs')
       .select('*')
       .eq('id', clubId)
       .single();
 
-    if (data) setClub(data);
+    if (error) console.error("Erreur chargement club:", error.message);
+    if (data) {
+      console.log("Club chargé avec succès:", data);
+      setClub(data);
+    }
     setLoading(false);
   };
 
-  // Logique Admin consolidée
-  const isAdmin = 
-    user?.role === 'admin' || 
-    user?.username?.toLowerCase() === 'admin' || 
-    user?.email === 'anthony.didier.pro@gmail.com' ||
-    localStorage.getItem('isAdmin') === 'true'; // Sécurité supplémentaire
+  const isAdmin = user?.role === 'admin' || user?.username?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
 
   const ajouterEquipe = async () => {
-    if (!nomEquipe.trim() || !club) return;
+    console.log("Bouton cliqué. Nom équipe:", nomEquipe);
     
-    console.log("Tentative d'ajout d'équipe pour le club:", clubId);
+    if (!nomEquipe.trim()) return alert("Le nom de l'équipe est vide");
+    if (!club) return alert("Le club n'est pas chargé");
 
-    // Initialisation sécurisée du tableau
+    // Sécurité : On s'assure que c'est un tableau
     const listeBase = Array.isArray(club.equipes) ? club.equipes : [];
-    const nouvelleEquipe = { 
-      id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(), 
-      nom: nomEquipe.trim() 
-    };
-    
+    const nouvelleEquipe = { id: Date.now().toString(), nom: nomEquipe.trim() };
     const nouvellesEquipes = [...listeBase, nouvelleEquipe];
 
-    try {
-      const { data, error } = await supabase
-        .from('equipes_clubs')
-        .update({ equipes: nouvellesEquipes })
-        .eq('id', clubId)
-        .select();
+    console.log("Envoi à Supabase...", nouvellesEquipes);
 
-      if (error) throw error;
+    const { data, error } = await supabase
+      .from('equipes_clubs')
+      .update({ equipes: nouvellesEquipes })
+      .eq('id', clubId)
+      .select(); // On force le retour de la donnée pour vérifier
 
-      console.log("Mise à jour réussie:", data);
+    if (error) {
+      console.error("ERREUR SUPABASE:", error.message);
+      alert("Erreur Supabase: " + error.message);
+    } else {
+      console.log("UPDATE RÉUSSI. Données retournées:", data);
       setClub({ ...club, equipes: nouvellesEquipes });
       setNomEquipe('');
-    } catch (error: any) {
-      console.error("Erreur lors de l'update Supabase:", error);
-      alert("Erreur Supabase : " + error.message);
     }
   };
 
@@ -96,7 +93,7 @@ export default function DetailClubPage({ params }: { params: Promise<{ id: strin
   };
 
   if (loading) return <div style={containerStyle}>Chargement...</div>;
-  if (!club) return <div style={containerStyle}>Club introuvable.</div>;
+  if (!club) return <div style={containerStyle}>Club introuvable (ID: {clubId})</div>;
 
   return (
     <div style={containerStyle}>
@@ -151,7 +148,7 @@ const backBtn = { background: 'none', border: 'none', color: '#64748b', cursor: 
 const headerCard = { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' };
 const logoStyle = { width: '80px', height: '80px', borderRadius: '20px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 'bold' as const };
 const addBox = { display: 'flex', gap: '10px', marginBottom: '30px' };
-const inputStyle = { flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', outline: 'none' };
+const inputStyle = { flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' };
 const addBtn = { padding: '12px 20px', backgroundColor: '#F97316', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold' as const, cursor: 'pointer' };
 const listContainer = { backgroundColor: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', overflow: 'hidden' };
 const sectionTitle = { fontSize: '1rem', padding: '20px', margin: 0, borderBottom: '1px solid #f1f5f9', color: '#1e293b' };
