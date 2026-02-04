@@ -33,8 +33,11 @@ export default function DetailClubPage({ params }: { params: Promise<{ id: strin
   const isAdmin = user?.role === 'admin' || user?.username?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
 
   const ajouterEquipe = async () => {
-    if (!nomEquipe) return;
-    const nouvellesEquipes = [...(club.equipes || []), { id: Date.now().toString(), nom: nomEquipe.trim() }];
+    if (!nomEquipe || !club) return;
+    
+    // CORRECTIF : On s'assure que club.equipes est un tableau pour éviter le plantage
+    const listeBase = Array.isArray(club.equipes) ? club.equipes : [];
+    const nouvellesEquipes = [...listeBase, { id: Date.now().toString(), nom: nomEquipe.trim() }];
     
     const { error } = await supabase
       .from('equipes_clubs')
@@ -44,10 +47,11 @@ export default function DetailClubPage({ params }: { params: Promise<{ id: strin
     if (!error) {
       setClub({ ...club, equipes: nouvellesEquipes });
       setNomEquipe('');
+    } else {
+      alert("Erreur Supabase : " + error.message);
     }
   };
 
-  // NOUVELLE FONCTION AJOUTÉE
   const modifierEquipe = async (eqId: string, nomActuel: string) => {
     const nouveauNom = prompt("Modifier le nom de l'équipe :", nomActuel);
     if (nouveauNom && nouveauNom.trim() !== "" && nouveauNom !== nomActuel) {
@@ -82,7 +86,7 @@ export default function DetailClubPage({ params }: { params: Promise<{ id: strin
       <button onClick={() => router.back()} style={backBtn}>← Retour à la liste</button>
 
       <div style={headerCard}>
-        <div style={{ ...logoStyle, backgroundColor: club.logoColor }}>{club.nom[0]}</div>
+        <div style={{ ...logoStyle, backgroundColor: club.logoColor }}>{club.nom ? club.nom[0] : '?'}</div>
         <div>
           <h1 style={{ margin: 0 }}>{club.nom}</h1>
           <p style={{ color: '#64748b', margin: 0 }}>📍 {club.ville}</p>
@@ -96,6 +100,7 @@ export default function DetailClubPage({ params }: { params: Promise<{ id: strin
             value={nomEquipe} 
             onChange={(e) => setNomEquipe(e.target.value)}
             style={inputStyle}
+            onKeyDown={(e) => e.key === 'Enter' && ajouterEquipe()}
           />
           <button onClick={ajouterEquipe} style={addBtn}>Ajouter l'équipe</button>
         </div>
@@ -116,14 +121,14 @@ export default function DetailClubPage({ params }: { params: Promise<{ id: strin
             </div>
           ))
         ) : (
-          <p style={{ color: '#94a3b8', textAlign: 'center' }}>Aucune équipe pour le moment.</p>
+          <p style={{ color: '#94a3b8', textAlign: 'center', padding: '20px' }}>Aucune équipe pour le moment.</p>
         )}
       </div>
     </div>
   );
 }
 
-// --- STYLES (INTÉGRALITÉ CONSERVÉE) ---
+// --- STYLES OBJETS (CONSERVÉS À 100%) ---
 const containerStyle = { padding: '40px 20px', maxWidth: '700px', margin: '0 auto', fontFamily: 'sans-serif' };
 const backBtn = { background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontWeight: 'bold' as const, marginBottom: '20px' };
 const headerCard = { display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' };
