@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-// Si l'erreur persiste avec ./ ou ../, on utilise l'import absolu
-import "@/globals.css"; 
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
@@ -99,7 +97,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </div>
 
-              {/* SECTION DÉCONNEXION RESTAURÉE */}
               <div className="profile-footer">
                 <div className="user-details">
                   <p className="conn-label">CONNECTÉ EN TANT QUE</p>
@@ -142,7 +139,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .nav-section { margin-top: 25px; }
           .section-title { font-size: 0.65rem; color: #4b5563; padding-left: 15px; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
           .section-title.admin { color: #F97316; }
-          .profile-footer { padding: 20px; border-top: 1px solid #1f2937; background: #0f172a; }
+          .profile-footer { padding: 20px; border-top: 1px solid #1f2937; background: #0f172a; margin-top: auto; }
           .conn-label { margin: 0; font-size: 0.65rem; color: #64748b; font-weight: 800; }
           .user-display { color: white; font-size: 1.1rem; display: block; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
           .btn-logout { width: 100%; margin-top: 15px; padding: 10px; border-radius: 10px; border: 1px solid #ef4444; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-weight: 800; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
