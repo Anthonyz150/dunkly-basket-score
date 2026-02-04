@@ -38,7 +38,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={fullPageWrapper}>
+    <main style={fullPageWrapper}>
       <div style={cardStyle}>
         <div style={headerStyle}>
           <div style={logoIconStyle}>🏀</div>
@@ -82,38 +82,35 @@ export default function LoginPage() {
           Pas de compte ? <Link href="/register" style={linkStyle}>Inscription</Link>
         </p>
       </div>
-    </div>
+    </main>
   );
 }
 
-// --- LES STYLES (CORRIGÉS POUR LE FOND) ---
-
+// --- STYLES STRICTS ---
 const fullPageWrapper: React.CSSProperties = {
   position: 'fixed',
   top: 0,
   left: 0,
   width: '100vw',
   height: '100vh',
-  // Ce dégradé crée la bande centrale bleu nuit sur fond noir (image 7a1aa7)
-  background: 'linear-gradient(to right, #0a0a0a 0%, #0a0a0a 42%, #0f172a 42%, #0f172a 58%, #0a0a0a 58%, #0a0a0a 100%)',
+  // Correction du fond : Colonne centrale bleu nuit sur fond noir total
+  backgroundColor: '#000',
+  backgroundImage: 'linear-gradient(to right, transparent 40%, #0f172a 40%, #0f172a 60%, transparent 60%)',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   margin: 0,
-  padding: 0,
-  overflow: 'hidden',
 };
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: '#1c2331',
+  backgroundColor: '#1e293b',
   padding: '50px 40px',
   borderRadius: '24px',
-  width: '420px',
-  boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
+  width: '400px',
+  boxShadow: '0 25px 50px rgba(0, 0, 0, 1)',
   textAlign: 'center',
+  zIndex: 10,
 };
-
-const headerStyle = { marginBottom: '35px' };
 
 const logoIconStyle: React.CSSProperties = {
   fontSize: '28px',
@@ -127,54 +124,14 @@ const logoIconStyle: React.CSSProperties = {
   margin: '0 auto 12px',
 };
 
-const titleStyle: React.CSSProperties = { 
-  fontSize: '3.2rem', 
-  fontWeight: '900', 
-  color: '#fff', 
-  margin: 0, 
-  letterSpacing: '2px',
-  fontFamily: 'Arial Black, sans-serif'
-};
-
+const titleStyle: React.CSSProperties = { fontSize: '3rem', fontWeight: '900', color: '#fff', margin: 0, fontFamily: 'Arial Black, sans-serif' };
 const subtitleStyle = { color: '#94a3b8', fontSize: '14px', marginTop: '5px' };
-
-const formStyle = { display: 'flex', flexDirection: 'column' as const, gap: '22px' };
-
+const headerStyle = { marginBottom: '30px' };
+const formStyle = { display: 'flex', flexDirection: 'column' as const, gap: '20px' };
 const inputGroupStyle = { textAlign: 'left' as const };
-
-const labelStyle = { 
-  display: 'block', 
-  color: '#94a3b8', 
-  fontSize: '12px', 
-  marginBottom: '8px', 
-  fontWeight: 'bold' 
-};
-
-const inputStyle: React.CSSProperties = { 
-  width: '100%', 
-  padding: '13px', 
-  borderRadius: '8px', 
-  border: '1px solid #334155', 
-  backgroundColor: '#0d1117', 
-  color: '#fff', 
-  fontSize: '1rem',
-  boxSizing: 'border-box'
-};
-
-const btnStyle: React.CSSProperties = { 
-  padding: '15px', 
-  borderRadius: '10px', 
-  border: 'none', 
-  backgroundColor: '#f97316', 
-  color: '#fff', 
-  fontSize: '1rem', 
-  cursor: 'pointer', 
-  fontWeight: '900',
-  marginTop: '10px'
-};
-
-const errorStyle = { color: '#ef4444', fontSize: '13px', marginBottom: '15px' };
-
+const labelStyle = { display: 'block', color: '#94a3b8', fontSize: '12px', marginBottom: '8px', fontWeight: 'bold' };
+const inputStyle: React.CSSProperties = { width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#0d1117', color: '#fff', boxSizing: 'border-box' };
+const btnStyle: React.CSSProperties = { padding: '15px', borderRadius: '10px', border: 'none', backgroundColor: '#f97316', color: '#fff', fontSize: '1rem', cursor: 'pointer', fontWeight: '900' };
+const errorStyle = { color: '#ff4444', fontSize: '13px', marginBottom: '15px' };
 const footerTextStyle = { marginTop: '25px', color: '#94a3b8', fontSize: '14px' };
-
 const linkStyle = { color: '#fff', textDecoration: 'none', fontWeight: 'bold' };
