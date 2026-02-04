@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-client@2"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 serve(async (req) => {
   const supabase = createClient(
@@ -28,7 +28,7 @@ serve(async (req) => {
           "Authorization": "Basic TA_REST_API_KEY_GENEREE" // <--- TA CLÉ ICI
         },
         body: JSON.stringify({
-          app_id: "a60eae06-8739-4515-8827-858c2ec0c07b",
+          app_id: "a60eae06-8739-4515-8827-858c2ec0c07b", // Ton ID de capture
           included_segments: ["All"],
           contents: { "fr": `🏀 Match imminent : ${match.clubA} vs ${match.clubB} !` },
           headings: { "fr": "DUNKLY" }
