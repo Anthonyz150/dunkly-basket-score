@@ -119,7 +119,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {children}
             </main>
 
-            {/* TAB BAR MOBILE */}
             <nav className="mobile-tab-bar">
                 <Link href="/" className={`tab-item ${pathname === '/' ? 'active' : ''}`}>🏠 <span>Home</span></Link>
                 <Link href="/competitions" className={`tab-item ${pathname === '/competitions' ? 'active' : ''}`}>🏆 <span>Compètes</span></Link>
@@ -162,11 +161,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .tab-item.active { color: #F97316; }
 
           @media (max-width: 900px) {
-            .sidebar { transform: translateX(-100%); width: 260px; }
+            .sidebar { transform: translateX(-100%); width: 100%; } 
             .sidebar.mobile-open { transform: translateX(0); }
             .main-content { margin-left: 0; width: 100%; padding-top: 60px; padding-bottom: 80px; }
             .burger-btn { display: block; }
-            .menu-overlay { display: block; }
+            .menu-overlay { display: none; }
             .mobile-tab-bar { display: flex; }
           }
         `}</style>
