@@ -39,44 +39,71 @@ export default function LoginPage() {
 
   return (
     <div style={containerStyle}>
-      <div style={authCard}>
-        <div style={logoSection}>
-          <span style={{ fontSize: '3rem' }}>🏀</span>
-          <h1 style={titleStyle}>DUNKLY <span style={{ color: '#F97316' }}>.</span></h1>
-          <p style={subtitleStyle}>Bon retour ! Connectez-vous.</p>
-        </div>
-
-        {error && <div style={errorBadge}>{error}</div>}
-
-        <form onSubmit={handleLogin} style={formStyle}>
-          <div style={inputGroup}>
-            <label style={labelStyle}>ADRESSE E-MAIL</label>
-            <input type="email" placeholder="nom@exemple.com" value={email} onChange={(e) => setEmail(e.target.value)} required style={inputStyle} />
-          </div>
-          <div style={inputGroup}>
-            <label style={labelStyle}>MOT DE PASSE</label>
-            <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required style={inputStyle} />
-          </div>
-          <button type="submit" disabled={loading} style={submitBtn}>
-            {loading ? 'CONNEXION...' : 'SE CONNECTER'}
-          </button>
-        </form>
-        <p style={footerText}>Pas de compte ? <Link href="/register" style={linkStyle}>S'inscrire</Link></p>
-      </div>
+      <h1 style={titleStyle}>DUNKLY</h1>
+      {error && <p style={{ color: 'red', fontWeight: 'bold' }}>{error}</p>}
+      
+      <form onSubmit={handleLogin} style={formStyle}>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          style={inputStyle}
+        />
+        <input
+          type="password"
+          placeholder="Mot de passe"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          style={inputStyle}
+        />
+        <button type="submit" disabled={loading} style={btnStyle}>
+          {loading ? 'Connexion...' : 'Se connecter'}
+        </button>
+      </form>
+      
+      <p style={{ marginTop: '20px' }}>
+        Pas de compte ? <Link href="/register" style={{ color: '#F97316' }}>S'inscrire</Link>
+      </p>
     </div>
   );
 }
 
-const containerStyle = { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#F8FAFC', fontFamily: 'sans-serif', padding: '20px' };
-const authCard = { backgroundColor: 'white', padding: '50px 40px', borderRadius: '32px', boxShadow: '0 20px 50px rgba(0,0,0,0.05)', width: '100%', maxWidth: '450px', textAlign: 'center' as const };
-const logoSection = { marginBottom: '40px' };
-const titleStyle = { fontSize: '2.5rem', fontWeight: '900', color: '#1E293B', margin: '10px 0 5px 0', letterSpacing: '-1px' };
-const subtitleStyle = { color: '#64748B', fontSize: '0.95rem' };
-const formStyle = { display: 'flex', flexDirection: 'column' as const, gap: '25px', textAlign: 'left' as const };
-const inputGroup = { display: 'flex', flexDirection: 'column' as const, gap: '8px' };
-const labelStyle = { fontSize: '0.7rem', fontWeight: '900', color: '#94A3B8', letterSpacing: '1px' };
-const inputStyle = { padding: '16px', borderRadius: '14px', border: '2px solid #F1F5F9', fontSize: '1rem', outline: 'none', backgroundColor: '#F8FAFC' };
-const submitBtn = { backgroundColor: '#1E293B', color: 'white', padding: '18px', borderRadius: '16px', border: 'none', fontSize: '1rem', fontWeight: '800', cursor: 'pointer', marginTop: '10px' };
-const errorBadge = { backgroundColor: '#FEF2F2', color: '#DC2626', padding: '12px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '25px', border: '1px solid #FEE2E2' };
-const footerText = { marginTop: '30px', color: '#64748B', fontSize: '0.9rem' };
-const linkStyle = { color: '#F97316', fontWeight: 'bold', textDecoration: 'none' };
+const containerStyle = {
+  display: 'flex',
+  flexDirection: 'column' as const,
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: '100vh',
+  fontFamily: 'sans-serif',
+  backgroundColor: '#fff'
+};
+
+const titleStyle = { fontSize: '3rem', fontWeight: 'bold', marginBottom: '20px' };
+
+const formStyle = {
+  display: 'flex',
+  flexDirection: 'column' as const,
+  gap: '10px',
+  width: '300px'
+};
+
+const inputStyle = {
+  padding: '10px',
+  borderRadius: '5px',
+  border: '1px solid #ccc',
+  fontSize: '1rem'
+};
+
+const btnStyle = {
+  padding: '10px',
+  borderRadius: '5px',
+  border: 'none',
+  backgroundColor: '#111827',
+  color: '#fff',
+  fontSize: '1rem',
+  cursor: 'pointer',
+  fontWeight: 'bold' as const
+};
