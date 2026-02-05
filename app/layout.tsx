@@ -68,7 +68,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <p className="group-title">ADMINISTRATION</p>
                   <Link href="/membres" className={`nav-item ${pathname === '/membres' ? 'active' : ''}`}>👥 Membres</Link>
                   <Link href="/arbitres" className={`nav-item ${pathname === '/arbitres' ? 'active' : ''}`}>🏁 Arbitres</Link>
-                  {/* --- AJOUT DE L'ONGLET NEWSLETTER --- */}
                   <Link href="/admin/newsletter" className={`nav-item ${pathname === '/admin/newsletter' ? 'active' : ''}`}>📩 Newsletter</Link>
                 </div>
               )}
@@ -79,10 +78,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </nav>
 
-            {/* --- FORMULAIRE NEWSLETTER DANS LA SIDEBAR --- */}
-            <div className="sidebar-newsletter-container">
-              <NewsletterForm />
-            </div>
+            {/* --- MODIFICATION ICI : CONDITION AJOUTÉE --- */}
+            {!isAdmin && (
+              <div className="sidebar-newsletter-container">
+                <NewsletterForm />
+              </div>
+            )}
+            {/* --------------------------------------------- */}
 
             <div className="sidebar-footer">
               <div className="user-box">
