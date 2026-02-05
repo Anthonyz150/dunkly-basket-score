@@ -27,9 +27,6 @@ export default function NewsletterForm() {
     setLoading(false);
 
     if (error) {
-      console.error("ERREUR SUPABASE COMPLÈTE :", error);
-    }
-    
       // Email déjà existant (clé unique)
       if (error.code === "23505") {
         setMessage("📩 Cet email est déjà inscrit à la newsletter.");
