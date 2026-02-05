@@ -48,7 +48,7 @@ export default function AdminNewsletterPage() {
 
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', color: 'white' }}>
-      <h1 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '5px' }}>📩 Administration Newsletter</h1>
+      <h1 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '5px', color: 'black' }}>📩 Administration Newsletter</h1>
       <p style={{ color: '#94A3B8', marginBottom: '30px' }}>Rédigez et envoyez votre campagne à tous les abonnés.</p>
       
       <form onSubmit={handleSendNewsletter} style={{ 
