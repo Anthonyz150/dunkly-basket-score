@@ -31,7 +31,7 @@ export default function NewsletterForm() {
       if (error.code === "23505") {
         setMessage("📩 Cet email est déjà inscrit à la newsletter.");
       } else {
-        console.error("Erreur Supabase:", error);
+        console.log("Erreur Supabase :", JSON.stringify(error, null, 2));
         setMessage("❌ Une erreur est survenue. Réessaie plus tard.");
       }
       return;
