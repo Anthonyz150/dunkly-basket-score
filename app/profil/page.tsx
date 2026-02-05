@@ -86,9 +86,9 @@ export default function ProfilPage() {
   );
 
   return (
-    // MODIFICATION ICI : Centrage avec Flexbox
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '15px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <header style={{ marginBottom: '30px', width: '100%' }}>
+    // MODIFICATION : Centrage horizontal via margin: 'auto'
+    <div style={{ maxWidth: '600px', margin: '20px auto', padding: '15px' }}>
+      <header style={{ marginBottom: '30px' }}>
         <h1 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
           Mon Profil <span style={{ color: '#F97316' }}>.</span>
         </h1>
@@ -99,13 +99,13 @@ export default function ProfilPage() {
         <div style={{ 
           padding: '15px', backgroundColor: message.includes('✅') ? '#DCFCE7' : '#FEE2E2', 
           color: message.includes('✅') ? '#166534' : '#991B1B', borderRadius: '12px', 
-          marginBottom: '20px', fontWeight: '700', border: '1px solid', width: '100%'
+          marginBottom: '20px', fontWeight: '700', border: '1px solid'
         }}>
           {message}
         </div>
       )}
 
-      <form onSubmit={handleSave} className="profile-form" style={{ width: '100%' }}>
+      <form onSubmit={handleSave} className="profile-form">
         <div style={inputGroup}>
           <label style={labelStyle}>Pseudo (Nom d'utilisateur)</label>
           <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} style={inputStyle} required />
@@ -136,7 +136,7 @@ export default function ProfilPage() {
         </div>
 
         <style jsx>{`
-          .profile-form { display: flex; flex-direction: column; gap: 20px; background-color: white; padding: 25px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid #F1F5F9; box-sizing: border-box; }
+          .profile-form { display: flex; flex-direction: column; gap: 20px; background-color: white; padding: 25px; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid #F1F5F9; }
           .name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
           @media (max-width: 480px) { .name-grid { grid-template-columns: 1fr; gap: 15px; } }
         `}</style>
