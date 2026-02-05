@@ -1,8 +1,7 @@
-// components/NewsletterForm.tsx
 "use client";
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase'; // Ajustez le chemin selon votre structure
+import { supabase } from '@/lib/supabase'; // Assurez-vous que ce chemin est correct
 
 export default function NewsletterForm() {
   const [email, setEmail] = useState('');
@@ -36,14 +35,31 @@ export default function NewsletterForm() {
     <form onSubmit={handleSubmit} style={{ 
       display: 'flex', 
       flexDirection: 'column',
-      gap: '10px',
-      background: 'rgba(255,255,255,0.05)',
-      padding: '15px',
-      borderRadius: '12px',
-      border: '1px solid rgba(255,255,255,0.1)'
+      gap: '12px',
+      background: 'rgba(255, 255, 255, 0.03)', // Léger fond transparent
+      padding: '20px',
+      borderRadius: '16px',
+      border: '1px solid rgba(255, 255, 255, 0.06)',
+      backdropFilter: 'blur(10px)', // Effet de verre
+      transition: 'all 0.3s ease'
     }}>
-      <h3 style={{ margin: 0, color: 'white', fontSize: '0.95rem' }}>Newsletter Dunkly</h3>
-      <p style={{ margin: 0, color: '#94A3B8', fontSize: '0.75rem' }}>Restez informé des actualités.</p>
+      <h3 style={{ 
+        margin: 0, 
+        color: 'white', 
+        fontSize: '1.1rem',
+        fontWeight: '800',
+        letterSpacing: '-0.5px'
+      }}>
+        Newsletter Dunkly
+      </h3>
+      <p style={{ 
+        margin: 0, 
+        color: '#94A3B8', 
+        fontSize: '0.8rem',
+        lineHeight: '1.4'
+      }}>
+        Ne manquez aucun résultat ni les actualités chaudes du basket.
+      </p>
       
       <input
         type="email"
@@ -52,26 +68,33 @@ export default function NewsletterForm() {
         placeholder="votre.email@exemple.com"
         required
         style={{ 
-          padding: '10px', 
-          borderRadius: '8px', 
-          border: 'none',
+          padding: '12px', 
+          borderRadius: '10px', 
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: 'rgba(0, 0, 0, 0.2)',
+          color: 'white',
           outline: 'none',
-          fontSize: '0.85rem'
+          fontSize: '0.85rem',
+          transition: 'border-color 0.2s'
         }}
+        // Ajout d'un effet focus via JS pour le style
+        onFocus={(e) => e.target.style.borderColor = '#F97316'}
+        onBlur={(e) => e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
       />
       
       <button 
         type="submit" 
         disabled={loading}
         style={{ 
-          padding: '10px', 
+          padding: '12px', 
           background: loading ? '#A1A1AA' : '#F97316', 
           color: 'white', 
           border: 'none', 
-          borderRadius: '8px',
-          fontWeight: 'bold',
+          borderRadius: '10px',
+          fontWeight: '700',
           cursor: loading ? 'not-allowed' : 'pointer',
-          fontSize: '0.85rem'
+          fontSize: '0.85rem',
+          transition: 'background 0.2s'
         }}
       >
         {loading ? 'Inscription...' : 'S\'abonner'}
@@ -81,9 +104,12 @@ export default function NewsletterForm() {
         <p style={{ 
           margin: 0, 
           fontSize: '0.75rem', 
-          fontWeight: 'bold',
-          color: message.startsWith('❌') ? '#EF4444' : '#22C55E',
-          textAlign: 'center'
+          fontWeight: '600',
+          color: message.startsWith('❌') ? '#F87171' : '#4ADE80',
+          textAlign: 'center',
+          background: message.startsWith('❌') ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
+          padding: '8px',
+          borderRadius: '8px'
         }}>
           {message}
         </p>
