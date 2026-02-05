@@ -5,16 +5,23 @@ export async function POST(req: Request) {
   try {
     const { email, username } = await req.json();
 
+    // 1. Vérification des variables d'environnement
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      throw new Error("Configuration e-mail manquante");
+    }
+
+    // 2. Configuration du transporteur
     const transporter = nodemailer.createTransport({
-      service: 'gmail', // Ou votre fournisseur SMTP
+      service: 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
     });
 
+    // 3. Options de l'e-mail (Contenu HTML)
     const mailOptions = {
-      from: '"Dunkly App" <dunkly.app@gmail.com>',
+      from: `"Dunkly App" <${process.env.EMAIL_USER}>`,
       to: email,
       subject: 'Bienvenue chez Dunkly App ! 🏀',
       html: `
@@ -38,9 +45,11 @@ export async function POST(req: Request) {
       `,
     };
 
+    // 4. Envoi de l'e-mail
     await transporter.sendMail(mailOptions);
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Erreur Nodemailer:", error);
     return NextResponse.json({ error: "Erreur envoi" }, { status: 500 });
   }
 }
