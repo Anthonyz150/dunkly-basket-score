@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 // --- IMPORT DU COMPOSANT NEWSLETTER ---
-import NewsletterForm from "app/components/NewsletterForm";
+import NewsletterForm from "@/components/NewsletterForm";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
