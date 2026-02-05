@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+// --- IMPORT DU COMPOSANT NEWSLETTER ---
+import NewsletterForm from "@/components/NewsletterForm";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
@@ -15,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     if (storedUser) {
       try { setUser(JSON.parse(storedUser)); } catch (e) { console.error(e); }
     }
-    setIsMenuOpen(false); 
+    setIsMenuOpen(false);
   }, [pathname]);
 
   const isLoginPage = pathname === '/login';
@@ -30,15 +32,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr">
       <body>
         <div className="app-container">
-          
+
           {/* HEADER MOBILE AMÉLIORÉ */}
           <header className="mobile-header">
             <button className="burger-icon" onClick={() => setIsMenuOpen(true)}>
               <span></span><span></span><span></span>
             </button>
-            
+
             <div className="logo-brand">🏀 DUNKLY</div>
-            
+
             <Link href="/profil" className="profile-avatar-link">
               <div className="avatar-circle">{initial}</div>
             </Link>
@@ -66,6 +68,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <p className="group-title">ADMINISTRATION</p>
                   <Link href="/membres" className={`nav-item ${pathname === '/membres' ? 'active' : ''}`}>👥 Membres</Link>
                   <Link href="/arbitres" className={`nav-item ${pathname === '/arbitres' ? 'active' : ''}`}>🏁 Arbitres</Link>
+                  {/* --- AJOUT DE L'ONGLET NEWSLETTER --- */}
+                  <Link href="/admin/newsletter" className={`nav-item ${pathname === '/admin/newsletter' ? 'active' : ''}`}>📩 Newsletter</Link>
                 </div>
               )}
 
@@ -74,6 +78,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <Link href="/profil" className={`nav-item ${pathname === '/profil' ? 'active' : ''}`}>👤 Mon Profil</Link>
               </div>
             </nav>
+
+            {/* --- FORMULAIRE NEWSLETTER DANS LA SIDEBAR --- */}
+            <div className="sidebar-newsletter-container">
+              <NewsletterForm />
+            </div>
 
             <div className="sidebar-footer">
               <div className="user-box">
@@ -119,13 +128,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           .nav-item:hover { background: rgba(255,255,255,0.05); color: white; }
           .nav-item.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2); }
 
+          /* --- STYLES NEWSLETTER FORM --- */
+          .sidebar-newsletter-container { padding: 16px; }
+
           .sidebar-footer { padding: 20px; background: #020617; }
           .user-box { padding: 15px; background: rgba(255,255,255,0.03); border-radius: 12px; }
           .u-name { margin: 0; font-weight: 700; font-size: 0.9rem; }
           .logout-btn { background: none; border: none; color: #EF4444; font-weight: 700; cursor: pointer; padding: 0; margin-top: 8px; font-size: 0.8rem; }
 
           .page-content { flex: 1; margin-left: var(--sidebar-w); transition: 0.3s; }
-          .content-inner { padding: 40px; max-width: 1200px; margin: 0 auto; }
+          .content-inner { padding: 40px; max-width: 1200px; margin: 0 auto; width: 100%; }
 
           .mobile-header { display: none; }
 
@@ -141,10 +153,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               position: fixed; top: 0; left: 0; right: 0; height: 70px;
               background: white; padding: 0 16px; border-bottom: 1px solid #E2E8F0; z-index: 900;
             }
-            
+
             .logo-brand { font-weight: 900; color: var(--primary); font-size: 1.2rem; position: absolute; left: 50%; transform: translateX(-50%); }
-            
-            .burger-icon { 
+
+            .burger-icon {
               display: flex; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 10px;
             }
             .burger-icon span { width: 22px; height: 2px; background: var(--dark); border-radius: 10px; }
