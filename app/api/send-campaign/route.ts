@@ -36,7 +36,6 @@ export async function POST(req: Request) {
     });
 
     // 3. Générer le HTML final en utilisant le template (passage du sujet et du corps)
-    // <--- MODIFICATION ICI : On passe maintenant 'subject' en plus de 'body'
     const finalHtml = getNewsletterTemplate(subject, body);
 
     // 4. Envoyer les e-mails avec le HTML stylisé
@@ -44,7 +43,9 @@ export async function POST(req: Request) {
       from: `"Dunkly App" <${process.env.EMAIL_USER}>`,
       to: emailList, 
       subject: subject,
-      html: finalHtml, // <--- Utilisation du HTML stylisé
+      html: finalHtml, 
+      // --- MODIFICATION ICI : Ajout du Reply-To ---
+      replyTo: "ne-pas-repondre@dunkly.app", 
     };
 
     await transporter.sendMail(mailOptions);

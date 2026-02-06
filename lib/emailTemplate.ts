@@ -40,7 +40,7 @@ export const getNewsletterTemplate = (subject: string, content: string) => {
             <tr>
               <td class="footer">
                 <p style="margin: 0 0 10px 0;">Dunkly App &copy; 2026</p>
-                <p style="margin: 0;">Vous recevez cet e-mail car vous êtes abonné à Dunkly. Merci de ne pas répondre à cet e-mail</p>
+                <p style="margin: 0;">Vous recevez cet e-mail car vous êtes abonné à Dunkly. Cet e-mail est envoyé par une adresse automatique, merci de ne pas y répondre.</p>
               </td>
             </tr>
           </table>
