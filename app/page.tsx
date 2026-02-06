@@ -174,7 +174,7 @@ export default function Dashboard() {
                 </div>
                 <div style={{ flex: 1, fontWeight: '900', fontSize: '0.9rem' }}>{dernierResultat.clubB}</div>
               </div>
-              <Link href="/resultats" style={{ color: '#64748B', fontSize: '0.8rem', fontWeight: 'bold' }}>Tous les résultats ↗</Link>
+              <Link href="/matchs/resultats" style={{ color: '#64748B', fontSize: '0.8rem', fontWeight: 'bold' }}>Tous les résultats ↗</Link>
             </div>
           ) : <p style={{ textAlign: 'center', color: '#94A3B8' }}>Aucun résultat.</p>}
         </div>
