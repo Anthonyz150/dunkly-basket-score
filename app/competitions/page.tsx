@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import Link from 'next/link'; // Import pour le clic
+import Link from 'next/link';
 
 export default function CompetitionsPage() {
   const [competitions, setCompetitions] = useState<any[]>([]);
@@ -41,7 +41,7 @@ export default function CompetitionsPage() {
     if (e) e.preventDefault();
     if (!nom || !isAdmin) return;
 
-    const nouvelle = { nom: nom.trim(), type: type };
+    const nouvelle = { nom: nom.trim(), type: type, statut: 'actif' };
 
     const { data, error } = await supabase
       .from('competitions')
@@ -58,7 +58,7 @@ export default function CompetitionsPage() {
   };
 
   const supprimerCompet = async (e: React.MouseEvent, id: string) => {
-    e.preventDefault(); // Empêche d'ouvrir la page de la compet lors du clic sur supprimer
+    e.preventDefault();
     if (!isAdmin) return;
     if (confirm("Voulez-vous vraiment supprimer cette compétition ?")) {
       const { error } = await supabase.from('competitions').delete().eq('id', id);
@@ -92,6 +92,13 @@ export default function CompetitionsPage() {
               <div style={compCardStyle}>
                 <div style={decorBar}></div>
                 <div style={{ padding: '20px', flex: 1, position: 'relative', overflow: 'hidden' }}>
+                  
+                  {/* --- MODIFICATION ICI : Badge Clôturé --- */}
+                  {c.statut === 'cloture' && (
+                    <span style={closedBadgeMiniStyle}>🔒 Clôturée</span>
+                  )}
+                  {/* ---------------------------------------- */}
+                  
                   {isAdmin && (
                     <button onClick={(e) => supprimerCompet(e, c.id)} style={deleteBtnStyle}>×</button>
                   )}
@@ -143,25 +150,23 @@ export default function CompetitionsPage() {
 
       <style jsx>{`
       .container { padding: 20px; maxWidth: 1200px; margin: 0 auto; font-family: sans-serif; }
-  
-      /* MODIFICATION ICI */
-      .page-header { 
-       display: flex; 
-       justify-content: flex-start; /* Aligne le titre et le bouton à gauche */
-      align-items: center; 
-      gap: 20px; /* Réduit l'espace entre le titre et le bouton */
-      margin-bottom: 30px; 
-      }
-  
+      .page-header { display: flex; justify-content: flex-start; align-items: center; gap: 20px; margin-bottom: 30px; }
       .title { font-size: 2rem; font-weight: 900; margin: 0; }
       .subtitle { color: #64748b; margin: 5px 0 0 0; }
-      /* ... reste du style ... */
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+      .comp-name { margin: 0; font-size: 1.2rem; font-weight: 800; color: #1e293b; word-break: break-word; }
+      .comp-date { font-size: 0.8rem; color: #94a3b8; margin: 0; }
+      .loader { text-align: center; padding: 50px; font-weight: bold; }
+      
+      @media (max-width: 600px) {
+        .page-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+      }
     `}</style>
     </div>
   );
 }
 
-// STYLES RESTANTS
+// STYLES
 const btnNouveauStyle = { backgroundColor: '#F97316', color: 'white', border: 'none', padding: '12px 20px', borderRadius: '10px', cursor: 'pointer', fontWeight: '900' as const, fontSize: '0.8rem' };
 const typeBadgeStyle = (type: string) => ({ display: 'inline-block', width: 'fit-content', padding: '3px 10px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: '800' as const, backgroundColor: type === 'Championnat' ? '#eff6ff' : '#fff7ed', color: type === 'Championnat' ? '#2563eb' : '#ea580c' });
 const modalOverlayStyle: React.CSSProperties = { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(15, 23, 42, 0.9)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000 };
@@ -174,3 +179,17 @@ const compCardStyle: React.CSSProperties = { backgroundColor: '#fff', borderRadi
 const decorBar = { width: '6px', backgroundColor: '#F97316' };
 const deleteBtnStyle: React.CSSProperties = { position: 'absolute', top: '10px', right: '10px', background: 'white', border: '1px solid #fee2e2', color: '#ef4444', cursor: 'pointer', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', zIndex: 10 };
 const emptyStateStyle: React.CSSProperties = { gridColumn: '1/-1', textAlign: 'center', padding: '60px', color: '#94a3b8', backgroundColor: '#f8fafc', borderRadius: '20px', border: '2px dashed #e2e8f0' };
+
+// --- MODIFICATION ICI : Style Badge Clôturé ---
+const closedBadgeMiniStyle = {
+  position: 'absolute' as const,
+  top: '10px',
+  right: '40px', // À gauche du bouton supprimer
+  backgroundColor: '#fee2e2',
+  color: '#ef4444',
+  padding: '4px 8px',
+  borderRadius: '12px',
+  fontSize: '0.7rem',
+  fontWeight: 'bold' as const,
+  zIndex: 10
+};
