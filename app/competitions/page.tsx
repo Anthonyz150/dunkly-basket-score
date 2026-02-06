@@ -34,15 +34,15 @@ export default function CompetitionsPage() {
     }
   };
 
-  const isAdmin = user?.username?.toLowerCase() === 'admin' || 
-                  user?.email === 'anthony.didier.pro@gmail.com';
+  const isAdmin = user?.username?.toLowerCase() === 'admin' ||
+    user?.email === 'anthony.didier.pro@gmail.com';
 
   const creerCompet = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!nom || !isAdmin) return;
-    
+
     const nouvelle = { nom: nom.trim(), type: type };
-    
+
     const { data, error } = await supabase
       .from('competitions')
       .insert([nouvelle])
@@ -142,19 +142,21 @@ export default function CompetitionsPage() {
       )}
 
       <style jsx>{`
-        .container { padding: 20px; maxWidth: 1200px; margin: 0 auto; font-family: sans-serif; }
-        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        .title { font-size: 2rem; font-weight: 900; margin: 0; }
-        .subtitle { color: #64748b; margin: 5px 0 0 0; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-        .comp-name { margin: 0; font-size: 1.2rem; font-weight: 800; color: #1e293b; word-break: break-word; }
-        .comp-date { font-size: 0.8rem; color: #94a3b8; margin: 0; }
-        .loader { text-align: center; padding: 50px; font-weight: bold; }
-        
-        @media (max-width: 600px) {
-          .page-header { flex-direction: column; align-items: flex-start; gap: 15px; }
-        }
-      `}</style>
+      .container { padding: 20px; maxWidth: 1200px; margin: 0 auto; font-family: sans-serif; }
+  
+      /* MODIFICATION ICI */
+      .page-header { 
+       display: flex; 
+       justify-content: flex-start; /* Aligne le titre et le bouton à gauche */
+      align-items: center; 
+      gap: 20px; /* Réduit l'espace entre le titre et le bouton */
+      margin-bottom: 30px; 
+      }
+  
+      .title { font-size: 2rem; font-weight: 900; margin: 0; }
+      .subtitle { color: #64748b; margin: 5px 0 0 0; }
+      /* ... reste du style ... */
+    `}</style>
     </div>
   );
 }
