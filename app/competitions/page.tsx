@@ -8,6 +8,7 @@ export default function CompetitionsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [nom, setNom] = useState('');
   const [type, setType] = useState('Championnat');
+  const [saison, setSaison] = useState('2025/2026'); // --- AJOUT ÉTAT SAISON ---
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -41,7 +42,13 @@ export default function CompetitionsPage() {
     if (e) e.preventDefault();
     if (!nom || !isAdmin) return;
 
-    const nouvelle = { nom: nom.trim(), type: type, statut: 'actif' };
+    // --- MODIFICATION : AJOUT SAISON DANS L'INSERTION ---
+    const nouvelle = { 
+      nom: nom.trim(), 
+      type: type, 
+      saison: saison,
+      statut: 'actif' 
+    };
 
     const { data, error } = await supabase
       .from('competitions')
@@ -51,6 +58,7 @@ export default function CompetitionsPage() {
     if (!error && data) {
       setCompetitions([data[0], ...competitions]);
       setNom('');
+      setSaison('2025/2026'); // Reset saison
       setIsModalOpen(false);
     } else if (error) {
       alert("Erreur base de données : " + error.message);
@@ -93,11 +101,9 @@ export default function CompetitionsPage() {
                 <div style={decorBar}></div>
                 <div style={{ padding: '20px', flex: 1, position: 'relative', overflow: 'hidden' }}>
                   
-                  {/* --- MODIFICATION ICI : Badge Clôturé --- */}
                   {c.statut === 'cloture' && (
                     <span style={closedBadgeMiniStyle}>🔒 Clôturée</span>
                   )}
-                  {/* ---------------------------------------- */}
                   
                   {isAdmin && (
                     <button onClick={(e) => supprimerCompet(e, c.id)} style={deleteBtnStyle}>×</button>
@@ -106,7 +112,7 @@ export default function CompetitionsPage() {
                     <span style={typeBadgeStyle(c.type)}>{c.type}</span>
                     <h3 className="comp-name">{c.nom}</h3>
                     <p className="comp-date">
-                      📅 {c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR') : 'Date inconnue'}
+                      📅 {c.saison || 'Saison inconnue'}
                     </p>
                   </div>
                 </div>
@@ -139,6 +145,14 @@ export default function CompetitionsPage() {
                   <option value="Coupe">Coupe</option>
                 </select>
               </div>
+              
+              {/* --- AJOUT CHAMP SAISON --- */}
+              <div style={inputGroup}>
+                <label style={labelStyle}>Saison</label>
+                <input value={saison} onChange={(e) => setSaison(e.target.value)} style={inputStyle} required />
+              </div>
+              {/* ------------------------- */}
+
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <button type="submit" style={confirmBtnStyle}>Créer</button>
                 <button type="button" onClick={() => setIsModalOpen(false)} style={cancelBtnStyle}>Annuler</button>
@@ -179,12 +193,10 @@ const compCardStyle: React.CSSProperties = { backgroundColor: '#fff', borderRadi
 const decorBar = { width: '6px', backgroundColor: '#F97316' };
 const deleteBtnStyle: React.CSSProperties = { position: 'absolute', top: '10px', right: '10px', background: 'white', border: '1px solid #fee2e2', color: '#ef4444', cursor: 'pointer', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: 'bold', zIndex: 10 };
 const emptyStateStyle: React.CSSProperties = { gridColumn: '1/-1', textAlign: 'center', padding: '60px', color: '#94a3b8', backgroundColor: '#f8fafc', borderRadius: '20px', border: '2px dashed #e2e8f0' };
-
-// --- MODIFICATION ICI : Style Badge Clôturé ---
 const closedBadgeMiniStyle = {
   position: 'absolute' as const,
   top: '10px',
-  right: '40px', // À gauche du bouton supprimer
+  right: '40px',
   backgroundColor: '#fee2e2',
   color: '#ef4444',
   padding: '4px 8px',
