@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import OneSignal from 'react-onesignal';
 
-// --- 1. COMPOSANTS DE STYLE INTERNES ---
+// --- 1. COMPOSANTS DE STYLE INTERNES (TES ORIGINAUX ADAPTÉS MOBILE) ---
 function StatCard({ label, value, icon, color }: { label: string; value: number | string; icon: string; color: string }) {
   return (
     <div style={{ 
@@ -35,7 +35,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const initDashboard = async () => {
-      // Sécurité : Timeout pour forcer l'affichage
+      // Sécurité : Timeout pour forcer l'affichage même si OneSignal ou Supabase rame
       const forceDisplay = setTimeout(() => setLoading(false), 3000);
 
       try {
@@ -51,7 +51,7 @@ export default function Dashboard() {
           ...JSON.parse(localStorage.getItem('currentUser') || '{}')
         });
 
-        // Initialisation OneSignal
+        // Initialisation OneSignal non-bloquante
         if (typeof window !== "undefined") {
             OneSignal.init({
                 appId: "a60eae06-8739-4515-8827-858c2ec0c07b",
@@ -90,7 +90,6 @@ export default function Dashboard() {
   }, [router]);
 
   const formatteDateParis = (dateString: string) => {
-    if (!dateString) return 'Date inconnue';
     return new Date(dateString).toLocaleString('fr-FR', { 
       weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit',
       timeZone: 'Europe/Paris' 
@@ -129,7 +128,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* STATS GRID */}
+      {/* STATS GRID - Responsive 1 col mobile / 3 col PC */}
       <div style={{ 
         display: 'grid', 
         gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
@@ -143,16 +142,16 @@ export default function Dashboard() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
         
-        {/* PROCHAIN RDV - SÉCURISÉ */}
+        {/* PROCHAIN RDV */}
         <div style={{ backgroundColor: '#1E293B', padding: '25px', borderRadius: '24px', color: 'white', position: 'relative', overflow: 'hidden' }}>
           <h3 style={titleSectionStyle}>📅 Prochain RDV</h3>
           {prochainMatch ? (
             <div style={{ position: 'relative', zIndex: 2 }}>
-              <div style={{ fontSize: '0.8rem', color: '#F97316', fontWeight: 'bold', marginBottom: '10px' }}>{prochainMatch.competition || 'Compétition'}</div>
+              <div style={{ fontSize: '0.8rem', color: '#F97316', fontWeight: 'bold', marginBottom: '10px' }}>{prochainMatch.competition}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
-                <div style={{ flex: 1 }}><div style={{ fontSize: '1.2rem', fontWeight: '900' }}>{prochainMatch.clubA || '?'}</div></div>
+                <div style={{ flex: 1 }}><div style={{ fontSize: '1.2rem', fontWeight: '900' }}>{prochainMatch.clubA}</div></div>
                 <div style={{ color: '#F97316', fontWeight: '900' }}>VS</div>
-                <div style={{ flex: 1 }}><div style={{ fontSize: '1.2rem', fontWeight: '900' }}>{prochainMatch.clubB || '?'}</div></div>
+                <div style={{ flex: 1 }}><div style={{ fontSize: '1.2rem', fontWeight: '900' }}>{prochainMatch.clubB}</div></div>
               </div>
               <div style={{ color: '#94A3B8', fontSize: '0.85rem' }}>
                 <div style={{ color: 'white', fontWeight: '600' }}>🕒 {formatteDateParis(prochainMatch.date)}</div>
@@ -162,18 +161,18 @@ export default function Dashboard() {
           ) : <p>Aucun match programmé.</p>}
         </div>
 
-        {/* DERNIER RÉSULTAT - SÉCURISÉ */}
+        {/* DERNIER RÉSULTAT */}
         <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '24px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)', border: '1px solid #F1F5F9' }}>
           <h3 style={{ ...titleSectionStyle, color: '#64748B' }}>🏆 Dernier Résultat</h3>
           {dernierResultat ? (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.75rem', color: '#F97316', fontWeight: 'bold', marginBottom: '15px' }}>{dernierResultat.competition || 'Compétition'}</div>
+              <div style={{ fontSize: '0.75rem', color: '#F97316', fontWeight: 'bold', marginBottom: '15px' }}>{dernierResultat.competition}</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '15px' }}>
-                <div style={{ flex: 1, fontWeight: '900', fontSize: '0.9rem' }}>{dernierResultat.clubA || '?'}</div>
+                <div style={{ flex: 1, fontWeight: '900', fontSize: '0.9rem' }}>{dernierResultat.clubA}</div>
                 <div style={{ fontSize: '1.4rem', fontWeight: '900', color: 'white', backgroundColor: '#1E293B', padding: '5px 15px', borderRadius: '12px' }}>
-                  {dernierResultat.scoreA ?? '?'} - {dernierResultat.scoreB ?? '?'}
+                  {dernierResultat.scoreA} - {dernierResultat.scoreB}
                 </div>
-                <div style={{ flex: 1, fontWeight: '900', fontSize: '0.9rem' }}>{dernierResultat.clubB || '?'}</div>
+                <div style={{ flex: 1, fontWeight: '900', fontSize: '0.9rem' }}>{dernierResultat.clubB}</div>
               </div>
               <Link href="/matchs/resultats" style={{ color: '#64748B', fontSize: '0.8rem', fontWeight: 'bold' }}>Tous les résultats ↗</Link>
             </div>
