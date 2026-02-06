@@ -13,7 +13,7 @@ export const getNewsletterTemplate = (subject: string, content: string) => {
           .main { background-color: #ffffff; margin: 0 auto; width: 100%; max-width: 600px; border-spacing: 0; color: #333333; border-radius: 8px; overflow: hidden; }
           
           /* Bannière Orange */
-          .header { background-color: #ff6600; padding: 20px; text-align: center; }
+          .header { background-color: #1e293b; padding: 20px; text-align: center; }
           .logo { max-width: 150px; height: auto; }
           
           /* Corps du mail */
@@ -30,7 +30,7 @@ export const getNewsletterTemplate = (subject: string, content: string) => {
           <table class="main" width="100%">
             <tr>
               <td class="header">
-                <div className="logo-brand">🏀 DUNKLY</div>
+                <span className="logo-full">🏀 DUNKLY</span>
               </td>
             </tr>
             <tr>
