@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { createClient } from '@supabase/supabase-js';
-// 1. IMPORTATION : Importer le template généré à l'étape 1
+// 1. IMPORTATION : Importer le template mis à jour
 import { getNewsletterTemplate } from '@/lib/emailTemplate'; 
 
 // Initialiser Supabase Admin
@@ -35,16 +35,16 @@ export async function POST(req: Request) {
       },
     });
 
-    // 3. Générer le HTML final en utilisant le template
-    // On passe le corps du mail (body) à la fonction de template
-    const finalHtml = getNewsletterTemplate(body);
+    // 3. Générer le HTML final en utilisant le template (passage du sujet et du corps)
+    // <--- MODIFICATION ICI : On passe maintenant 'subject' en plus de 'body'
+    const finalHtml = getNewsletterTemplate(subject, body);
 
     // 4. Envoyer les e-mails avec le HTML stylisé
     const mailOptions = {
       from: `"Dunkly App" <${process.env.EMAIL_USER}>`,
-      to: emailList, // Gmail gère l'envoi à une liste en BCC automatiquement
+      to: emailList, 
       subject: subject,
-      html: finalHtml, // <--- UTILISATION DU HTML STYLISÉ
+      html: finalHtml, // <--- Utilisation du HTML stylisé
     };
 
     await transporter.sendMail(mailOptions);

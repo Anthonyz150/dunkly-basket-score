@@ -1,19 +1,28 @@
 // lib/emailTemplate.ts
 
-export const getNewsletterTemplate = (content: string) => {
+export const getNewsletterTemplate = (subject: string, content: string) => {
     return `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Newsletter Dunkly</title>
+        <title>${subject}</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f6f6f6; }
+          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; margin: 0; padding: 0; background-color: #f6f6f6; }
           .wrapper { width: 100%; table-layout: fixed; background-color: #f6f6f6; padding-bottom: 40px; }
-          .main { background-color: #ffffff; margin: 0 auto; width: 100%; max-width: 600px; border-spacing: 0; color: #333333; }
-          .header { background-color: #ff6600; padding: 20px; text-align: center; color: white; }
-          .content { padding: 30px; font-size: 16px; line-height: 1.5; }
-          .footer { background-color: #333333; color: #ffffff; text-align: center; padding: 20px; font-size: 12px; }
+          .main { background-color: #ffffff; margin: 0 auto; width: 100%; max-width: 600px; border-spacing: 0; color: #333333; border-radius: 8px; overflow: hidden; }
+          
+          /* Bannière Orange */
+          .header { background-color: #ff6600; padding: 20px; text-align: center; }
+          .logo { max-width: 150px; height: auto; }
+          
+          /* Corps du mail */
+          .content { padding: 30px; font-size: 16px; line-height: 1.6; color: #444444; }
+          .content h1 { color: #ff6600; font-size: 24px; margin-top: 0; }
+          
+          /* Footer Sombre */
+          .footer { background-color: #1a1d21; color: #ffffff; text-align: center; padding: 20px; font-size: 12px; }
+          .footer a { color: #ff6600; text-decoration: none; }
         </style>
       </head>
       <body>
@@ -21,17 +30,19 @@ export const getNewsletterTemplate = (content: string) => {
           <table class="main" width="100%">
             <tr>
               <td class="header">
-                <h1 style="margin:0;">DUNKLY</h1>
+                <img src="URL_DE_VOTRE_LOGO_DUNKLY" alt="Dunkly Logo" class="logo">
               </td>
             </tr>
             <tr>
               <td class="content">
-                ${content}
+                <h1>${subject}</h1>
+                <p>${content}</p>
               </td>
             </tr>
             <tr>
               <td class="footer">
                 <p>Dunkly App &copy; 2026</p>
+                <p>Vous recevez cet e-mail car vous êtes abonné à Dunkly.</p>
               </td>
             </tr>
           </table>
