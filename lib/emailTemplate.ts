@@ -14,7 +14,6 @@ export const getNewsletterTemplate = (subject: string, content: string) => {
           
           /* Bannière Orange */
           .header { background-color: #1e293b; padding: 20px; text-align: center; }
-          .logo { max-width: 150px; height: auto; }
           
           /* Corps du mail */
           .content { padding: 30px; font-size: 16px; line-height: 1.6; color: #444444; }
@@ -22,7 +21,6 @@ export const getNewsletterTemplate = (subject: string, content: string) => {
           
           /* Footer Sombre */
           .footer { background-color: #1a1d21; color: #ffffff; text-align: center; padding: 20px; font-size: 12px; }
-          .footer a { color: #ff6600; text-decoration: none; }
         </style>
       </head>
       <body>
@@ -30,19 +28,19 @@ export const getNewsletterTemplate = (subject: string, content: string) => {
           <table class="main" width="100%">
             <tr>
               <td class="header">
-                <span className="logo-full">🏀 DUNKLY</span>
+                <span style="color: #ff6600; font-size: 24px; font-weight: bold; font-family: sans-serif;">🏀 DUNKLY</span>
               </td>
             </tr>
             <tr>
               <td class="content">
                 <h1>${subject}</h1>
-                <p>${content}</p>
+                <p style="margin: 0 0 15px 0;">${content}</p>
               </td>
             </tr>
             <tr>
               <td class="footer">
-                <p>Dunkly App &copy; 2026</p>
-                <p>Vous recevez cet e-mail car vous êtes abonné à Dunkly.</p>
+                <p style="margin: 0 0 10px 0;">Dunkly App &copy; 2026</p>
+                <p style="margin: 0;">Vous recevez cet e-mail car vous êtes abonné à Dunkly.</p>
               </td>
             </tr>
           </table>
