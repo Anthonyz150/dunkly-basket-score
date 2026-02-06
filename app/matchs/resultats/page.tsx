@@ -4,23 +4,8 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase"; 
 import Link from "next/link";
 
-// --- 1. DÉFINITION DE L'INTERFACE ---
-interface Match {
-  id: string;
-  competition: string;
-  date: string;
-  clubA: string;
-  equipeA: string;
-  clubB: string;
-  equipeB: string;
-  scoreA: number;
-  scoreB: number;
-  lieu: string;
-  status: 'en-cours' | 'termine' | 'a-venir';
-}
-
 export default function ResultatsPage() {
-  const [matchs, setMatchs] = useState<Match[]>([]);
+  const [matchs, setMatchs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [user, setUser] = useState<any>(null);
@@ -40,12 +25,13 @@ export default function ResultatsPage() {
     const { data, error } = await supabase
       .from('matchs')
       .select('*')
+      .eq('status', 'termine') // On ne prend que les terminés pour cette vue
       .order('date', { ascending: false });
     if (!error) setMatchs(data || []);
     setLoading(false);
   };
 
-  // --- 2. TYPAGE DU REGROUPEMENT ---
+  // --- MODIFICATION ICI : Filtrage et Regroupement ---
   const matchGroupes = useMemo(() => {
     // 1. Filtrer selon la recherche
     const filtered = matchs.filter(m => 
@@ -60,8 +46,7 @@ export default function ResultatsPage() {
       if (!acc[compet]) acc[compet] = [];
       acc[compet].push(match);
       return acc;
-    }, {} as Record<string, Match[]>); // TYPAGE ICI
-
+    }, {} as Record<string, any[]>);
   }, [matchs, searchTerm]);
 
   if (loading) return <div className="loading-state">Chargement des scores...</div>;
@@ -70,20 +55,12 @@ export default function ResultatsPage() {
     <div className="page-container">
       <header className="dashboard-header">
         <div className="header-left">
-          <h1>RÉSULTATS <span className="orange-dot">.</span></h1>
+          <h1>Résultats <span className="orange-dot">.</span></h1>
           <p className="subtitle">Consultez les derniers scores de la saison.</p>
         </div>
         <div className="header-right" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           {isAdmin && (
-            <Link href="/matchs/a-venir" style={{ 
-              background: '#0f172a', 
-              color: 'white', 
-              textDecoration: 'none',
-              padding: '10px 15px', 
-              borderRadius: '10px', 
-              fontWeight: 'bold', 
-              fontSize: '0.85rem' 
-            }}>
+            <Link href="/matchs/a-venir" className="btn-admin">
               Match à venir
             </Link>
           )}
@@ -96,12 +73,12 @@ export default function ResultatsPage() {
         </div>
       </header>
 
-      {/* --- 3. AFFICHAGE TYPÉ --- */}
+      {/* --- MODIFICATION ICI : Affichage par sections --- */}
       {Object.entries(matchGroupes).map(([compet, matchsSection]) => (
         <div key={compet} className="compet-section">
           <h2 className="compet-title">🏆 {compet}</h2>
           <div className="matchs-grid">
-            {matchsSection.map((m: Match) => (
+            {matchsSection.map((m: any) => (
               <Link href={`/matchs/resultats/${m.id}`} key={m.id} className="match-card-link">
                 <div className="match-card">
                   <div className={`status-border ${m.status === 'en-cours' ? 'bg-live' : 'bg-finished'}`}></div>
@@ -147,6 +124,7 @@ export default function ResultatsPage() {
         .orange-dot { color: #f97316; }
         .subtitle { color: #64748b; font-size: 0.9rem; margin: 5px 0 0; }
         .search-input { padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; width: 300px; outline: none; font-size: 0.85rem; }
+        .btn-admin { background: #0f172a; color: white; text-decoration: none; padding: 10px 15px; border-radius: 10px; font-weight: bold; font-size: 0.85rem; }
         
         .compet-section { margin-bottom: 40px; }
         .compet-title { font-size: 1.3rem; font-weight: 800; color: #1e293b; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #f1f5f9; }
