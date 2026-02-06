@@ -4,8 +4,23 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase"; 
 import Link from "next/link";
 
+// --- 1. DÉFINITION DE L'INTERFACE ---
+interface Match {
+  id: string;
+  competition: string;
+  date: string;
+  clubA: string;
+  equipeA: string;
+  clubB: string;
+  equipeB: string;
+  scoreA: number;
+  scoreB: number;
+  lieu: string;
+  status: 'en-cours' | 'termine' | 'a-venir';
+}
+
 export default function ResultatsPage() {
-  const [matchs, setMatchs] = useState<any[]>([]);
+  const [matchs, setMatchs] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [user, setUser] = useState<any>(null);
@@ -25,14 +40,12 @@ export default function ResultatsPage() {
     const { data, error } = await supabase
       .from('matchs')
       .select('*')
-      // Optionnel : filtrer uniquement les matchs terminés ici si nécessaire
-      // .eq('status', 'termine') 
       .order('date', { ascending: false });
     if (!error) setMatchs(data || []);
     setLoading(false);
   };
 
-  // --- MODIFICATION ICI : Regroupement et filtrage par compétition ---
+  // --- 2. TYPAGE DU REGROUPEMENT ---
   const matchGroupes = useMemo(() => {
     // 1. Filtrer selon la recherche
     const filtered = matchs.filter(m => 
@@ -47,7 +60,7 @@ export default function ResultatsPage() {
       if (!acc[compet]) acc[compet] = [];
       acc[compet].push(match);
       return acc;
-    }, {} as Record<string, any[]>);
+    }, {} as Record<string, Match[]>); // TYPAGE ICI
 
   }, [matchs, searchTerm]);
 
@@ -83,12 +96,12 @@ export default function ResultatsPage() {
         </div>
       </header>
 
-      {/* --- MODIFICATION ICI : Affichage par sections --- */}
+      {/* --- 3. AFFICHAGE TYPÉ --- */}
       {Object.entries(matchGroupes).map(([compet, matchsSection]) => (
         <div key={compet} className="compet-section">
           <h2 className="compet-title">🏆 {compet}</h2>
           <div className="matchs-grid">
-            {matchsSection.map((m: any) => (
+            {matchsSection.map((m: Match) => (
               <Link href={`/matchs/resultats/${m.id}`} key={m.id} className="match-card-link">
                 <div className="match-card">
                   <div className={`status-border ${m.status === 'en-cours' ? 'bg-live' : 'bg-finished'}`}></div>
@@ -135,7 +148,6 @@ export default function ResultatsPage() {
         .subtitle { color: #64748b; font-size: 0.9rem; margin: 5px 0 0; }
         .search-input { padding: 10px 16px; border-radius: 10px; border: 1px solid #e2e8f0; background: white; width: 300px; outline: none; font-size: 0.85rem; }
         
-        /* Sections styles */
         .compet-section { margin-bottom: 40px; }
         .compet-title { font-size: 1.3rem; font-weight: 800; color: #1e293b; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #f1f5f9; }
         
