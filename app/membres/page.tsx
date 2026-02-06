@@ -92,7 +92,7 @@ export default function MembresPage() {
     <div style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '50px' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '20px' }}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: '900', margin: 0 }}>Gestion des <span style={{ color: '#F97316' }}>Membres</span></h1>
+          <h1 style={{ fontSize: '2rem', fontWeight: '900', margin: 0 }}>GESTION DES <span style={{ color: '#F97316' }}>MEMBRES</span></h1>
           <p style={{ color: '#64748B' }}>{membres.length} utilisateur(s) enregistré(s)</p>
         </div>
         <input 

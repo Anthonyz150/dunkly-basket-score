@@ -114,7 +114,7 @@ export default function Dashboard() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <div>
           <h1 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
-            Accueil <span style={{ color: '#F97316' }}>.</span>
+            ACCUEIL <span style={{ color: '#F97316' }}>.</span>
           </h1>
           <p style={{ color: '#64748B', fontSize: '0.9rem', marginTop: '5px' }}>
             Ravi de vous revoir, <strong>{user?.prenom || user?.username || user?.email}</strong>.

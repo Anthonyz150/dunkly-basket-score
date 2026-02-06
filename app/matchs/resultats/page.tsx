@@ -70,7 +70,7 @@ export default function ResultatsPage() {
     <div className="page-container">
       <header className="dashboard-header">
         <div className="header-left">
-          <h1>Résultats <span className="orange-dot">.</span></h1>
+          <h1>RÉSULTATS <span className="orange-dot">.</span></h1>
           <p className="subtitle">Consultez les derniers scores de la saison.</p>
         </div>
         <div className="header-right" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>

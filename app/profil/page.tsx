@@ -102,7 +102,7 @@ export default function ProfilPage() {
       }}>
         <header style={{ marginBottom: '30px', textAlign: 'center' }}>
           <h1 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
-            Mon Profil <span style={{ color: '#F97316' }}>.</span>
+            MON PROFIL <span style={{ color: '#F97316' }}>.</span>
           </h1>
           <p style={{ color: '#64748B', marginTop: '5px' }}>Gérez votre identité Dunkly.</p>
         </header>
