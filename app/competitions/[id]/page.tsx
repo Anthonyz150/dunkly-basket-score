@@ -176,14 +176,22 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
               <tbody>
                 {classement.map((team: any, index: number) => (
                   <tr key={index} style={trStyle}>
-                    <td style={tdL}>
-                      <span style={rankStyle(index)}>{index + 1}</span>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span className="team-name-mobile" style={{ fontWeight: '800' }}>{team.nom}</span>
-                        <span style={{ fontSize: '0.7rem', color: '#64748b' }}>{team.clubNom}</span>
-                      </div>
-                    </td>
-                    <td style={tdC}>{team.m}</td>
+                  <td style={tdL}>
+                    <span style={rankStyle(index)}>{index + 1}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      
+                      {/* --- MODIFICATION ICI --- */}
+                      <span className="team-name-mobile" style={{ fontWeight: '800' }}>
+                        {team.clubNom} {/* Le Club en gros/gras */}
+                      </span>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                        {team.nom} {/* L'Équipe en petit/gris en dessous */}
+                      </span>
+                      {/* ------------------------- */}
+                      
+                    </div>
+                  </td>
+                  <td style={tdC}>{team.m}</td>
                     <td style={{ ...tdC, color: '#22c55e', fontWeight: 'bold' }}>{team.v}</td>
                     <td style={{ ...tdC, color: '#ef4444' }}>{team.d}</td>
                     <td className="hide-mobile" style={tdC}>{team.diff > 0 ? `+${team.diff}` : team.diff}</td>
