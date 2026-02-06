@@ -30,7 +30,7 @@ export const getNewsletterTemplate = (subject: string, content: string) => {
           <table class="main" width="100%">
             <tr>
               <td class="header">
-                <img src="URL_DE_VOTRE_LOGO_DUNKLY" alt="Dunkly Logo" class="logo">
+                <img src="https://dunkly-app.vercel.app/logo-dunkly.png" alt="Dunkly Logo" class="logo">
               </td>
             </tr>
             <tr>
