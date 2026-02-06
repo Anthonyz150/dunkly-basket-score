@@ -96,6 +96,24 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
   const classement = calculerClassement();
   const isAdmin = user?.username?.toLowerCase() === 'admin' || user?.email === 'anthony.didier.pro@gmail.com';
 
+  // --- MODIFICATION : AJOUT FONCTION CLÔTURE ---
+  const cloturerCompet = async () => {
+    if (!isAdmin) return;
+    if (confirm("Voulez-vous vraiment clôturer cette compétition ? Elle ne sera plus modifiable.")) {
+      const { error } = await supabase
+        .from('competitions')
+        .update({ statut: 'cloture' }) // Nécessite une colonne 'statut' dans la table
+        .eq('id', compId);
+      
+      if (!error) {
+        setCompetition({ ...competition, statut: 'cloture' });
+      } else {
+        alert("Erreur : " + error.message);
+      }
+    }
+  };
+  // ----------------------------------------------
+
   const ajouterEquipeACompete = async () => {
     if (!selectedEquipe || !selectedClubId || !competition) return;
     const club = clubs.find(c => c.id === selectedClubId);
@@ -124,7 +142,6 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
     setCompetition({ ...competition, equipes_engagees: filtrees });
   };
 
-  // Sécurité pour éviter l'erreur "Client-side exception"
   if (loading) return <div style={loadingOverlay}>🏀 Chargement de Dunkly...</div>;
   if (!competition) return <div style={loadingOverlay}>Compétition introuvable.</div>;
 
@@ -181,6 +198,13 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
 
         {/* ADMIN & INFOS */}
         <div className="action-column-mobile" style={actionColumn}>
+          {/* MODIFICATION : BOUTON CLÔTURER */}
+          {isAdmin && (
+            <button onClick={cloturerCompet} style={cloturerBtnStyle}>
+                🔒 CLÔTURER LA COMPÉTITION
+            </button>
+          )}
+
           {isAdmin && (
             <div style={adminCard}>
               <h3 style={{ fontSize: '1rem', marginBottom: '15px' }}>Engager une équipe</h3>
@@ -234,7 +258,7 @@ export default function DetailCompetitionPage({ params }: { params: Promise<{ id
   );
 }
 
-// --- STYLES HARMONISÉS (INCHANGÉS) ---
+// --- STYLES HARMONISÉS ---
 const containerStyle = { padding: '40px 20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'sans-serif', color: '#1e293b' };
 const loadingOverlay = { height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' as const, color: '#F97316' };
 const heroSection = { textAlign: 'center' as const, marginBottom: '40px' };
@@ -242,6 +266,9 @@ const titleStyle = { fontSize: '2.5rem', fontWeight: '900', marginBottom: '15px'
 const badgeGrid = { display: 'flex', gap: '10px', justifyContent: 'center' };
 const miniBadge = { backgroundColor: '#f1f5f9', padding: '8px 16px', borderRadius: '30px', fontWeight: 'bold' as const, fontSize: '0.8rem' };
 const backBtn = { background: 'none', border: 'none', color: '#F97316', cursor: 'pointer', fontWeight: 'bold' as const, marginBottom: '10px' };
+
+// MODIFICATION : Style bouton clôture
+const cloturerBtnStyle = { width: '100%', padding: '15px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold' as const, cursor: 'pointer' };
 
 const mainGrid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '30px' };
 
